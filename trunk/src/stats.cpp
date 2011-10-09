@@ -114,10 +114,9 @@ void Stats::get_base_stats(std::string& out) {
   Group_Stats_Item::append("maxbytes", settings_.maxbytes, out);
   Group_Stats_Item::append("threads", settings_.num_threads, out);
   Group_Stats_Item::append("max_stats_group", settings_.max_stats_group, out);
-  Group_Stats_Item::append("curr_stats_group", group_map_.size(), out);
+  Group_Stats_Item::append("curr_stats_group", (uint64_t)group_map_.size(), out);
   Group_Stats_Item::append("memory_limit", cache_mgr_.get_mem_limit(), out);
   Group_Stats_Item::append("memory_used", cache_mgr_.get_mem_used(), out);
-  Group_Stats_Item::append("curr_stats_group", group_map_.size(), out);
   lock_.lock();
   Group_Stats_Item::append("curr_conns", curr_conns_, out);
   Group_Stats_Item::append("total_conns", total_conns_, out);
