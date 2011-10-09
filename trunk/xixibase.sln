@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ixibase_server", "xixibase.vcproj", "{1BB899E1-BD14-4D3B-A0FB-5D972109F3FA}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xixibase_server", "src\xixibase.vcproj", "{1BB899E1-BD14-4D3B-A0FB-5D972109F3FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
