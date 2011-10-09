@@ -287,14 +287,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\concurrent.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\concurrent.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\currtime.cpp"
 				>
 			</File>
@@ -411,51 +403,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\peer_cc_pdu.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_ha_pdu.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\peer_pdu.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\src\peer_pdu.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_xixi.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_xixi.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_xixi_ha.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_xixi_ha.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_xixi_ha_cli.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\peer_xixi_ha_cli.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\session.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\session.h"
 				>
 			</File>
 		</Filter>

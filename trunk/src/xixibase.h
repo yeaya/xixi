@@ -19,11 +19,9 @@
 
 #include "defines.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#ifndef VERSION
 #define VERSION "Xixibase 0.1"
+#endif
 
 typedef uint16_t xixi_reason;
 const xixi_reason XIXI_REASON_SUCCESS = 0;

@@ -1,9 +1,7 @@
 CC = g++
 CPPFLAGS += -DNDEBUG -O2
-#CPPFLAGS += -g
-INCLUDE_OPTIONS += 
-
-LINK_OPTIONS += 
+INCLUDE_OPTIONS +=
+LINK_OPTIONS +=
 
 #GCOV_CPPFLAGS = -ftest-coverage -fprofile-arcs
 #GCOV_LINK_OPTION = -lgcov
@@ -37,9 +35,8 @@ $(OBJDIR)/%.d : %.cpp
 		mkdir -p $(OBJDIR); \
 	fi
 	@$(CC) -MM $(CPPFLAGS) $(GCOV_CPPFLAGS) $(INCLUDE_OPTIONS) $< | sed 's,\($*\)\.o[ :]*,$(OBJDIR)\/\1.o $@ : ,g' > $@
-	
+
 -include $(DEPS)
 
 clean:
 	rm -f $(TARGET) $(OBJS) $(DEPS)
-

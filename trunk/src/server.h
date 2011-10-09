@@ -17,26 +17,17 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "defines.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/thread/condition.hpp>
-#include <string>
-#include <map>
+//#include <string>
+//#include <map>
 #include "io_service_pool.h"
-#include "currtime.h"
-/*
-class HA_Client_Status {
-public:
-  HA_Client_Status() {
-    present_res_flag = false;
-  }
 
-  bool present_res_flag;
-};
-*/
 class Server {
 
 public:
@@ -53,60 +44,10 @@ public:
   std::string& get_server_id() {
     return server_id_;
   }
-/*
-  xixi_ha_status get_status() {
-    return ha_status_;
-  }
-
-  const char* get_status_string(xixi_ha_status status) {
-    static const char* sss[] = {
-      "LOOKING",
-      "LEADING",
-      "FOLLOWING",
-      "Unkown"
-    };
-    if (status > 2) {
-      status = 3;
-    }
-    return sss[status];
-  }
-
-  void remove_ha_client(Peer_XIXI_HA_CLI* client) {
-    lock_.lock();
-    ha_clients_.erase(client);
-    lock_.unlock();
-  }
-
-  void process_ha_present_req_pdu(Peer_XIXI_HA* client, XIXI_HA_Present_Req_Pdu* req_pdu, XIXI_HA_Present_Res_Pdu* res_pdu);
-  void process_ha_create_committee_req_pdu(Peer_XIXI_HA* client, XIXI_HA_Create_Committee_Req_Pdu* req_pdu, XIXI_HA_Create_Committee_Res_Pdu* res_pdu);
-  void process_ha_announce_leader_req_pdu(Peer_XIXI_HA* client, XIXI_HA_Announce_Leader_Req_Pdu* req_pdu, XIXI_HA_Announce_Leader_Res_Pdu* res_pdu);
-  void process_ha_keepalive_req_pdu(Peer_XIXI_HA* client, XIXI_HA_Keepalive_Req_Pdu* req_pdu, XIXI_HA_Keepalive_Res_Pdu* res_pdu);
-
-  void process_ha_pdu(XIXI_Pdu* pdu);
-
-  void pdu_process();
 
 private:
-  void process_ha_present_res_pdu(XIXI_HA_Present_Res_Pdu* pdu);
-  void process_ha_create_committee_res_pdu(XIXI_HA_Create_Committee_Res_Pdu* pdu);
-  void process_ha_announce_leader_res_pdu(XIXI_HA_Announce_Leader_Res_Pdu* pdu);
-  void process_ha_keepalive_res_pdu(XIXI_HA_Keepalive_Res_Pdu* pdu);
-*/
   void handle_accept(boost::asio::ip::tcp::socket* socket, const boost::system::error_code& err);
   void handle_timer(const boost::system::error_code& err);
-//  void handle_ha_keepalive_timer(const boost::system::error_code& err);
-//  void handle_ha_present_timeout(const boost::system::error_code& err);
-//  void handle_vote_recover_timer(const boost::system::error_code& err);
-
-  //void send_present();
-  //void create_committee();
-  //void announce_leader();
-//  void send_keepalive();
-
-//  uint32_t check_leader_keepalive();
-//  void check_follow_keepalive();
-  //void clear_ha_client();
-//  void do_clear_ha_client();
 
 private:
   std::string server_id_;
@@ -116,25 +57,7 @@ private:
   boost::asio::ip::tcp::acceptor acceptor_;
   boost::asio::ip::tcp::resolver resolver_;
   boost::asio::deadline_timer timer_;
-//  boost::asio::deadline_timer ha_timer_;
   volatile bool stop_flag_;
-
-//  xixi_ha_status ha_status_;
-//  bool vote_flag_;
-//  uint32_t vote_recover_interval_ms_;
-//  boost::asio::deadline_timer vote_recover_timer_;
-//  std::vector<std::pair<string, string> > ha_servers;
-//  std::map<Peer_XIXI_HA_CLI*, HA_Client_Status> ha_clients_;
-
-  //uint32_t ha_present_res_count_;
-
-  //std::vector<string> ha_votes_;
-//  uint32_t follow_keepalive_timestamp_;
-
-//  shared_ptr<boost::thread> pdu_process_thread_;
-//  std::list<XIXI_Pdu*> pdu_list_;
- // mutex pdu_list_lock_;
- // boost::condition pdu_list_condition_;
 };
 
 extern Server* svr_;

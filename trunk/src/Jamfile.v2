@@ -33,7 +33,6 @@ else if [ os.name ] = HPUX
 
 exe xixibase
   : cache.cpp 
-    concurrent.cpp 
     currtime.cpp 
     io_service_pool.cpp 
     log.cpp 
@@ -46,10 +45,6 @@ exe xixibase
     peer.cpp 
     peer_cache.cpp 
     peer_pdu.cpp 
-    peer_xixi.cpp 
-    peer_xixi_ha.cpp 
-    peer_xixi_ha_cli.cpp 
-    session.cpp 
     auth.cpp
     /boost/system//boost_system
     /boost/thread//boost_thread

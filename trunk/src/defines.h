@@ -17,6 +17,10 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <boost/cstdint.hpp>
 using namespace boost;
 
