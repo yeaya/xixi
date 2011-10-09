@@ -14,9 +14,7 @@
    limitations under the License.
 */
 
-#include "peer_cc_pdu.h"
 #include "peer_cache_pdu.h"
-#include "peer_ha_pdu.h"
 
 bool XIXI_Pdu::decode_pdu(uint8_t* pdu_buffer, XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length) {
   switch (header.choice) {
@@ -58,76 +56,9 @@ bool XIXI_Pdu::decode_pdu(uint8_t* pdu_buffer, XIXI_Pdu_Header& header, uint8_t*
     case XIXI_CHOICE_CHECK_WATCH_REQ:
       ((XIXI_Check_Watch_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
       break;
-    case XIXI_CHOICE_MUTEX_CREATE_REQ:
-      ((XIXI_Mutex_Create_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
-      break;
-    case XIXI_CHOICE_MUTEX_GET_STATUS_REQ:
-      ((XIXI_Mutex_Get_Status_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
-    case XIXI_CHOICE_MUTEX_LOCK_REQ:
-      ((XIXI_Mutex_Lock_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
-      break;
-    case XIXI_CHOICE_MUTEX_UNLOCK_REQ:
-      ((XIXI_Mutex_Unlock_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
-      break;
-    case XIXI_CHOICE_MUTEX_DESTROY_REQ:
-      ((XIXI_Mutex_Destroy_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
-      break;
     default:
       return false;
   }
 
   return true;
-}
-
-#define DECODE_PDU_4_HA(x) { \
-  x* pdu = new x; \
-  if (pdu != NULL) { \
-    pdu->decode_fixed(buf, length); \
-    pdu->choice = header.choice; \
-  } \
-  return pdu; \
-}
-
-XIXI_Pdu* XIXI_Pdu::decode_pdu_4_ha(XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length) {
-  switch (header.choice) {
-    case XIXI_CHOICE_HA_PRESENT_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Present_Req_Pdu);
-
-    case XIXI_CHOICE_HA_PRESENT_RES:
-      DECODE_PDU_4_HA(XIXI_HA_Present_Res_Pdu);
-
-    case XIXI_CHOICE_HA_CREATE_COMMITTEE_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Create_Committee_Req_Pdu);
-
-    case XIXI_CHOICE_HA_CREATE_COMMITTEE_RES:
-      DECODE_PDU_4_HA(XIXI_HA_Create_Committee_Res_Pdu);
-
-    case XIXI_CHOICE_HA_ANNOUNCE_LEADER_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Announce_Leader_Req_Pdu);
-
-    case XIXI_CHOICE_HA_ANNOUNCE_LEADER_RES:
-      DECODE_PDU_4_HA(XIXI_HA_Announce_Leader_Res_Pdu);
-
-    case XIXI_CHOICE_HA_KEEPALIVE_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Keepalive_Req_Pdu);
-
-    case XIXI_CHOICE_HA_KEEPALIVE_RES:
-      DECODE_PDU_4_HA(XIXI_HA_Keepalive_Res_Pdu);
-
-    case XIXI_CHOICE_HA_MUTEX_CREATE_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Mutex_Create_Req_Pdu);
-
-    case XIXI_CHOICE_HA_MUTEX_LOCK_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Mutex_Lock_Req_Pdu);
-
-    case XIXI_CHOICE_HA_MUTEX_UNLOCK_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Mutex_Unlock_Req_Pdu);
-
-    case XIXI_CHOICE_HA_MUTEX_DESTROY_REQ:
-      DECODE_PDU_4_HA(XIXI_HA_Mutex_Destroy_Req_Pdu);
-    default:
-      return NULL;
-  }
-
-  return NULL;
 }

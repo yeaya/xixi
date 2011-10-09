@@ -17,7 +17,7 @@
 #include "server.h"
 #include "settings.h"
 #include "log.h"
-#include "peer_xixi.h"
+//#include "peer_xixi.h"
 #include "peer_cache.h"
 #include "cache.h"
 #include <boost/lexical_cast.hpp>
@@ -110,60 +110,13 @@ public:
 
   void start_peer(uint8_t* data, uint32_t data_len) {
     if (data_len >= 1) {
-/*      if (data[0] == BINARY_MAGIC_REQ) {
-        Peer* peer = new Peer_MC_Binary();
-        if (peer != NULL) {
-          TcpConnection* conn = new TcpConnection(socket_);
-          conn->start(read_buf_, read_data_size_, peer);
-          socket_ = NULL;
-        }
-        return;
-      } else */if (data[0] == XIXI_CATEGORY_COMMON || data[0] == XIXI_CATEGORY_CC) {
-        Peer_XIXI* peer = new Peer_XIXI(socket_);
-        peer->start(read_buf_, read_data_size_);
-        socket_ = NULL;
-        return;
-      } else if (data[0] == XIXI_CATEGORY_CACHE) {
+      if (data[0] == XIXI_CATEGORY_CACHE) {
         Peer_Cache* peer = new Peer_Cache(socket_);
         peer->start(read_buf_, read_data_size_);
         socket_ = NULL;
         return;
-      } else if (data[0] == XIXI_CATEGORY_HA) {
-        Peer_XIXI_HA* peer_ha = new Peer_XIXI_HA(socket_);
-        peer_ha->start(read_buf_, read_data_size_);
-        socket_ = NULL;
-        return;
       }
-    }
-/*    if (data_len >= 3) {
-      if (::memcmp(data, "get", 3) == 0
-          || ::memcmp(data, "get", 3) == 0
-          || ::memcmp(data, "bget", 3) == 0
-          || ::memcmp(data, "add", 3) == 0
-          || ::memcmp(data, "set", 3) == 0
-          || ::memcmp(data, "replace", 3) == 0
-          || ::memcmp(data, "prepend", 3) == 0
-          || ::memcmp(data, "append", 3) == 0
-          || ::memcmp(data, "cas", 3) == 0
-          || ::memcmp(data, "incr", 3) == 0
-          || ::memcmp(data, "gets", 3) == 0
-          || ::memcmp(data, "decr", 3) == 0
-          || ::memcmp(data, "delete", 3) == 0
-          || ::memcmp(data, "stats", 3) == 0
-          || ::memcmp(data, "flush_all", 3) == 0
-          || ::memcmp(data, "version", 3) == 0
-          || ::memcmp(data, "quit", 3) == 0
-          || ::memcmp(data, "verbosity", 3) == 0) {
-        Peer* peer = new Peer_MC_Ascii();
-        if (peer != NULL) {
-          TcpConnection* conn = new TcpConnection(socket_);
-          conn->start(read_buf_, read_data_size_, peer);
-          socket_ = NULL;
-        }
-        return;
-      }
-    }*/
-    
+	}
   }
 
   static void destroy(Connection_Help* conn) {
@@ -182,28 +135,29 @@ Server::Server(std::size_t pool_size, std::size_t thread_size) :
     io_service_pool_(pool_size, thread_size),
     acceptor_(io_service_pool_.get_io_service()),
     resolver_(io_service_pool_.get_io_service()),
-    timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(500)),
-    ha_timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(50)),
-    vote_recover_timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(50)) {
+    timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(500)) {
+//    ha_timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(50)),
+  //  vote_recover_timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(50)) {
   boost::uuids::basic_random_generator<boost::mt19937> gen;
   boost::uuids::uuid id = gen();
 
   server_id_ = boost::uuids::to_string(id);
-  LOG_INFO("UUID: " << id);
+//LOG_INFO("UUID: " << id);
+
 //  server_id_ = boost::lexical_cast<std::string>(server_id_);
 //  LOG_INFO("UUID: " << id);
-  ha_status_ = XIXI_HA_STATUS_LOOKING;
+//  ha_status_ = XIXI_HA_STATUS_LOOKING;
 
   stop_flag_ = false;
   curr_time_.set_current_time();
 
-  ha_servers.push_back(pair<string, string>("127.0.0.1", "7788"));
-  ha_servers.push_back(pair<string, string>("127.0.0.1", "7789"));
-  ha_servers.push_back(pair<string, string>("127.0.0.1", "7790"));
-  ha_present_res_count_ = 0;
-  vote_flag_ = false;
-  vote_recover_interval_ms_ = ha_servers.size() * PRESENT_TIMEOUT_MS;
-  follow_keepalive_timestamp_ = curr_time_.get_current_time();
+//  ha_servers.push_back(pair<string, string>("127.0.0.1", "7788"));
+//  ha_servers.push_back(pair<string, string>("127.0.0.1", "7789"));
+ // ha_servers.push_back(pair<string, string>("127.0.0.1", "7790"));
+ // ha_present_res_count_ = 0;
+ // vote_flag_ = false;
+ // vote_recover_interval_ms_ = ha_servers.size() * PRESENT_TIMEOUT_MS;
+ // follow_keepalive_timestamp_ = curr_time_.get_current_time();
 }
 
 Server::~Server() {
@@ -255,8 +209,8 @@ void Server::start() {
     boost::asio::placeholders::error));
 
 //  send_present();
-  shared_ptr<boost::thread> spt(new boost::thread(boost::bind(&Server::pdu_process, this)));
-  pdu_process_thread_ = spt;
+//  shared_ptr<boost::thread> spt(new boost::thread(boost::bind(&Server::pdu_process, this)));
+ // pdu_process_thread_ = spt;
 }
 
 void Server::stop() {
@@ -264,8 +218,8 @@ void Server::stop() {
   stop_flag_ = true;
   acceptor_.close();
   resolver_.cancel();
-  pdu_list_condition_.notify_one();
-  pdu_process_thread_->join();
+ // pdu_list_condition_.notify_one();
+//  pdu_process_thread_->join();
 //  timer_.cancel();
 //  ha_timer_.cancel();
 //  vote_recover_timer_.cancel();
@@ -313,7 +267,7 @@ void Server::handle_timer(const boost::system::error_code& err) {
 //  static int i = 0; 
 //  printf("tt%d\n", i++);
 }
-
+/*
 void Server::handle_ha_keepalive_timer(const boost::system::error_code& err) {
   LOG_INFO("Server::handle_ha_keepalive_timer status=" << this->get_status_string(ha_status_) << "  err=" << err);
   if (!err) {
@@ -673,3 +627,4 @@ void Server::pdu_process() {
   }
   LOG_INFO("Server::pdu_process leave");
 }
+*/

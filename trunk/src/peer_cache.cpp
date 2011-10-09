@@ -352,26 +352,6 @@ uint32_t Peer_Cache::process_header(uint8_t* data, uint32_t data_len) {
       next_data_len_ = XIXI_Check_Watch_Req_Pdu::get_fixed_body_size();
       set_state(PEER_STATE_READ_BODY_FIXED);
       break;
-    case XIXI_CHOICE_MUTEX_CREATE_REQ:
-      next_data_len_ = XIXI_PDU_MUTEX_CREATE_REQ_BODY_LENGTH;
-      set_state(PEER_STATE_READ_BODY_FIXED);
-      break;
-    case XIXI_CHOICE_MUTEX_GET_STATUS_REQ:
-      next_data_len_ = XIXI_PDU_MUTEX_GET_STATUS_REQ_BODY_LENGTH;
-      set_state(PEER_STATE_READ_BODY_FIXED);
-      break;
-    case XIXI_CHOICE_MUTEX_LOCK_REQ:
-      next_data_len_ = XIXI_PDU_MUTEX_LOCK_REQ_BODY_LENGTH;
-      set_state(PEER_STATE_READ_BODY_FIXED);
-      break;
-    case XIXI_CHOICE_MUTEX_UNLOCK_REQ:
-      next_data_len_ = XIXI_PDU_MUTEX_UNLOCK_REQ_BODY_LENGTH;
-      set_state(PEER_STATE_READ_BODY_FIXED);
-      break;
-    case XIXI_CHOICE_MUTEX_DESTROY_REQ:
-      next_data_len_ = XIXI_PDU_MUTEX_DESTROY_REQ_BODY_LENGTH;
-      set_state(PEER_STATE_READ_BODY_FIXED);
-      break;
     default:
       LOG_WARNING2("process_header unknown cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
       write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
@@ -426,26 +406,6 @@ void Peer_Cache::process_pdu_fixed(XIXI_Pdu* pdu) {
     break;
   case XIXI_CHOICE_CHECK_WATCH_REQ:
     process_check_watch_req_pdu_fixed((XIXI_Check_Watch_Req_Pdu*)pdu);
-    break;
-  case XIXI_CHOICE_MUTEX_CREATE_REQ:
-    next_data_len_ = ((XIXI_Mutex_Create_Req_Pdu*)pdu)->key.size + ((XIXI_Mutex_Create_Req_Pdu*)pdu)->session_id.size;
-    set_state(PEER_STATE_READ_BODY_EXTRAS2);
-    break;
-  case XIXI_CHOICE_MUTEX_GET_STATUS_REQ:
-    next_data_len_ = ((XIXI_Mutex_Get_Status_Req_Pdu*)pdu)->key.size + ((XIXI_Mutex_Get_Status_Req_Pdu*)pdu)->session_id.size;
-    set_state(PEER_STATE_READ_BODY_EXTRAS2);
-    break;
-  case XIXI_CHOICE_MUTEX_LOCK_REQ:
-    next_data_len_ = ((XIXI_Mutex_Lock_Req_Pdu*)pdu)->key.size + ((XIXI_Mutex_Lock_Req_Pdu*)pdu)->session_id.size;
-    set_state(PEER_STATE_READ_BODY_EXTRAS2);
-    break;
-  case XIXI_CHOICE_MUTEX_UNLOCK_REQ:
-    next_data_len_ = ((XIXI_Mutex_Lock_Req_Pdu*)pdu)->key.size + ((XIXI_Mutex_Lock_Req_Pdu*)pdu)->session_id.size;
-    set_state(PEER_STATE_READ_BODY_EXTRAS2);
-    break;
-  case XIXI_CHOICE_MUTEX_DESTROY_REQ:
-    next_data_len_ = ((XIXI_Mutex_Destroy_Req_Pdu*)pdu)->key.size + ((XIXI_Mutex_Destroy_Req_Pdu*)pdu)->session_id.size;
-    set_state(PEER_STATE_READ_BODY_EXTRAS2);
     break;
   default:
     LOG_WARNING2("process_pdu_fixed unknown cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
@@ -1010,7 +970,7 @@ uint32_t Peer_Cache::try_write() {
         make_custom_alloc_handler(handler_allocator_,
             boost::bind(&Peer_Cache::handle_write, this,
               boost::asio::placeholders::error)));
-      LOG_TRACE2("try_write async_write write_buf.count=" << write_buf_.size() << " size=" << size);
+      LOG_TRACE2("try_write async_write write_buf.count=" << write_buf_.size());
     }
     return write_buf_.size();
   }
