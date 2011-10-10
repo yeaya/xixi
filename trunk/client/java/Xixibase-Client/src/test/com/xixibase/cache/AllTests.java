@@ -25,6 +25,7 @@ public class AllTests {
 		TestSuite suite = new TestSuite(AllTests.class.getName());
 
 		suite.addTestSuite(CacheClientManagerTest.class);
+		suite.addTestSuite(CacheClientTest.class);
 		suite.addTestSuite(MultiOperationTest.class);
 		suite.addTestSuite(LocalCacheTest.class);
 

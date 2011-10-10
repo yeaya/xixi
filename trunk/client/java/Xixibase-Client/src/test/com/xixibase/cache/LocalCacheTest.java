@@ -69,4 +69,90 @@ public class LocalCacheTest extends TestCase {
 
 		mgr.shutdown();
 	}
+	
+	public void testSetW() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		assertEquals(lc.getCacheCount(), 0);
+		cc.setW("xixi", "value", 1);
+		assertEquals(lc.get("xixi").getValue(), "value");
+		assertEquals(cc.get("xixi"), "value");
+		assertEquals(cc.getL("xixi"), "value");
+		assertEquals(cc.getW("xixi"), "value");
+		assertEquals(cc.getLW("xixi"), "value");
+		assertEquals(lc.get("xixi").getValue(), "value");
+		assertEquals(lc.getCacheCount(), 1);
+		assertEquals(lc.getCacheSize(), 1029);
+		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
+		lc.setMaxCacheSize(1024 * 1024);
+		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
+		lc.setWarningCacheRate(0.8);
+		assertEquals(lc.getWarningCacheRate(), 0.8);
+		
+		Thread.sleep(2000);
+		
+		assertNull(lc.get("xixi"));
+		assertNull(cc.get("xixi"));
+		assertNull(cc.getL("xixi"));
+		assertNull(cc.getW("xixi"));
+		assertNull(cc.getLW("xixi"));
+		assertEquals(lc.getCacheCount(), 0);
+		assertEquals(lc.getCacheSize(), 0);
+		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
+		lc.setWarningCacheRate(0.8);
+		assertEquals(lc.getWarningCacheRate(), 0.8);
+		
+		mgr.shutdown();
+	}
+	
+	public void testSetW2() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		assertEquals(lc.getCacheCount(), 0);
+		long ret = cc.setW("xixi", "value", 1, 123);
+		assertTrue(ret != 0);
+		ret = cc.setW("xixi", "value", 1, 0);
+		assertTrue(ret != 0);
+		CacheItem item = cc.gets("xixi");
+		assertEquals("value", item.getValue());
+		assertEquals(lc.get("xixi").getValue(), "value");
+		assertEquals(cc.get("xixi"), "value");
+		assertEquals(cc.getL("xixi"), "value");
+		assertEquals(cc.getW("xixi"), "value");
+		assertEquals(cc.getLW("xixi"), "value");
+		assertEquals(lc.getCacheCount(), 1);
+		assertEquals(lc.getCacheSize(), 1029);
+		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
+		lc.setMaxCacheSize(1024 * 1024);
+		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
+		lc.setWarningCacheRate(0.8);
+		assertEquals(lc.getWarningCacheRate(), 0.8);
+		ret = cc.setW("xixi", "value2", 1, item.getCacheID());
+		assertTrue(ret != 0);
+		
+		Thread.sleep(2000);
+		
+		assertNull(cc.get("xixi"));
+		assertNull(lc.get("xixi"));
+		assertNull(cc.getL("xixi"));
+		assertNull(cc.getW("xixi"));
+		assertNull(cc.getLW("xixi"));
+		assertEquals(lc.getCacheCount(), 0);
+		assertEquals(lc.getCacheSize(), 0);
+		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
+		lc.setWarningCacheRate(0.8);
+		assertEquals(lc.getWarningCacheRate(), 0.8);
+		
+		mgr.shutdown();
+	}
 }
