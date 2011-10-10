@@ -472,6 +472,22 @@ public:
 			item->cache_stats_[class_id].add_success++;
 		}
 	}
+	inline void add_success_watch(uint32_t group_id, uint32_t class_id) {
+		group_sum_.cache_stats_[class_id].add_success++;
+
+		Group_Stats_Item* item = get_group_item(group_id);
+		if (item != NULL) {
+			item->cache_stats_[class_id].add_success_watch++;
+		}
+	}
+	inline void add_watch_miss(uint32_t group_id, uint32_t class_id) {
+		group_sum_.cache_stats_[class_id].add_success++;
+
+		Group_Stats_Item* item = get_group_item(group_id);
+		if (item != NULL) {
+			item->cache_stats_[class_id].add_watch_miss++;
+		}
+	}
 	inline void add_fail(uint32_t group_id, uint32_t class_id) {
 		group_sum_.cache_stats_[class_id].add_fail++;
 
