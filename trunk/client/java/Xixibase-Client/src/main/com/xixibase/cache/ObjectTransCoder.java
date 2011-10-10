@@ -160,7 +160,7 @@ public class ObjectTransCoder implements TransCoder {
 		}
 
 		if (b != null) {
-			if (b.length >= compressionThreshold) {
+			if (b.length >= compressionThreshold && compressionThreshold > 0) {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				GZIPOutputStream gos = null;
 				try {
@@ -172,8 +172,11 @@ public class ObjectTransCoder implements TransCoder {
 					gos.close();
 					bos.close();
 				}
-				b = bos.toByteArray();
-				flags |= FLAGS_COMPRESSED;
+				byte[] c = bos.toByteArray();
+				if (c.length < b.length) {
+					b = c;
+					flags |= FLAGS_COMPRESSED;
+				}
 			}
 		}
 		outflags[0] = flags + option1 + option2;
