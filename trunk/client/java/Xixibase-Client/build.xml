@@ -54,7 +54,7 @@
 			</classpath>
 			<jvmarg value="-Dhosts=${hosts}" />
 			<formatter type="xml" />
-			<test name="com.xixibase.cache.CacheClientManagerTest" todir="${report.dir}" />
+			<test name="com.xixibase.cache.CacheClientTest" todir="${report.dir}" />
 		</junit>
 		<junitreport todir="${report.dir}">
 			<fileset dir="${report.dir}">
