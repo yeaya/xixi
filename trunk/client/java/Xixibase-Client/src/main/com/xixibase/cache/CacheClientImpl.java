@@ -45,23 +45,23 @@ public class CacheClientImpl extends Defines {
 		return lastError;
 	}
 
-	public CacheClientImpl(CacheClientManager manager) {
+	public CacheClientImpl(CacheClientManager manager, int groupID) {
 		this.manager = manager;
 		localCache = manager.getLocalCache();
-		groupID = manager.getGroupID();
+		this.groupID = groupID;
 	}
 
-	public CacheClientImpl(String managerName) {
-		this(CacheClientManager.getInstance(managerName));
+	public CacheClientImpl(String managerName, int groupID) {
+		this(CacheClientManager.getInstance(managerName), groupID);
 	}
 
 	public int getGroupID() {
 		return groupID;
 	}
 
-	public void setGroupID(int groupID) {
-		this.groupID = groupID;
-	}
+//	public void setGroupID(int groupID) {
+//		this.groupID = groupID;
+//	}
 
 	public void setTransCoder(TransCoder transCoder) {
 		this.transCoder = transCoder;
@@ -97,9 +97,9 @@ public class CacheClientImpl extends Defines {
 		int watchID = 0;
 		if ((getFlag & LOCAL_CACHE) == LOCAL_CACHE) {
 			if ((getFlag & TOUCH_CACHE) == TOUCH_CACHE) {
-				item = localCache.getAndTouch(host, key, expiration);
+				item = localCache.getAndTouch(host, groupID, key, expiration);
 			} else {
-				item = localCache.get(host, key);
+				item = localCache.get(host, groupID, key);
 			}
 			if (item != null) {
 				return item;
@@ -149,7 +149,9 @@ public class CacheClientImpl extends Defines {
 					int[] objectSize = new int[1];
 					Object obj = transCoder.decode(data, flags, objectSize);
 					if (obj != null) {
-						item = new CacheItem(cacheID,
+						item = new CacheItem(
+								key,
+								cacheID,
 								expiration,
 								groupID,
 								flags,
@@ -229,7 +231,9 @@ public class CacheClientImpl extends Defines {
 				long cacheID = dis.readLong();
 				int flags = dis.readInt();
 				int expiration = dis.readInt();
-				CacheBaseItem item = new CacheBaseItem(cacheID,
+				CacheBaseItem item = new CacheBaseItem(
+						key,
+						cacheID,
 						expiration,
 						groupID,
 						flags);
@@ -423,7 +427,9 @@ public class CacheClientImpl extends Defines {
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_RES) {
 				long newCacheID = dis.readLong();
 				if (watchID != 0) {
-					CacheItem item = new CacheItem(newCacheID,
+					CacheItem item = new CacheItem(
+							key,
+							newCacheID,
 							expiration,
 							groupID,
 							flags,

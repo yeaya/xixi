@@ -31,7 +31,7 @@ public class CacheClientManager {
 	private static ConcurrentHashMap<String, CacheClientManager> managers = new ConcurrentHashMap<String, CacheClientManager>();
 
 	private volatile boolean initialized = false;
-	private int groupID = 0;
+	private int defaultGroupID = 0;
 	
 	private int initConn = 1;
 	private int maxActiveConn = 16;
@@ -82,12 +82,12 @@ public class CacheClientManager {
 		return getInstance("default");
 	}
 	
-	public int getGroupID() {
-		return groupID;
+	public int getDefaultGroupID() {
+		return defaultGroupID;
 	}
 
-	public void setGroupID(int groupID) {
-		this.groupID = groupID;
+	public void setDefaultGroupID(int defaultGroupID) {
+		this.defaultGroupID = defaultGroupID;
 	}
 
 	public int getDefaultPort() {
@@ -241,7 +241,11 @@ public class CacheClientManager {
 	}
 	
 	public CacheClient createClient() {
-		return new CacheClient(this);
+		return new CacheClient(this, defaultGroupID);
+	}
+	
+	public CacheClient createClient(int groupID) {
+		return new CacheClient(this, groupID);
 	}
 
 	protected final XixiSocket createSocket(String host) {

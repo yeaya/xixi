@@ -44,22 +44,16 @@ public class CacheClientTest extends TestCase {
 	}
 
 	public void testFlush() {
-		int groupID = cc1.getGroupID();
-		cc1.setGroupID(3);
-		cc1.set("xixi1", "bar1");
-		cc1.setGroupID(15);
-		cc1.set("xixi2", "bar2");
-		cc1.setGroupID(3);
-		int count = cc1.flush();
+		CacheClient cca = mgr1.createClient(3);
+		CacheClient ccb = mgr1.createClient(15);
+		cca.set("xixi1", "bar1");
+		ccb.set("xixi2", "bar2");
+		int count = cca.flush();
 		assertEquals(1, count);
-		cc1.setGroupID(15);
-		count = cc1.flush();
+		count = ccb.flush();
 		assertEquals(1, count);
-		cc1.setGroupID(3);
-		assertFalse(cc1.keyExists("xixi1"));
-		cc1.setGroupID(15);
-		assertFalse(cc1.keyExists("xixi2"));
-		cc1.setGroupID(groupID);
+		assertFalse(cca.keyExists("xixi1"));
+		assertFalse(ccb.keyExists("xixi2"));
 	}
 	
 	public void testFlush2() {
@@ -113,27 +107,30 @@ public class CacheClientTest extends TestCase {
 	}
 	
 	public void testGroup() {
-		int groupID = cc1.getGroupID();
-		cc1.setGroupID(3);
-		cc1.set("xixi", "group3");
-		cc1.setGroupID(15);
-		cc1.set("xixi", "group15");
+		CacheClient cca = mgr1.createClient(3);
+		CacheClient ccb = mgr1.createClient(15);
+	//	int groupID = cc1.getGroupID();
+//		cc1.setGroupID(3);
+		cca.set("xixi", "group3");
+//		ccb.setGroupID(15);
+		ccb.set("xixi", "group15");
 
-		cc1.setGroupID(3);
-		assertEquals("group3", cc1.get("xixi"));
-		cc1.setGroupID(15);
-		assertEquals("group15", cc1.get("xixi"));
+	//	cc1.setGroupID(3);
+		assertEquals("group3", cca.get("xixi"));
+	//	cc1.setGroupID(15);
+		assertEquals("group15", ccb.get("xixi"));
 		
-		cc1.setGroupID(3);
-		int count = cc1.flush();
+//		cc1.setGroupID(3);
+		int count = cca.flush();
 		assertEquals(1, count);
-		cc1.setGroupID(15);
-		count = cc1.flush();
+//		cc1.setGroupID(15);
+		count = ccb.flush();
 		assertEquals(1, count);
 		
-		cc1.setGroupID(groupID);
+//		cc1.setGroupID(groupID);
 		
-		assertNull(cc1.getLastError());
+		assertNull(cca.getLastError());
+		assertNull(ccb.getLastError());
 	}
 
 	public void testObjectTransCoderEncodeIntLong() {
@@ -222,7 +219,7 @@ public class CacheClientTest extends TestCase {
 		mgr.setNagle(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
-		CacheClient cc = new CacheClient("test1");
+		CacheClient cc = mgr.createClient();
 		cc.set("xixi", value);
 		String s = (String) cc.get("xixi");
 		assertEquals(s, value);
@@ -234,7 +231,7 @@ public class CacheClientTest extends TestCase {
 		mgr.setNagle(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.MD5_HASH));
-		cc = new CacheClient("test2");
+		cc = mgr.createClient();
 		cc.set("xixi", value);
 		s = (String) cc.get("xixi");
 		assertEquals(s, value);
@@ -287,7 +284,7 @@ public class CacheClientTest extends TestCase {
 		mgr.setNagle(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
-		cc1 = new CacheClient("test1");
+		cc1 = mgr.createClient();
 		cc1.set("xixi", input);
 		s = (String) cc1.get("xixi");
 		assertEquals(s, input);
@@ -300,7 +297,7 @@ public class CacheClientTest extends TestCase {
 		mgr.setNagle(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(true, XixiWeightMap.NATIVE_HASH));
-		cc1 = new CacheClient("test2");
+		cc1 = mgr.createClient();
 		cc1.set("xixi", input);
 		s = (String) cc1.get("xixi");
 		assertEquals(s, input);
@@ -316,7 +313,7 @@ public class CacheClientTest extends TestCase {
 		weights[1] = new Integer(8);
 		mgr.initialize(serverlist, weights,
 				new XixiWeightMap<Integer>(true, XixiWeightMap.MD5_HASH));
-		cc1 = new CacheClient("test3");
+		cc1 = mgr.createClient();
 		cc1.set("xixi", input);
 		s = (String) cc1.get("xixi");
 		assertEquals(s, input);

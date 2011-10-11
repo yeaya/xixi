@@ -19,6 +19,7 @@ package com.xixibase.cache;
 import com.xixibase.util.CurrentTick;
 
 public class CacheBaseItem {
+	protected String key;
 	protected long cacheID;
 	protected long expireTime;
 	protected int groupID;
@@ -32,7 +33,8 @@ public class CacheBaseItem {
 	}
 */
 	
-	public CacheBaseItem(long cacheID, int expiration, int groupID, int flags) {
+	public CacheBaseItem(String key, long cacheID, int expiration, int groupID, int flags) {
+		this.key = key;
 		this.cacheID = cacheID;
 		if (expiration == Defines.NO_EXPIRATION) {
 			this.expireTime = Defines.NO_EXPIRATION;

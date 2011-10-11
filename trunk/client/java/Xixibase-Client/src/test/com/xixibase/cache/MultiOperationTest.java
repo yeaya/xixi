@@ -27,8 +27,9 @@ import junit.framework.TestCase;
 
 
 public class MultiOperationTest extends TestCase {
-	private static final String managerName1 = "manager1";
+	private static final String managerName1 = "MultiOperationTest";
 	private static CacheClient cc1 = null;
+	private static CacheClientManager mgr1 = null;
 
 	static String servers;
 	static {
@@ -38,7 +39,7 @@ public class MultiOperationTest extends TestCase {
 		}
 		String[] serverlist = servers.split(",");
 
-		CacheClientManager mgr1 = CacheClientManager.getInstance(managerName1);
+		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
 		mgr1.initialize(serverlist);
 		mgr1.enableLocalCache();
@@ -46,7 +47,7 @@ public class MultiOperationTest extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		cc1 = new CacheClient(managerName1);
+		cc1 = mgr1.createClient();
 	}
 
 	protected void tearDown() throws Exception {

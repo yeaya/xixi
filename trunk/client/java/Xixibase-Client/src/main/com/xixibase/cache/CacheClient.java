@@ -26,21 +26,21 @@ import com.xixibase.cache.multi.MultiUpdateItem;
 public class CacheClient extends Defines {
 	private CacheClientImpl client;
 
-	public CacheClient(CacheClientManager manager) {
-		client = new CacheClientImpl(manager);
+	public CacheClient(CacheClientManager manager, int groupID) {
+		client = new CacheClientImpl(manager, groupID);
 	}
 
-	public CacheClient(String managerName) {
-		client = new CacheClientImpl(managerName);
+	public CacheClient(String managerName, int groupID) {
+		client = new CacheClientImpl(managerName, groupID);
 	}
 
 	public int getGroupID() {
 		return client.getGroupID();
 	}
 
-	public void setGroupID(int groupID) {
-		client.setGroupID(groupID);
-	}
+//	public void setGroupID(int groupID) {
+//		client.setGroupID(groupID);
+//	}
 	
 	public String getLastError() {
 		return client.getLastError();

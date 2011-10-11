@@ -103,6 +103,13 @@ public class LocalCache {
 		watchMap.clear();
 	}
 	
+	public void addGroup(int groupID) {
+		Iterator<LocalCacheWatch> it = watchMap.values().iterator();
+		while (it.hasNext()) {
+			LocalCacheWatch updater = it.next();
+			updater.addGroup(groupID);
+		}
+	}
 	public void dropInactive(int maxDropCount) {
 		Iterator<LocalCacheWatch> it = watchMap.values().iterator();
 		while (it.hasNext()) {
@@ -111,32 +118,32 @@ public class LocalCache {
 		}
 	}
 	
-	public CacheItem get(String host, String key) {
+	public CacheItem get(String host, int groupID, String key) {
 		LocalCacheWatch updater = watchMap.get(host);
 		if (updater != null) {
-			CacheItem item = updater.get(key);
+			CacheItem item = updater.get(groupID, key);
 			return item;
 		}
 		return null;
 	}
 
-	public CacheItem get(String key) {
+	public CacheItem get(int groupID, String key) {
 		String host = manager.getHost(key);
-		return get(host, key);
+		return get(host, groupID, key);
 	}
 
-	public CacheItem getAndTouch(String host, String key, int expiration) {
+	public CacheItem getAndTouch(String host, int groupID, String key, int expiration) {
 		LocalCacheWatch updater = watchMap.get(host);
 		if (updater != null) {
-			CacheItem item = updater.getAndTouch(key, expiration);
+			CacheItem item = updater.getAndTouch(groupID, key, expiration);
 			return item;
 		}
 		return null;
 	}
 
-	public CacheItem getAndTouch(String key, int expiration) {
+	public CacheItem getAndTouch(int groupID, String key, int expiration) {
 		String host = manager.getHost(key);
-		return getAndTouch(host, key, expiration);
+		return getAndTouch(host, groupID, key, expiration);
 	}
 	
 	public void put(String host, String key, CacheItem value) {
@@ -158,17 +165,17 @@ public class LocalCache {
 		put(host, key, value);
 	}
 
-	public CacheItem remove(String host, String key) {
+	public CacheItem remove(String host, int groupID, String key) {
 		LocalCacheWatch updater = watchMap.get(host);
 		if (updater != null) {
-			CacheItem item = updater.remove(key);
+			CacheItem item = updater.remove(groupID, key);
 			return item;
 		}
 		return null;
 	}
 	
-	public CacheItem remove(String key) {
+	public CacheItem remove(int groupID, String key) {
 		String host = manager.getHost(key);
-		return remove(host, key);
+		return remove(host, groupID, key);
 	}
 }

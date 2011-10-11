@@ -386,7 +386,7 @@ public final class MultiGet extends Defines {
 				if (state == STATE_READ_DAYA) {
 					offset += channel.read(data);
 					if (offset == dataSize) {
-				//		String key = mykeys.get(decode_count);
+						String key = keys.get(decode_count);
 						decode_count++;
 						if (keys.size() == decode_count) {
 							isDone = true;
@@ -396,7 +396,9 @@ public final class MultiGet extends Defines {
 						Object obj = null;
 						obj = transCoder.decode(buf, flags, null);
 						if (obj != null) {
-							CacheItem item = new CacheItem(cacheID,
+							CacheItem item = new CacheItem(
+									key,
+									cacheID,
 									expiration,
 									groupID,
 									flags,

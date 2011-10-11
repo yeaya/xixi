@@ -96,7 +96,8 @@ class TestCase1 implements Runable {
 		this.cacheItemCount = cacheItemCount;
 		
 		String mgrName = "stresstest";
-		cc = new CacheClient(mgrName);
+		CacheClientManager mgr = CacheClientManager.getInstance(mgrName);
+		cc = mgr.createClient();
 	}
 	public void run() {
 	//	System.out.println("testCase1 run"); 

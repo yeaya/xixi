@@ -161,7 +161,8 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 		}
 		this.operationType = operationType;
 		
-		cc = new CacheClient(mgrName);	
+		CacheClientManager mgr = CacheClientManager.getInstance(mgrName);
+		cc = mgr.createClient();
 	}
 	public void run() {
 	//	System.out.println("testCase1 run"); 
