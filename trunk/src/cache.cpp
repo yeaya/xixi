@@ -40,37 +40,37 @@ Cache_Watch::Cache_Watch(uint32_t watch_id, uint32_t expire_time) {
 
 void Cache_Watch::check_and_set_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count, uint64_t ack_cache_id,
 										 boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t expire_time) {
-											 expire_time_ = expire_time;
-											 if (!wait_updated_list_.empty()) {
-												 if (wait_updated_list_.front() == ack_cache_id) {
-													 wait_updated_list_.clear();
-													 wait_updated_count_ = 0;
-												 } else {
-													 std::list<uint64_t>::iterator it = wait_updated_list_.begin();
-													 while (it != wait_updated_list_.end()) {
-														 updated_list.push_back(*it);
-														 ++it;
-													 }
-													 updated_count = wait_updated_count_;
-													 return;
-												 }
-											 }
-											 if (updated_count_ > 0) {
-												 std::list<uint64_t>::iterator it = updated_list_.begin();
-												 while (it != updated_list_.end()) {
-													 updated_list.push_back(*it);
-													 ++it;
-												 }
-												 wait_updated_count_ = updated_count = updated_count_;
-												 updated_list_.swap(wait_updated_list_);
-												 updated_count_ = 0;
-											 } else {
-												 boost::shared_ptr<Cache_Watch_Sink> p = wp_.lock();
-												 if (p != NULL) {
-													 p->on_cache_watch_notify(watch_id_);
-												 }
-												 wp_ = sp;
-											 }
+	expire_time_ = expire_time;
+	if (!wait_updated_list_.empty()) {
+		if (wait_updated_list_.front() == ack_cache_id) {
+			wait_updated_list_.clear();
+			wait_updated_count_ = 0;
+		} else {
+			std::list<uint64_t>::iterator it = wait_updated_list_.begin();
+			while (it != wait_updated_list_.end()) {
+				updated_list.push_back(*it);
+				++it;
+			}
+			updated_count = wait_updated_count_;
+			return;
+		}
+	}
+	if (updated_count_ > 0) {
+		std::list<uint64_t>::iterator it = updated_list_.begin();
+		while (it != updated_list_.end()) {
+			updated_list.push_back(*it);
+			++it;
+		}
+		wait_updated_count_ = updated_count = updated_count_;
+		updated_list_.swap(wait_updated_list_);
+		updated_count_ = 0;
+	} else {
+		boost::shared_ptr<Cache_Watch_Sink> p = wp_.lock();
+		if (p != NULL) {
+			p->on_cache_watch_notify(watch_id_);
+		}
+		wp_ = sp;
+	}
 }
 
 void Cache_Watch::check_and_clear_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count) {
@@ -265,43 +265,43 @@ void Cache_Mgr::expire_items(uint32_t curr_time) {
 
 Cache_Item* Cache_Mgr::do_alloc(uint32_t group_id, size_t key_length, uint32_t flags, 
 								uint32_t expire_time, uint32_t data_size) {
-									uint32_t item_size = CALC_ITEM_SIZE(key_length, data_size);
+	uint32_t item_size = CALC_ITEM_SIZE(key_length, data_size);
 
-									uint32_t id = get_class_id(item_size);
-									if (id == 0) {
-										return NULL;
-									}
-									item_size = max_size_[id];
+	uint32_t id = get_class_id(item_size);
+	if (id == 0) {
+		return NULL;
+	}
+	item_size = max_size_[id];
 
-									Cache_Item* it = free_cache_list_[id].pop_front();
-									if (it == NULL) {
-										if (mem_used_ + item_size <= mem_limit_) {
+	Cache_Item* it = free_cache_list_[id].pop_front();
+	if (it == NULL) {
+		if (mem_used_ + item_size <= mem_limit_) {
 #ifdef USING_BOOST_POOL
-											void* buf = pools_[id]->malloc();
+			void* buf = pools_[id]->malloc();
 #else
-											void* buf = malloc(item_size);
+			void* buf = malloc(item_size);
 #endif
-											if (buf != NULL) {
-												it = new (buf) Cache_Item;
-												mem_used_ += item_size;
-											} else {
-												return NULL;
-											}
-										} else {
-											return NULL;
-										}
-									}
+			if (buf != NULL) {
+				it = new (buf) Cache_Item;
+				mem_used_ += item_size;
+			} else {
+				return NULL;
+			}
+		} else {
+			return NULL;
+		}
+	}
 
-									it->class_id = (uint8_t)id;
-									it->expiration_id = (uint8_t)get_expiration_id(curr_time_.get_current_time(), expire_time);
-									it->ref_count = 1;
-									it->group_id = group_id;
-									it->key_length = key_length;
-									it->data_size = data_size;
-									it->expire_time = expire_time;
-									it->flags = flags;
+	it->class_id = (uint8_t)id;
+	it->expiration_id = (uint8_t)get_expiration_id(curr_time_.get_current_time(), expire_time);
+	it->ref_count = 1;
+	it->group_id = group_id;
+	it->key_length = key_length;
+	it->data_size = data_size;
+	it->expire_time = expire_time;
+	it->flags = flags;
 
-									return it;
+	return it;
 }
 
 void Cache_Mgr::free_item(Cache_Item* it) {
@@ -328,7 +328,9 @@ bool Cache_Mgr::item_size_ok(size_t key_length, uint32_t data_size) {
 }
 
 uint32_t Cache_Mgr::get_expiration_id(uint32_t curr_time, uint32_t expire_time) {
-	if (expire_time > curr_time) {
+	if (expire_time == 0) {
+		return 33;
+	} else if (expire_time > curr_time) {
 		uint32_t expiration = expire_time - curr_time;
 		uint32_t i = 1;
 		for (; i < 33; i++) {
@@ -416,139 +418,144 @@ Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, size_t key_
 
 Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, size_t key_length,
 							  uint32_t hash_value, uint32_t&/*out*/ expiration) {
-								  Cache_Key ck(group_id, key, key_length);
-								  Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
+	Cache_Key ck(group_id, key, key_length);
+	Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
 
-								  if (it != NULL) {
-									  LOG_TRACE("Cache_Mgr.do_get, found, key " << string((char*)key, key_length));
+	if (it != NULL) {
+		LOG_TRACE("Cache_Mgr.do_get, found, key " << string((char*)key, key_length));
 
-									  uint32_t currtime = curr_time_.get_current_time();
-									  if (it->expire_time > currtime) {
-										  it->ref_count++;
-										  expiration = it->expire_time - currtime;
-									  } else {
-										  do_unlink(it);
-										  it = NULL;
-									  }
-								  } else {
-									  LOG_TRACE("Cache_Mgr.do_get, not found, key " << string((char*)key, key_length));
-								  }
+		if (it->expire_time == 0) {
+			it->ref_count++;
+			expiration = 0;
+		} else {
+			uint32_t currtime = curr_time_.get_current_time();
+			if (it->expire_time > currtime) {
+				it->ref_count++;
+				expiration = it->expire_time - currtime;
+			} else {
+				do_unlink(it);
+				it = NULL;
+			}
+		}
+	} else {
+		LOG_TRACE("Cache_Mgr.do_get, not found, key " << string((char*)key, key_length));
+	}
 
-								  return it;
+	return it;
 }
 
 Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, size_t key_length,
-									uint32_t hash_value, uint32_t expiration) {
-										Cache_Key ck(group_id, key, key_length);
-										Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
+		uint32_t hash_value, uint32_t expiration) {
+	Cache_Key ck(group_id, key, key_length);
+	Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
 
-										if (it != NULL) {
-											LOG_TRACE("Cache_Mgr.do_get_touch, found, key " << string((char*)key, key_length));
+	if (it != NULL) {
+		LOG_TRACE("Cache_Mgr.do_get_touch, found, key " << string((char*)key, key_length));
 
-											it->ref_count++;
-											uint32_t expire_time = curr_time_.realtime(expiration);
+		it->ref_count++;
+		uint32_t expire_time = curr_time_.realtime(expiration);
 #ifdef NOTIFY_EXPIRATION_REDUCE
-											if (expire_time < it->expire_time) {
-												if (it->watch_item != NULL) {
-													notify_watch(it);
-													it->cache_id = get_cache_id();
-												}
-											}
+		if (expire_time < it->expire_time && expire_time != 0) {
+			if (it->watch_item != NULL) {
+				notify_watch(it);
+				it->cache_id = get_cache_id();
+			}
+		}
 #endif
-											it->expire_time = expire_time;
-										} else {
-											LOG_TRACE("Cache_Mgr.do_get_touch, not found, key " << string((char*)key, key_length));
-										}
+		it->expire_time = expire_time;
+	} else {
+		LOG_TRACE("Cache_Mgr.do_get_touch, not found, key " << string((char*)key, key_length));
+	}
 
-										return it;
+	return it;
 }
 
 Cache_Item* Cache_Mgr::alloc_item(uint32_t group_id, size_t key_length, uint32_t flags,
 								  uint32_t expiration, uint32_t data_size) {
-									  Cache_Item* it;
-									  cache_lock_.lock();
-									  it = do_alloc(group_id, key_length, flags, curr_time_.realtime(expiration), data_size);
-									  cache_lock_.unlock();
-									  return it;
+	Cache_Item* it;
+	cache_lock_.lock();
+	it = do_alloc(group_id, key_length, flags, curr_time_.realtime(expiration), data_size);
+	cache_lock_.unlock();
+	return it;
 }
 
 Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id,
 							uint32_t&/*out*/ expiration, bool&/*out*/ watch_error) {
-								Cache_Item* item;
-								uint32_t hash_value = hash32(key, key_length, group_id);
-								watch_error = false;
-								cache_lock_.lock();
+	Cache_Item* item;
+	uint32_t hash_value = hash32(key, key_length, group_id);
+	watch_error = false;
+	cache_lock_.lock();
 
-								item = do_get(group_id, key, key_length, hash_value, expiration);
-								if (item != NULL) {
-									if (watch_id != 0) {
-										if (is_valid_watch_id(watch_id)) {
-											item->attach_watch(watch_id);
-											stats_.get_hit_watch(group_id, item->class_id);
-										} else {
-											watch_error = true;
-											stats_.get_hit_watch_miss(group_id, item->class_id);
-											do_release_reference(item);
-											item = NULL;
-										}
-									} else {
-										stats_.get_hit_no_watch(group_id, item->class_id);
-									}
-								} else {
-									stats_.get_miss(group_id);
-								}
-								cache_lock_.unlock();
-								return item;
+	item = do_get(group_id, key, key_length, hash_value, expiration);
+	if (item != NULL) {
+		if (watch_id != 0) {
+			if (is_valid_watch_id(watch_id)) {
+				item->add_watch(watch_id);
+				stats_.get_hit_watch(group_id, item->class_id);
+			} else {
+				watch_error = true;
+				stats_.get_hit_watch_miss(group_id, item->class_id);
+				do_release_reference(item);
+				item = NULL;
+			}
+		} else {
+			stats_.get_hit_no_watch(group_id, item->class_id);
+		}
+	} else {
+		stats_.get_miss(group_id);
+	}
+	cache_lock_.unlock();
+	return item;
 }
 
 Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id,
-								  uint32_t expiration, bool&/*out*/ watch_error) {
-									  Cache_Item* item;
-									  uint32_t hash_value = hash32(key, key_length, group_id);
-									  watch_error = false;
-									  cache_lock_.lock();
+								uint32_t expiration, bool&/*out*/ watch_error) {
+	Cache_Item* item;
+	uint32_t hash_value = hash32(key, key_length, group_id);
+	watch_error = false;
+	cache_lock_.lock();
 
-									  item = do_get_touch(group_id, key, key_length, hash_value, expiration);
-									  if (item != NULL) {
-										  if (watch_id != 0) {
-											  if (is_valid_watch_id(watch_id)) {
-												  item->attach_watch(watch_id);
-												  stats_.get_touch_hit_watch(group_id, item->class_id);
-											  } else {
-												  watch_error = true;
-												  stats_.get_touch_hit_watch_miss(group_id, item->class_id);
-												  do_release_reference(item);
-												  item = NULL;
-											  }
-										  } else {
-											  stats_.get_touch_hit_no_watch(group_id, item->class_id);
-										  }
-									  } else {
-										  stats_.get_touch_miss(group_id);
-									  }
-									  cache_lock_.unlock();
-									  return item;
+	item = do_get_touch(group_id, key, key_length, hash_value, expiration);
+	if (item != NULL) {
+	  if (watch_id != 0) {
+		  if (is_valid_watch_id(watch_id)) {
+			  item->add_watch(watch_id);
+			  stats_.get_touch_hit_watch(group_id, item->class_id);
+		  } else {
+			  watch_error = true;
+			  stats_.get_touch_hit_watch_miss(group_id, item->class_id);
+			  do_release_reference(item);
+			  item = NULL;
+		  }
+	  } else {
+		  stats_.get_touch_hit_no_watch(group_id, item->class_id);
+	  }
+	} else {
+	  stats_.get_touch_miss(group_id);
+	}
+	cache_lock_.unlock();
+	return item;
 }
 
 bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, size_t key_length, uint64_t&/*out*/ cache_id,
 						 uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration) {
-							 Cache_Item* it;
-							 bool ret;
-							 uint32_t hash_value = hash32(key, key_length, group_id);
-							 cache_lock_.lock();
-							 it = do_get(group_id, key, key_length, hash_value, expiration);
-							 if (it != NULL) {
-								 cache_id = it->cache_id;
-								 flags = it->flags;
-								 stats_.get_base_hit(it->group_id, it->class_id);
-								 do_release_reference(it);
-								 ret = true;
-							 } else {
-								 stats_.get_base_miss(group_id);
-								 ret = false;
-							 }
-							 cache_lock_.unlock();
-							 return ret;
+	 Cache_Item* it;
+	 bool ret;
+	 uint32_t hash_value = hash32(key, key_length, group_id);
+	 cache_lock_.lock();
+	 it = do_get(group_id, key, key_length, hash_value, expiration);
+	 if (it != NULL) {
+		 cache_id = it->cache_id;
+		 flags = it->flags;
+		 stats_.get_base_hit(it->group_id, it->class_id);
+		 do_release_reference(it);
+		 ret = true;
+	 } else {
+		 stats_.get_base_miss(group_id);
+		 ret = false;
+	 }
+	 cache_lock_.unlock();
+	 return ret;
 }
 
 bool Cache_Mgr::update_base(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Base_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
@@ -564,7 +571,7 @@ bool Cache_Mgr::update_base(uint32_t group_id, const uint8_t* key, size_t key_le
 			if (pdu->is_update_expiration()) {
 				uint32_t expire_time = curr_time_.realtime(pdu->expiration);
 #ifdef NOTIFY_EXPIRATION_REDUCE
-				if (expire_time < it->expire_time) {
+				if (expire_time < it->expire_time && expire_time != 0) {
 					need_notify = true;
 				}
 #endif
@@ -609,7 +616,7 @@ xixi_reason Cache_Mgr::add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 	if (old_it == NULL) {
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
-				item->attach_watch(watch_id);
+				item->add_watch(watch_id);
 				stats_.add_success_watch(item->group_id, item->class_id);
 			} else {
 				stats_.add_watch_miss(item->group_id, item->class_id);
@@ -644,7 +651,6 @@ xixi_reason Cache_Mgr::set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 		if (item->cache_id == 0 || item->cache_id == old_it->cache_id) {
 			if (watch_id != 0) {
 				if (is_valid_watch_id(watch_id)) {
-					item->attach_watch(watch_id);
 					stats_.set_success_watch(item->group_id, item->class_id);
 				} else {
 					stats_.set_watch_miss(item->group_id, item->class_id);
@@ -655,6 +661,10 @@ xixi_reason Cache_Mgr::set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 			}
 			if (reason == XIXI_REASON_SUCCESS) {
 				do_replace(old_it, item);
+				// after notify last watch, then add new watch
+				if (watch_id != 0) {
+					item->add_watch(watch_id);
+				}
 				cache_id = item->cache_id;
 			}
 		} else {
@@ -665,7 +675,7 @@ xixi_reason Cache_Mgr::set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 	} else {
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
-				item->attach_watch(watch_id);
+				item->add_watch(watch_id);
 				stats_.set_success_watch(item->group_id, item->class_id);
 			} else {
 				stats_.set_watch_miss(item->group_id, item->class_id);
@@ -696,7 +706,6 @@ xixi_reason Cache_Mgr::replace(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 	} else if (it->cache_id == 0 || it->cache_id == old_it->cache_id) {
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
-				it->attach_watch(watch_id);
 				stats_.replace_success_watch(it->group_id, it->class_id);
 			} else {
 				stats_.replace_watch_miss(it->group_id, it->class_id);
@@ -707,6 +716,10 @@ xixi_reason Cache_Mgr::replace(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 		}
 		if (reason == XIXI_REASON_SUCCESS) {
 			do_replace(old_it, it);
+			// after notify last watch, then add new watch
+			if (watch_id != 0) {
+				it->add_watch(watch_id);
+			}
 			cache_id = it->cache_id;
 		}
 		do_release_reference(old_it);
@@ -735,10 +748,8 @@ xixi_reason Cache_Mgr::append(Cache_Item* it, uint32_t watch_id, uint64_t&/*out*
 				new_it->set_key_with_hash(it->get_key(), it->hash_value_);
 				memcpy(new_it->get_data(), old_it->get_data(), old_it->data_size);
 				memcpy(new_it->get_data() + old_it->data_size, it->get_data(), it->data_size);
-//				new_it->cache_id = old_it->cache_id;
 				if (watch_id != 0) {
 					if (is_valid_watch_id(watch_id)) {
-						it->attach_watch(watch_id);
 						stats_.append_success_watch(it->group_id, it->class_id);
 					} else {
 						stats_.append_watch_miss(it->group_id, it->class_id);
@@ -749,6 +760,10 @@ xixi_reason Cache_Mgr::append(Cache_Item* it, uint32_t watch_id, uint64_t&/*out*
 				}
 				if (reason == XIXI_REASON_SUCCESS) {
 					do_replace(old_it, new_it);
+					// after notify last watch, then add new watch
+					if (watch_id != 0) {
+						it->add_watch(watch_id);
+					}
 					cache_id = new_it->cache_id;
 				}
 				do_release_reference(new_it);
@@ -783,10 +798,8 @@ xixi_reason Cache_Mgr::prepend(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 				new_it->set_key_with_hash(it->get_key(), it->hash_value_);
 				memcpy(new_it->get_data(), it->get_data(), it->data_size);
 				memcpy(new_it->get_data() + it->data_size, old_it->get_data(), old_it->data_size);
-			//	new_it->cache_id = old_it->cache_id;
 				if (watch_id != 0) {
 					if (is_valid_watch_id(watch_id)) {
-						it->attach_watch(watch_id);
 						stats_.prepend_success_watch(it->group_id, it->class_id);
 					} else {
 						stats_.prepend_watch_miss(it->group_id, it->class_id);
@@ -796,6 +809,10 @@ xixi_reason Cache_Mgr::prepend(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 					stats_.prepend_success(old_it->group_id, old_it->class_id);
 				}
 				if (reason == XIXI_REASON_SUCCESS) {
+					// after notify last watch, then add new watch
+					if (watch_id != 0) {
+						it->add_watch(watch_id);
+					}
 					do_replace(old_it, new_it);
 					cache_id = new_it->cache_id;
 				}
@@ -928,7 +945,7 @@ void Cache_Mgr::flush(uint32_t group_id, uint32_t&/*out*/ flush_count, uint64_t&
 	flush_count = 0;
 	flush_size = 0;
 	cache_lock_.lock();
-	for (int i = 0; i < 33; i++) {
+	for (int i = 0; i < 34; i++) {
 		Cache_Item* it = expire_list_[i].front();
 		while (it != NULL) {
 			Cache_Item* next = it->next();

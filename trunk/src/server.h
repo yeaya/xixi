@@ -24,8 +24,6 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/thread/condition.hpp>
-//#include <string>
-//#include <map>
 #include "io_service_pool.h"
 
 class Server {

@@ -57,7 +57,7 @@ private:
 
 class Cache_Watch_Item {
 public:
-	void attach_watch(uint32_t watch_id) {
+	void add_watch(uint32_t watch_id) {
 		watch_map.insert(watch_id);
 	}
 	std::set<uint32_t> watch_map;
@@ -130,13 +130,15 @@ public:
 	inline uint32_t total_size() { return sizeof(Cache_Item) + key_length + data_size; }
 
 	inline void calc_hash_value() { hash_value_ = hash32((uint8_t*)body, key_length, group_id); }
+
 protected:
-	void attach_watch(uint32_t watch_id) {
+	void add_watch(uint32_t watch_id) {
 		if (watch_item == NULL) {
 			watch_item = new Cache_Watch_Item();
 		}
-		watch_item->attach_watch(watch_id);
+		watch_item->add_watch(watch_id);
 	}
+
 protected:
 	Cache_Watch_Item* watch_item;
 	uint32_t expire_time;
@@ -229,7 +231,7 @@ private:
 
 	xixi::hash_map<Cache_Key, Cache_Item> cache_hash_map_;
 
-	xixi::list<Cache_Item> expire_list_[33];
+	xixi::list<Cache_Item> expire_list_[34];
 	uint32_t expire_check_time_[33];
 	uint32_t expiration_time_[33];
 

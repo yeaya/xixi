@@ -22,37 +22,48 @@
 class Current_Time
 {
 public:
-  Current_Time();
+	Current_Time();
 
-  void set_current_time();
-  uint32_t get_current_time() {
-    return current_time_;
-  }
-  uint32_t get_start_time();
-  uint32_t realtime(uint32_t expiration) {
-    uint64_t t = expiration;
-    t += current_time_;
-    if (t <= (uint32_t)0xFFFFFFFF) {
-      return (uint32_t)t;
-    }
-    return 0xFFFFFFFF;
-  }
-  static uint32_t realtime(uint32_t curr_time, uint32_t expiration) {
-    uint64_t t = expiration;
-    t += curr_time;
-    if (t <= (uint32_t)0xFFFFFFFF) {
-      return (uint32_t)t;
-    }
-    return 0xFFFFFFFF;
-  }
-  bool is_timeout(uint32_t last_time, uint32_t timeout) {
-    return last_time + timeout < current_time_;
-  }
+	void set_current_time();
+	uint32_t get_current_time() {
+		return current_time_;
+	}
+	uint32_t get_start_time();
+	uint32_t realtime(uint32_t expiration) {
+		if (expiration == 0) {
+			return 0;
+		} else {
+			uint64_t t = expiration;
+			t += current_time_;
+			if (t <= 0xFFFFFFFFL) {
+				return (uint32_t)t;
+			}
+		}
+		return 0;
+	}
+	static uint32_t realtime(uint32_t curr_time, uint32_t expiration) {
+		if (expiration == 0) {
+			return 0;
+		} else {
+			uint64_t t = expiration;
+			t += curr_time;
+			if (t <= 0xFFFFFFFFL) {
+				return (uint32_t)t;
+			}
+		}
+		return 0;
+	}
+	bool is_timeout(uint32_t last_time, uint32_t timeout) {
+		if (last_time == 0) {
+			return false;
+		}
+		return last_time + timeout <= current_time_;
+	}
 
 private:
-  uint32_t start_time_;
-  volatile uint32_t current_time_;
-  volatile uint32_t last_time_;
+	uint32_t start_time_;
+	volatile uint32_t current_time_;
+	volatile uint32_t last_time_;
 };
 
 extern Current_Time curr_time_;
