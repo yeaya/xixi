@@ -208,7 +208,7 @@ public final class MultiUpdateBase extends Defines {
 			item = items.get(currKeyIndex);
 			keyBuf = transCoder.encodeKey(item.key);
 			if (keyBuf == null) {
-				lastError = "MultiUpdateBase.encode, failed to encode key";
+				lastError = "encode, failed to encode key";
 				log.error(lastError);
 				return;
 			}
@@ -233,7 +233,7 @@ public final class MultiUpdateBase extends Defines {
 				item = items.get(currKeyIndex);
 				keyBuf = transCoder.encodeKey(item.key);
 				if (keyBuf == null) {
-					lastError = "MultiUpdateBase.encode, failed to encode key";
+					lastError = "encode, failed to encode key";
 					log.error(lastError);
 					return;
 				}
@@ -262,12 +262,9 @@ public final class MultiUpdateBase extends Defines {
 			outBuffer = ByteBuffer.allocateDirect(64 * 1024);
 			
 			encode();
-			
+
 			outBuffer.flip();
 			channel = socket.getChannel();
-			if (channel == null) {
-				throw new IOException("MultiUpdateBase.init, failed on getChannel: " + socket.getHost());
-			}
 			channel.configureBlocking(false);
 			channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
 		}
@@ -291,20 +288,24 @@ public final class MultiUpdateBase extends Defines {
 		}
 
 		public void close() {
-			try {
-				if (isDone) {
-					channel.configureBlocking(true);
-					socket.close();
-					return;
+			if (socket != null) {
+				try {
+					if (isDone) {
+						channel.configureBlocking(true);
+						socket.close();
+						socket = null;
+						return;
+					}
+				} catch (IOException e) {
+					lastError = "close, failed on close socket, " + e.getMessage();
+					log.warn(lastError);
 				}
-			} catch (IOException e) {
-				lastError = "MultiUpdateBase.close, failed on close socket, " + e.getMessage();
-				log.warn(lastError);
-			}
-
-			try {
-				socket.trueClose();
-			} catch (IOException ignoreMe) {
+	
+				try {
+					socket.trueClose();
+					socket = null;
+				} catch (IOException ignoreMe) {
+				}
 			}
 		}
 
@@ -369,7 +370,7 @@ public final class MultiUpdateBase extends Defines {
 						items.get(decode_count).reason = reason;
 						decode_count++;
 
-						lastError = "MultiUpdateBase.processResponse, resonpse error reason=" + reason;
+						lastError = "processResponse, resonpse error reason=" + reason;
 						log.error(lastError);
 						if (items.size() == decode_count) {
 							isDone = true;

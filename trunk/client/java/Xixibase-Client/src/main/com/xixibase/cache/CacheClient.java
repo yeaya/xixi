@@ -126,70 +126,48 @@ public class CacheClient extends Defines {
 		return client.replace(key, value, expiration, cacheID, true);
 	}
 
-	public Long incr(String key) {
+	public long createDelta(String key, long delta) {
+		return add(key, "" + delta, Defines.NO_EXPIRATION);
+	}
+	
+	public long createDelta(String key, long delta, int expiration) {
+		return add(key, "" + delta, expiration);
+	}
+	
+	public long setDelta(String key, long delta) {
+		return set(key, "" + delta, Defines.NO_EXPIRATION, Defines.NO_CAS);
+	}
+	
+	public long setDelta(String key, long delta, int expiration) {
+		return set(key, "" + delta, expiration, Defines.NO_CAS);
+	}
+	
+	public long setDelta(String key, long delta, int expiration, long cacheID) {
+		return set(key, "" + delta, expiration, cacheID);
+	}
+
+	public DeltaItem incr(String key) {
 		return client.incr(key, 1, Defines.NO_CAS);
 	}
 
-	public Long incr(String key, long inc) {
-		return client.incr(key, inc, Defines.NO_CAS);
+	public DeltaItem incr(String key, long delta) {
+		return client.incr(key, delta, Defines.NO_CAS);
 	}
 
-	public Long incr(String key, long inc, long cacheID) {
-		return client.incr(key, inc, cacheID);
+	public DeltaItem incr(String key, long delta, long cacheID) {
+		return client.incr(key, delta, cacheID);
 	}
 
-	public Long decr(String key) {
+	public DeltaItem decr(String key) {
 		return client.decr(key, 1, Defines.NO_CAS);
 	}
 
-	public Long decr(String key, long inc) {
-		return client.decr(key, inc, Defines.NO_CAS);
+	public DeltaItem decr(String key, long delta) {
+		return client.decr(key, delta, Defines.NO_CAS);
 	}
 
-	public Long decr(String key, long inc, long cacheID) {
-		return client.decr(key, inc, cacheID);
-	}
-
-	public Long addOrIncr(String key) {
-		return addOrIncr(key, 0, Defines.NO_EXPIRATION, Defines.NO_CAS);
-	}
-
-	public Long addOrIncr(String key, long inc) {
-		return addOrIncr(key, inc, Defines.NO_EXPIRATION, Defines.NO_CAS);
-	}
-
-	public Long addOrIncr(String key, long inc, int expiration) {
-		return addOrIncr(key, inc, expiration, Defines.NO_CAS);
-	}
-
-	public Long addOrIncr(String key, long inc, int expiration, long cacheID) {
-		long ret = add(key, "" + inc, expiration);
-		if (ret != NO_CAS) {
-			return new Long(inc);
-		} else {
-			return client.incr(key, inc, cacheID);
-		}
-	}
-
-	public Long addOrDecr(String key) {
-		return addOrDecr(key, 0, Defines.NO_EXPIRATION, Defines.NO_CAS);
-	}
-
-	public Long addOrDecr(String key, long inc) {
-		return addOrDecr(key, inc, Defines.NO_EXPIRATION, Defines.NO_CAS);
-	}
-
-	public Long addOrDecr(String key, long inc, int expiration) {
-		return addOrDecr(key, inc, expiration, Defines.NO_CAS);
-	}
-
-	public Long addOrDecr(String key, long inc, int expiration, long cacheID) {
-		long ret = add(key, "" + inc, expiration);
-		if (ret != NO_CAS) {
-			return new Long(inc);
-		} else {
-			return client.decr(key, inc, cacheID);
-		}
+	public DeltaItem decr(String key, long delta, long cacheID) {
+		return client.decr(key, delta, cacheID);
 	}
 
 	public Object get(String key) {

@@ -99,7 +99,7 @@ public class ObjectTransCoder implements TransCoder {
 	
 	public void setOption2(byte option2) {
 		this.option2 = option2;
-		this.option2 = this.option2 << 8;
+		this.option2 = (this.option2 << 8) & 0xFF00;
 	}
 
 	public byte[] encode(final Object obj, int[]/*out*/ outflags) throws IOException {

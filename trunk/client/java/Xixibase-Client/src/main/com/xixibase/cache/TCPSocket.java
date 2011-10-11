@@ -55,6 +55,14 @@ public class TCPSocket implements XixiSocket {
 
 		socket.setTcpNoDelay(noDelay);
 		socketChannel = socket.getChannel();
+		if (socketChannel == null) {
+			try {
+				socket.close();
+			} catch (IOException e) {
+			}
+			socket = null;
+			throw new IOException("Can not getChannel for host:" + host);
+		}
 	}
 
 	public ByteBuffer getReadBuffer() {
@@ -77,46 +85,22 @@ public class TCPSocket implements XixiSocket {
 		readBuffer.clear();
 		writeBuffer.clear();
 
-		String errorMessage = null;
-
-		if (socketChannel != null) {
-			try {
-				socketChannel.close();
-			} catch (IOException e) {
-				errorMessage = "error on closing socket: " + toString()
-					+ " for host: " + getHost() + "\n" + e.getMessage();
-				
-			}
-			socketChannel = null;
-		} else {
-			errorMessage = "socketChannel already null in trueClose";
-		}
-
-		if (socket != null) {
+		try {
+			socketChannel.close();
+		} catch (IOException e) {
 			try {
 				socket.close();
-			} catch (IOException e) {
-				String msg = "error on closing socket: " + toString() + " for host: " + getHost() + "\n"
-				+ e.getMessage();
-				if (errorMessage == null) {
-					errorMessage = msg;
-				} else {
-					errorMessage += "\n" + msg;
-				}
+			} catch (IOException e2) {
 			}
-			socket = null;
-		} else {
-			String msg = "socket already null in trueClose";
-			if (errorMessage == null) {
-				errorMessage = msg;
-			} else {
-				errorMessage += "\n" + msg;
-			}
+			throw new IOException("failed on close socketChannel, for host:" + host + ", " + e);
 		}
 
-		if (errorMessage != null) {
-			throw new IOException(errorMessage);
+		try {
+			socket.close();
+		} catch (IOException e) {
+			throw new IOException("failed on close socket, for host:" + host + ", " + e);
 		}
+		socket = null;
 	}
 
 	public final void close() {

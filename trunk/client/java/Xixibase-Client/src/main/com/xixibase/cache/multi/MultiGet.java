@@ -103,8 +103,8 @@ public final class MultiGet extends Defines {
 				Entry<String, Connection> e = itc.next();
 				String host = e.getKey();
 				Connection conn = e.getValue();
+				
 				XixiSocket socket = manager.getSocketByHost(host);
-
 				if (socket != null) {
 					conn.init(socket);
 				}
@@ -261,9 +261,6 @@ public final class MultiGet extends Defines {
 			
 			outBuffer.flip();
 			channel = socket.getChannel();
-			if (channel == null) {
-				throw new IOException("dead connection to: " + socket.getHost());
-			}
 			channel.configureBlocking(false);
 			channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
 		}
@@ -287,20 +284,24 @@ public final class MultiGet extends Defines {
 		}
 
 		public void close() {
-			try {
-				if (isDone) {
-					channel.configureBlocking(true);
-					socket.close();
-					return;
+			if (socket != null) {
+				try {
+					if (isDone) {
+						channel.configureBlocking(true);
+						socket.close();
+						socket = null;
+						return;
+					}
+				} catch (IOException e) {
+					lastError = "close, exception on close, " + e.getMessage();
+					log.warn(lastError);
 				}
-			} catch (IOException e) {
-				lastError = "MultiGet.close, exception on close, " + e.getMessage();
-				log.warn(lastError);
-			}
-
-			try {
-				socket.trueClose();
-			} catch (IOException ignoreMe) {
+	
+				try {
+					socket.trueClose();
+					socket = null;
+				} catch (IOException ignoreMe) {
+				}
 			}
 		}
 
@@ -369,7 +370,7 @@ public final class MultiGet extends Defines {
 						myobjs.add(null);
 						
 					//	mykeys.remove(decode_count);
-						lastError = "MultiGet.processResponse, response error reason=" + reason; 
+						lastError = "processResponse, response error reason=" + reason; 
 						log.error(lastError);
 						state = 0;
 						if (keys.size() == decode_count) {

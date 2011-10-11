@@ -22,7 +22,7 @@ public class Defines {
 	public static final int WATCH_CACHE = 2;
 	public static final int TOUCH_CACHE = 4;
 	
-	public static final int NO_EXPIRATION = -1;
+	public static final int NO_EXPIRATION = 0;
 	public static final long NO_CAS = 0;
 	public static final int NO_WATCH = 0;
 

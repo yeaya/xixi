@@ -34,7 +34,11 @@ public class CacheBaseItem {
 	
 	public CacheBaseItem(long cacheID, int expiration, int groupID, int flags) {
 		this.cacheID = cacheID;
-		this.expireTime = CurrentTick.get() + (expiration & 0xFFFFFFFFL) ;
+		if (expiration == Defines.NO_EXPIRATION) {
+			this.expireTime = Defines.NO_EXPIRATION;
+		} else {
+			this.expireTime = CurrentTick.get() + (expiration & 0xFFFFFFFFL) ;
+		}
 		this.groupID = groupID;
 		this.flags = flags;
 	}
@@ -48,15 +52,22 @@ public class CacheBaseItem {
 	}
 
 	protected void setExpiration(int expiration) {
-		this.expireTime = CurrentTick.get() + (expiration & 0xFFFFFFFFL) ;
+		if (expiration == Defines.NO_EXPIRATION) {
+			this.expireTime = Defines.NO_EXPIRATION;
+		} else {
+			this.expireTime = CurrentTick.get() + (expiration & 0xFFFFFFFFL) ;
+		}
 	}
 	
 	public long getExpiration() {
-		long currTick = CurrentTick.get();
-		if (currTick <= expireTime) {
-			return expireTime - CurrentTick.get();
+		if (expireTime == Defines.NO_EXPIRATION) {
+			return Defines.NO_EXPIRATION;
 		}
-		return 0L; 
+		long currTick = CurrentTick.get();
+		if (currTick != expireTime) {
+			return expireTime - currTick;
+		}
+		return -1L; 
 	}
 	
 	public long getExpireTime() {

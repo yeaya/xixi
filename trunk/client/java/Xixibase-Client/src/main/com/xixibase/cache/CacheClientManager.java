@@ -133,7 +133,6 @@ public class CacheClientManager {
 			for (int j = 0; j < initConn; j++) {
 				XixiSocket socket = createSocket(servers[i]);
 				if (socket == null) {
-					log.error("failed to create socket for host: " + servers[i]);
 					break;
 				}
 				addSocket(servers[i], socket);
@@ -251,7 +250,8 @@ public class CacheClientManager {
 			socket = new TCPSocket(this, host, socketWriteBufferSize, socketTimeout,
 					socketConnectTimeout, nagle);
 		} catch (Exception e) {
-			log.error("failed to create Socket for host: " + host + " e=" + e.getMessage());
+			log.error("manager.createSocket, failed to create Socket for host: " + host
+					+ " e=" + e.toString());
 			socket = null;
 		}
 

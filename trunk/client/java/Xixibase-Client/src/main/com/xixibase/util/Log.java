@@ -54,6 +54,7 @@ public class Log {
 	
 	public void debug(String msg) {
 		if (level == 0){
+			msg = name + "." + msg;
 			if (enableLog4j) {
 				if (logger == null) {
 					logger = Logger.getLogger(name);
@@ -67,6 +68,7 @@ public class Log {
 
 	public void info(String msg) {
 		if (level <= 1){
+			msg = name + "." + msg;
 			if (enableLog4j) {
 				if (logger == null) {
 					logger = Logger.getLogger(name);
@@ -80,6 +82,7 @@ public class Log {
 	
 	public void warn(String msg) {
 		if (level <= 2){
+			msg = name + "." + msg;
 			if (enableLog4j) {
 				if (logger == null) {
 					logger = Logger.getLogger(name);
@@ -93,6 +96,7 @@ public class Log {
 	
 	public void error(String msg) {
 		if (level <= 3){
+			msg = name + "." + msg;
 			if (enableLog4j) {
 				if (logger == null) {
 					logger = Logger.getLogger(name);

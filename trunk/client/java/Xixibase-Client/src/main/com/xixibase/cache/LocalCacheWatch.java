@@ -213,11 +213,11 @@ class LocalCacheWatch extends Thread {
 	}
 	
 	public void run() {
-		log.info("LocalCacheWatch " + host + " run");
+		log.info("run, host=" + host);
 		while (runFlag) {
 			while (watchID == 0 && runFlag) {
 				watchID = cc.createWatch(host, maxNextCheckInterval);
-				log.debug("LocalCacheWatch " + host + " watchID=" + watchID);
+				log.debug("run, host=" + host + " watchID=" + watchID);
 				if (watchID == 0 && runFlag) {
 					try {
 						Thread.sleep(1000);
@@ -254,7 +254,7 @@ class LocalCacheWatch extends Thread {
 					}
 				}
 			} else {
-				log.error("LocalCacheWatch can not check with server:" + host + " watchID=" + watchID
+				log.error("run, can not check with server:" + host + " watchID=" + watchID
 						+ ", clear all local cache");
 				clear();
 			}

@@ -205,7 +205,7 @@ public final class MultiDelete extends Defines {
 			MultiDeleteItem item = items.get(currKeyIndex);
 			byte[] keyBuf = transCoder.encodeKey(item.key);
 			if (keyBuf == null) {
-				lastError = "MultiDelete.encode, failed to encode key";
+				lastError = "encode, failed to encode key";
 				log.error(lastError);
 				return;
 			}
@@ -228,7 +228,7 @@ public final class MultiDelete extends Defines {
 				item = items.get(currKeyIndex);
 				keyBuf = transCoder.encodeKey(item.key);
 				if (keyBuf == null) {
-					lastError = "MultiDelete.encode, failed to encode key";
+					lastError = "encode, failed to encode key";
 					log.error(lastError);
 					return;
 				}
@@ -257,9 +257,6 @@ public final class MultiDelete extends Defines {
 			
 			outBuffer.flip();
 			channel = socket.getChannel();
-			if (channel == null) {
-				throw new IOException("MultiDelete.init, failed on getChannel: " + socket.getHost());
-			}
 			channel.configureBlocking(false);
 			channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
 		}
@@ -283,20 +280,24 @@ public final class MultiDelete extends Defines {
 		}
 
 		public void close() {
-			try {
-				if (isDone) {
-					channel.configureBlocking(true);
-					socket.close();
-					return;
+			if (socket != null) {
+				try {
+					if (isDone) {
+						channel.configureBlocking(true);
+						socket.close();
+						socket = null;
+						return;
+					}
+				} catch (IOException e) {
+					lastError = "close, failed on close socket, " + e.getMessage();
+					log.warn(lastError);
 				}
-			} catch (IOException e) {
-				lastError = "MultiDelete.close, failed on close socket, " + e.getMessage();
-				log.warn(lastError);
-			}
-
-			try {
-				socket.trueClose();
-			} catch (IOException ignoreMe) {
+	
+				try {
+					socket.trueClose();
+					socket = null;
+				} catch (IOException ignoreMe) {
+				}
 			}
 		}
 
@@ -346,7 +347,7 @@ public final class MultiDelete extends Defines {
 						items.get(decode_count).reason = reason;
 						decode_count++;
 
-						lastError = "MultiDelete.processResponse, response error reason=" + reason;
+						lastError = "processResponse, response error reason=" + reason;
 						log.error(lastError);
 						if (items.size() == decode_count) {
 							isDone = true;

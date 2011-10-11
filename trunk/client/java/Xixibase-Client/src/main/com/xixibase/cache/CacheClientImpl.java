@@ -168,7 +168,6 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "get, response error, reason=" + reason;
 				log.debug(lastError);
-				return null;
 			}
 			return null;
 		} catch (IOException e) {
@@ -530,15 +529,15 @@ public class CacheClientImpl extends Defines {
 		return false;
 	}
 
-	public Long incr(String key, long inc, long cacheID) {
-		return delta(key, XIXI_DELTA_SUB_OP_INCR, inc, cacheID);
+	public DeltaItem incr(String key, long delta, long cacheID) {
+		return delta(key, XIXI_DELTA_SUB_OP_INCR, delta, cacheID);
 	}
 
-	public Long decr(String key, long inc, long cacheID) {
-		return delta(key, XIXI_DELTA_SUB_OP_DECR, inc, cacheID);
+	public DeltaItem decr(String key, long delta, long cacheID) {
+		return delta(key, XIXI_DELTA_SUB_OP_DECR, delta, cacheID);
 	}
 
-	private Long delta(String key, byte subOp, long delta, long cacheID) {
+	private DeltaItem delta(String key, byte subOp, long delta, long cacheID) {
 		lastError = null;
 		if (key == null) {
 			lastError = "delta, key == null";
@@ -554,7 +553,6 @@ public class CacheClientImpl extends Defines {
 		}
 
 		XixiSocket socket = manager.getSocket(key);
-
 		if (socket == null) {
 			lastError = "delta, failed to get socket";
 			log.error(lastError);
@@ -580,9 +578,12 @@ public class CacheClientImpl extends Defines {
 			byte category = dis.readByte();
 			byte type = dis.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DETLA_RES) {
-				dis.readLong();//uint64_t cacheID;
-				long res = dis.readLong();
-				return new Long(res);
+				cacheID = dis.readLong();//uint64_t ;
+				long value = dis.readLong();
+				DeltaItem item = new DeltaItem();
+				item.cacheID = cacheID;
+				item.value = value;
+				return item;
 			} else {
 				short reason = dis.readShort();
 				lastError = "delta, response error, reason=" + reason;

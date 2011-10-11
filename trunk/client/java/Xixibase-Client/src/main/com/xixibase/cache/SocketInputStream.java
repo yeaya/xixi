@@ -49,8 +49,10 @@ public final class SocketInputStream extends InputStream {
 		return b;
 	}
 
+	/*
 	@Override
 	public int available() throws IOException {
 		return socket.getReadBuffer().remaining();
 	}
+	*/
 }

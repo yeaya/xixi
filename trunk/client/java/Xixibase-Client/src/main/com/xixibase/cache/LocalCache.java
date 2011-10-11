@@ -49,7 +49,7 @@ public class LocalCache {
 	public void setMaxCacheSize(long maxCacheSize) {
 		this.maxCacheSize = maxCacheSize;
 		this.warningCacheSize = (long)(maxCacheSize * warningCacheRate);
-		log.info("localCache setMaxCacheSize, maxCacheSize=" + maxCacheSize);
+		log.info("setMaxCacheSize, maxCacheSize=" + maxCacheSize);
 	}
 	
 	public double getWarningCacheRate() {
@@ -79,17 +79,17 @@ public class LocalCache {
 
 	protected void start() {
 		if (watchMap.size() > 0) {
-			log.warn("LocalCache " + manager.getName() + " was already started.");
+			log.warn("start, LocalCache " + manager.getName() + " was already started.");
 			return;
 		}
-		log.info("localCache start, maxCacheSize=" + maxCacheSize);
+		log.info("start, maxCacheSize=" + maxCacheSize);
 		String[] hosts = manager.getServers();
 		for (int i = 0; i < hosts.length; i++) {
 			String host = hosts[i];
 			LocalCacheWatch updater = new LocalCacheWatch(host, manager,
 					cacheSize, cacheCount);
 			watchMap.put(host, updater);
-			log.info("localCache updater " + host + " start");
+			log.info("start, localCache updater " + host + " start");
 			updater.init();
 		}
 	}

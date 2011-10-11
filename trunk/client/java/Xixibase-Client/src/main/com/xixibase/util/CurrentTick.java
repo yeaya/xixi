@@ -18,7 +18,7 @@ package com.xixibase.util;
 
 //import java.util.concurrent.atomic.AtomicInteger;
 
-public class CurrentTick {
+public final class CurrentTick {
 //	private static int lastTime = (int)(System.currentTimeMillis() / 1000);
 //	private static int currTick = 0;
 //	private static AtomicInteger lastTick = new AtomicInteger(0);
