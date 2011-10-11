@@ -22,7 +22,7 @@ import java.util.List;
 import com.xixibase.cache.multi.MultiDeleteItem;
 import com.xixibase.cache.multi.MultiUpdateItem;
 
-public class CacheClientBench {
+public class CacheClientBench  {
 	int start = 1;
 	int runs = 50000;
 	String keyBase = "key";
@@ -50,64 +50,75 @@ public class CacheClientBench {
 		
 		System.out.println("keybaselen=" + keyBase.length() + " objlen=" + object.length());
 	}
-	
-	public void run() {
-		set();
-		getW();
-		getL();
-		multiGet();
-		delete();
-		multiSet();
-		multiGetForSet();
-		multiDelete();
-		multiSet();
-		flush();
+
+	public boolean runIt() {
+		boolean ret = true;
+		ret &= set();
+		ret &= getW();
+		ret &= getL();
+		ret &= multiGet();
+		ret &= delete();
+		ret &= multiSet();
+		ret &= multiGetForSet();
+		ret &= multiDelete();
+		ret &= multiSet();
+		ret &= flush();
 		
 		CacheClientManager.getInstance("test").shutdown();
+		return ret;
 	}
 
-	void set() {
+	boolean set() {
+		boolean r = true;
 		long begin = System.currentTimeMillis();
 		for (int i = start; i < start + runs; i++) {
 			long ret = cc.set(keyBase + i, object);
 			if (ret == 0) {
+				r = false;
 				System.out.println("set error index=" + i + " obj=" + object);
 			}
 		}
 		long end = System.currentTimeMillis();
 		long time = end - begin;
 		System.out.println(runs + " sets: " + time + "ms");
+		return r;
 	}
 	
-	void getW() {
+	boolean getW() {
+		boolean r = true;
 		long begin = System.currentTimeMillis();
 		String obj = "";
 		for (int i = start; i < start + runs; i++) {
 			obj = (String)cc.getW(keyBase + i);
 			if (!object.equals(obj)) {
+				r = false;
 				System.out.println("getW error index=" + i + " obj=" + obj);
 			}
 		}
 		long end = System.currentTimeMillis();
 		long time = end - begin;
 		System.out.println(runs + " getW: " + time + "ms");
+		return r;
 	}
 	
-	void getL() {
+	boolean getL() {
+		boolean r = true;
 		long begin = System.currentTimeMillis();
 		Object obj = "";
 		for (int i = start; i < start + runs; i++) {
 			obj = (String)cc.getL(keyBase + i);
 			if (!object.equals(obj)) {
+				r = false;
 				System.out.println("getL error index=" + i + " obj=" + obj);
 			}
 		}
 		long end = System.currentTimeMillis();
 		long time = end - begin;
 		System.out.println(runs + " getL: " + time + "ms");
+		return r;
 	}
 	
-	void multiGet() {
+	boolean multiGet() {
 		ArrayList<String> keys = new ArrayList<String>(runs);
 		for (int i = start; i < start + runs; i++) {
 			keys.add(keyBase + i);
@@ -119,17 +130,17 @@ public class CacheClientBench {
 		int missCount = 0;
 		for (int i = start; i < start + runs; i++) {
 			String key = keyBase + i;
-			if (m.get(i - start) == null)
-			{
+			if (m.get(i - start) == null) {
 				System.out.println("can not find the key=" + key);
 				missCount++;
 			}
 		}
 		System.out.println(runs + " multiGet: " + time + "ms" + " count=" + m.size()
 				+ " missCount=" + missCount);
+		return missCount == 0;
 	}
 	
-	void multiSet() {
+	boolean multiSet() {
 		ArrayList<MultiUpdateItem> items = new ArrayList<MultiUpdateItem>(runs);
 		String value = object.toString() + 1;
 		for (int i = start; i < start + runs; i++) {
@@ -153,9 +164,10 @@ public class CacheClientBench {
 		
 		System.out.println(runs + " multiSet: " + time + "ms" + " count=" + count
 				+ " missCount=" + missCount);
+		return missCount == 0;
 	}
 	
-	void multiGetForSet() {
+	boolean multiGetForSet() {
 		ArrayList<String> keys = new ArrayList<String>(runs);
 		for (int i = start; i < start + runs; i++) {
 			keys.add(keyBase + i);
@@ -176,9 +188,10 @@ public class CacheClientBench {
 		}
 		System.out.println(runs + " multiGetForSet: " + time + "ms" + " count=" + items.size()
 				+ " missCount=" + missCount);
+		return missCount == 0;
 	}
 	
-	void multiDelete() {
+	boolean multiDelete() {
 		ArrayList<MultiDeleteItem> items = new ArrayList<MultiDeleteItem>(runs);
 		for (int i = start; i < start + runs; i++) {
 			MultiDeleteItem item = new MultiDeleteItem();
@@ -192,9 +205,10 @@ public class CacheClientBench {
 		long time = end - begin;
 		
 		System.out.println(runs + " multiDelete: " + time + "ms" + " count=" + count);
+		return true;
 	}
 	
-	void delete() {
+	boolean delete() {
 		long begin = System.currentTimeMillis();
 		for (int i = start; i < start + runs; i++) {
 			cc.delete(keyBase + i);
@@ -202,14 +216,16 @@ public class CacheClientBench {
 		long end = System.currentTimeMillis();
 		long time = end - begin;
 		System.out.println(runs + " deletes: " + time + "ms");
+		return true;
 	}
 
-	void flush() {
+	boolean flush() {
 		long begin = System.currentTimeMillis();
-		cc.flush();
+		int count = cc.flush();
 		long end = System.currentTimeMillis();
 		long time = end - begin;
 		System.out.println(runs + " flush: " + time + "ms");
+		return count == runs;
 	}
 	
 	public static void main(String[] args) {
@@ -218,6 +234,6 @@ public class CacheClientBench {
 			servers = args[0];
 		}
 		CacheClientBench bench = new CacheClientBench(servers, 1, 50000);
-		bench.run();
+		bench.runIt();
 	}
 }

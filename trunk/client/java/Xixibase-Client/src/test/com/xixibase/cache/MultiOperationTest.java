@@ -17,6 +17,7 @@
 package com.xixibase.cache;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.xixibase.cache.multi.MultiDeleteItem;
@@ -54,6 +55,33 @@ public class MultiOperationTest extends TestCase {
 		cc1.flush();
 	}
 
+	public void testMultiGet() {
+
+		String[] allKeys = { "key1", "key2", "key3", "key4", "key5", "key6", "key7" };
+		String[] setKeys = { "key1", "key3", "key5", "key7" };
+
+		for (String key : setKeys) {
+			cc1.set(key, key + "xixi");
+		}
+		ArrayList<String> allKeyList = new ArrayList<String>();
+		for (String key : allKeys) {
+			allKeyList.add(key);
+		}
+
+		List<CacheItem> results = cc1.multiGet(allKeyList);
+
+		HashMap<String, CacheItem> hm = new HashMap<String, CacheItem>();
+		for (int i = 0; i < allKeyList.size(); i++) {
+			hm.put(allKeyList.get(i), results.get(i));
+		}
+		assert allKeys.length == results.size();
+		for (int i = 0; i < setKeys.length; i++) {
+			String key = setKeys[i];
+			String val = (String) hm.get(key).getValue();
+			assertEquals(key + "xixi", val);
+		}
+	}
+
 	public void testMultiAdd() {
 		int max = 100;
 		ArrayList<MultiUpdateItem> multi = new ArrayList<MultiUpdateItem>();
@@ -76,6 +104,78 @@ public class MultiOperationTest extends TestCase {
 		for (int i = 0; i < max; i++) {
 			CacheItem item = results.get(i);
 			assertEquals(item.getValue(), values.get(i));
+		}
+	}
+	
+	public void testMultiSet() {
+		int max = 100;
+		ArrayList<MultiUpdateItem> multi = new ArrayList<MultiUpdateItem>();
+		ArrayList<String> keys = new ArrayList<String>();
+		ArrayList<String> values = new ArrayList<String>();
+		for (int i = 0; i < max; i++) {
+			String key = Integer.toString(i);
+			String value = "value" + i;
+			MultiUpdateItem item = new MultiUpdateItem();
+			item.key = key;
+			item.value = value;
+			multi.add(item);
+			keys.add(key);
+			values.add(value);
+		}
+
+		int ret = cc1.multiSet(multi);
+		assertEquals(max, ret);
+		List<CacheItem> results = cc1.multiGet(keys);
+		for (int i = 0; i < max; i++) {
+			CacheItem item = results.get(i);
+			assertEquals(item.getValue(), values.get(i));
+		}
+	}
+	
+	public void testMultiReplace() {
+		int max = 100;
+		ArrayList<MultiUpdateItem> multi = new ArrayList<MultiUpdateItem>();
+		ArrayList<String> keys = new ArrayList<String>();
+		ArrayList<String> values = new ArrayList<String>();
+		for (int i = 0; i < max; i++) {
+			String key = Integer.toString(i);
+			String value = "value" + i;
+			MultiUpdateItem item = new MultiUpdateItem();
+			item.key = key;
+			item.value = value;
+			multi.add(item);
+			keys.add(key);
+			values.add(value);
+		}
+
+		int ret = cc1.multiSet(multi);
+		assertEquals(max, ret);
+		List<CacheItem> results = cc1.multiGet(keys);
+		for (int i = 0; i < max; i++) {
+			CacheItem item = results.get(i);
+			assertEquals(item.getValue(), values.get(i));
+		}
+		
+		ArrayList<MultiUpdateItem> multi2 = new ArrayList<MultiUpdateItem>();
+		ArrayList<String> keys2 = new ArrayList<String>();
+		ArrayList<String> values2 = new ArrayList<String>();
+		for (int i = 0; i < max; i++) {
+			String key = Integer.toString(i);
+			String value = "value2" + i;
+			MultiUpdateItem item = new MultiUpdateItem();
+			item.key = key;
+			item.value = value;
+			multi2.add(item);
+			keys2.add(key);
+			values2.add(value);
+		}
+
+		ret = cc1.multiReplace(multi2);
+		assertEquals(max, ret);
+		List<CacheItem> results2 = cc1.multiGet(keys2);
+		for (int i = 0; i < max; i++) {
+			CacheItem item = results2.get(i);
+			assertEquals(item.getValue(), values2.get(i));
 		}
 	}
 	
@@ -147,22 +247,6 @@ public class MultiOperationTest extends TestCase {
 			CacheItem item = results.get(i);
 			assertEquals(item.getValue(), "prepend" + values.get(i));
 			assertTrue(item.cacheID != multi.get(i).cacheID);
-		}
-	}
-	
-	public void testMultiSet() {
-		int max = 100;
-		ArrayList<String> keys = new ArrayList<String>();
-		for (int i = 0; i < max; i++) {
-			String key = Integer.toString(i);
-			keys.add(key);
-			cc1.set(key, "value" + i);
-		}
-
-		List<CacheItem> results = cc1.multiGet(keys);
-		for (int i = 0; i < max; i++) {
-			CacheItem item = results.get(i);
-			assertEquals(item.getValue(), "value" + i);
 		}
 	}
 
