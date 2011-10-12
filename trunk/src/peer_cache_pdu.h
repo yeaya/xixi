@@ -370,9 +370,9 @@ const uint8_t XIXI_STATS_SUB_OP_MASK = 7;
 const uint8_t XIXI_STATS_SUB_OP_ADD_GROUP = 0;
 const uint8_t XIXI_STATS_SUB_OP_REMOVE_GROUP = 1;
 const uint8_t XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY = 2;
-const uint8_t XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY = 3;
+//const uint8_t XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY = 3;
 const uint8_t XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY = 4;
-const uint8_t XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY = 5;
+//const uint8_t XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY = 5;
 class XIXI_Stats_Req_Pdu : public XIXI_Pdu {
 public:
   static uint32_t get_fixed_body_size() {

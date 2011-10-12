@@ -23,6 +23,7 @@
 #include "xixibase.h"
 #include <boost/detail/atomic_count.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/tss.hpp>
 
 class Cache_Stats_Item {
 public:
@@ -241,7 +242,7 @@ public:
 		check_watch_miss_ = 0;
 
 		bytes_read_ = 0;
-		bytes_written_ = 0;
+		bytes_write_ = 0;
 
 		link_items_ = 0;
 		unlink_items_ = 0;
@@ -282,7 +283,7 @@ public:
 		append("check_watch_miss", check_watch_miss_, out);
 
 		append("bytes_read", bytes_read_, out);
-		append("bytes_written", bytes_written_, out);
+		append("bytes_write", bytes_write_, out);
 
 		append("link_caches", link_items_, out);
 		append("unlink_caches", unlink_items_, out);
@@ -320,7 +321,7 @@ public:
 	uint64_t check_watch_miss_;
 
 	uint64_t bytes_read_;
-	uint64_t bytes_written_;
+	uint64_t bytes_write_;
 
 	uint64_t link_items_;
 	uint64_t unlink_items_;
@@ -330,6 +331,11 @@ public:
 
 	uint32_t flush_;
 	Cache_Stats_Item cache_stats_[200];
+};
+
+class Thread_Stats_Item {
+public:
+
 };
 
 class Stats {
@@ -356,20 +362,24 @@ public:
 		return NULL;
 	}
 
-	inline void get_hit_no_watch(uint32_t group_id, uint32_t class_id) {
+	inline void get_hit_no_watch(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].get_hit_no_watch++;
+		group_sum_.bytes_read_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].get_hit_no_watch++;
+			item->bytes_read_ += bytes;
 		}
 	}
-	inline void get_hit_watch(uint32_t group_id, uint32_t class_id) {
+	inline void get_hit_watch(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].get_hit_watch++;
+		group_sum_.bytes_read_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].get_hit_watch++;
+			item->bytes_read_ += bytes;
 		}
 	}
 	inline void get_hit_watch_miss(uint32_t group_id, uint32_t class_id) {
@@ -389,20 +399,24 @@ public:
 		}
 	}
 
-	inline void get_touch_hit_no_watch(uint32_t group_id, uint32_t class_id) {
+	inline void get_touch_hit_no_watch(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].get_touch_hit_no_watch++;
+		group_sum_.bytes_read_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].get_touch_hit_no_watch++;
+			item->bytes_read_ += bytes;
 		}
 	}
-	inline void get_touch_hit_watch(uint32_t group_id, uint32_t class_id) {
+	inline void get_touch_hit_watch(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].get_touch_hit_watch++;
+		group_sum_.bytes_read_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].get_touch_hit_watch++;
+			item->bytes_read_ += bytes;
 		}
 	}
 	inline void get_touch_hit_watch_miss(uint32_t group_id, uint32_t class_id) {
@@ -464,20 +478,24 @@ public:
 		}
 	}
 
-	inline void add_success(uint32_t group_id, uint32_t class_id) {
+	inline void add_success(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].add_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].add_success++;
+			item->bytes_write_ += bytes;
 		}
 	}
-	inline void add_success_watch(uint32_t group_id, uint32_t class_id) {
+	inline void add_success_watch(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].add_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].add_success_watch++;
+			item->bytes_write_ += bytes;
 		}
 	}
 	inline void add_watch_miss(uint32_t group_id, uint32_t class_id) {
@@ -497,20 +515,24 @@ public:
 		}
 	}
 
-	inline void set_success(uint32_t group_id, uint32_t class_id) {
+	inline void set_success(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].set_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].set_success++;
+			item->bytes_write_ += bytes;
 		}
 	}
-	inline void set_success_watch(uint32_t group_id, uint32_t class_id) {
+	inline void set_success_watch(uint32_t group_id, uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].set_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].set_success_watch++;
+			item->bytes_write_ += bytes;
 		}
 	}
 	inline void set_watch_miss(uint32_t group_id, uint32_t class_id) {
@@ -530,20 +552,24 @@ public:
 		}
 	}
 
-	inline void replace_success(uint32_t group_id,uint32_t class_id) {
+	inline void replace_success(uint32_t group_id,uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].replace_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].replace_success++;
+			item->bytes_write_ += bytes;
 		}
 	}
-	inline void replace_success_watch(uint32_t group_id,uint32_t class_id) {
+	inline void replace_success_watch(uint32_t group_id,uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].replace_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].replace_success_watch++;
+			item->bytes_write_ += bytes;
 		}
 	}
 	inline void replace_watch_miss(uint32_t group_id,uint32_t class_id) {
@@ -571,20 +597,24 @@ public:
 		}
 	}
 
-	inline void append_success(uint32_t group_id,uint32_t class_id) {
+	inline void append_success(uint32_t group_id,uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].append_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].append_success++;
+			item->bytes_write_ += bytes;
 		}
 	}
-	inline void append_success_watch(uint32_t group_id,uint32_t class_id) {
+	inline void append_success_watch(uint32_t group_id,uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].append_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].append_success_watch++;
+			item->bytes_write_ += bytes;
 		}
 	}
 	inline void append_watch_miss(uint32_t group_id,uint32_t class_id) {
@@ -620,20 +650,24 @@ public:
 		}
 	}
 
-	inline void prepend_success(uint32_t group_id,uint32_t class_id) {
+	inline void prepend_success(uint32_t group_id,uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].prepend_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].prepend_success++;
+			item->bytes_write_ += bytes;
 		}
 	}
-	inline void prepend_success_watch(uint32_t group_id,uint32_t class_id) {
+	inline void prepend_success_watch(uint32_t group_id,uint32_t class_id, uint32_t bytes) {
 		group_sum_.cache_stats_[class_id].prepend_success++;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
 			item->cache_stats_[class_id].prepend_success_watch++;
+			item->bytes_write_ += bytes;
 		}
 	}
 	inline void prepend_watch_miss(uint32_t group_id,uint32_t class_id) {
@@ -769,7 +803,7 @@ public:
 			item->check_watch_miss_++;
 		}
 	}
-
+/*
 	inline void stat_bytes_read(uint32_t group_id, uint32_t bytes) {
 		group_sum_.bytes_read_ += bytes;
 
@@ -779,14 +813,14 @@ public:
 		}
 	}
 	inline void stat_bytes_write(uint32_t group_id, uint32_t bytes) {
-		group_sum_.bytes_written_ += bytes;
+		group_sum_.bytes_write_ += bytes;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
-			item->bytes_written_ += bytes;
+			item->bytes_write_ += bytes;
 		}
 	}
-
+*/
 	inline void flush(uint32_t group_id) {
 		group_sum_.flush_++;
 
@@ -834,6 +868,20 @@ public:
 		max_class_id_ = max_class_id;
 	}
 
+	inline Thread_Stats_Item* get_thread_stats_item() {
+		Thread_Stats_Item* item = threadLocal_.get();
+		if (item != NULL) {
+			return item;
+		} else {
+			item = new Thread_Stats_Item();
+			threadLocal_.reset(item);
+			lock_.lock();
+			thread_set_.insert(item);
+			lock_.unlock();
+			return item;
+		}
+	}
+
 private:
 	void merage(Cache_Stats_Item& cache_stat);
 
@@ -846,6 +894,8 @@ public:
 
 	Group_Stats_Item group_sum_;
 	std::map<uint32_t, Group_Stats_Item*> group_map_;
+	boost::thread_specific_ptr<Thread_Stats_Item> threadLocal_;
+	std::set<Thread_Stats_Item*> thread_set_;
 };
 
 extern Stats stats_;

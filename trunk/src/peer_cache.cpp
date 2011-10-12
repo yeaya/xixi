@@ -865,7 +865,7 @@ void Peer_Cache::start(uint8_t* data, uint32_t data_length) {
 		memcpy(read_buffer_.get_read_buf(), data, data_length);
 		read_buffer_.read_data_size_ += data_length;
 		process();
-		read_buffer_.handle_processed();
+//		read_buffer_.handle_processed();
 
 		if (!is_closed()) {
 			uint32_t size = try_write();
@@ -890,7 +890,7 @@ void Peer_Cache::handle_read(const boost::system::error_code& err, size_t length
 	if (!err) {
 		read_buffer_.read_data_size_ += length;
 		process();
-		read_buffer_.handle_processed();
+	//	read_buffer_.handle_processed();
 
 		if (state_ != PEER_STATUS_ASYNC_WAIT) {
 			if (!is_closed()) {
@@ -925,7 +925,7 @@ void Peer_Cache::handle_write(const boost::system::error_code& err) {
 	if (!err) {
 		write_buf_.clear();
 		process();
-		read_buffer_.handle_processed();
+	//	read_buffer_.handle_processed();
 
 		if (state_ != PEER_STATUS_ASYNC_WAIT) {
 			if (!is_closed()) {
@@ -953,6 +953,7 @@ void Peer_Cache::handle_write(const boost::system::error_code& err) {
 void Peer_Cache::try_read() {
 	if (rop_count_ == 0) {
 		++rop_count_;
+		read_buffer_.handle_processed();
 		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size()),
 			make_custom_alloc_handler(handler_allocator_,
 			boost::bind(&Peer_Cache::handle_read, this,

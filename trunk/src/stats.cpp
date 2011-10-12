@@ -23,29 +23,39 @@
 Stats stats_;
 
 void Cache_Stats_Item::append(uint32_t class_id, const char* k, uint32_t v, std::string& out) {
-	std::string c = boost::lexical_cast<std::string>(class_id);
-	std::string t = boost::lexical_cast<std::string>(v);
-	out += k + c + "=" + t + "\n";
+	if (v != 0) {
+		std::string c = boost::lexical_cast<std::string>(class_id);
+		std::string t = boost::lexical_cast<std::string>(v);
+		out += k + c + "=" + t + "\n";
+	}
 }
 
 void Cache_Stats_Item::append(uint32_t class_id, const char* k, uint64_t v, std::string& out) {
-	std::string c = boost::lexical_cast<std::string>(class_id);
-	std::string t = boost::lexical_cast<std::string>(v);
-	out += k + c + "=" + t + "\n";
+	if (v != 0) {
+		std::string c = boost::lexical_cast<std::string>(class_id);
+		std::string t = boost::lexical_cast<std::string>(v);
+		out += k + c + "=" + t + "\n";
+	}
 }
 
 void Group_Stats_Item::append(const char* k, uint32_t v, std::string& out) {
-	std::string t = boost::lexical_cast<std::string>(v);
-	out += k + string("=") + t + "\n";
+	if (v != 0) {
+		std::string t = boost::lexical_cast<std::string>(v);
+		out += k + string("=") + t + "\n";
+	}
 }
 
 void Group_Stats_Item::append(const char* k, uint64_t v, std::string& out) {
-	std::string t = boost::lexical_cast<std::string>(v);
-	out += k + string("=") + t + "\n";
+	if (v != 0) {
+		std::string t = boost::lexical_cast<std::string>(v);
+		out += k + string("=") + t + "\n";
+	}
 }
 
 void Group_Stats_Item::append(const char* k, const char* v, std::string& out) {
-	out += k + string("=") + v + "\n";
+	if (v != NULL) {
+		out += k + string("=") + v + "\n";
+	}
 }
 
 Stats::Stats() {

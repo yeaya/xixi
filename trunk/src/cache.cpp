@@ -206,15 +206,15 @@ void Cache_Mgr::stats(const XIXI_Stats_Req_Pdu* pdu, std::string& result) {
 	case XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY:
 		stats_.get_stats(pdu->group_id, pdu->class_id, result);
 		break;
-	case XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY:
-		stats_.get_and_clear_stats(pdu->group_id, pdu->class_id, result);
-		break;
+//	case XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY:
+//		stats_.get_and_clear_stats(pdu->group_id, pdu->class_id, result);
+//		break;
 	case XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY:
 		stats_.get_stats(pdu->class_id, result);
 		break;
-	case XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY:
-		stats_.get_and_clear_stats(pdu->class_id, result);
-		break;
+//	case XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY:
+//		stats_.get_and_clear_stats(pdu->class_id, result);
+//		break;
 	default:
 		result = "unknown sub command";
 		break;
@@ -491,7 +491,7 @@ Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, size_t key_le
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
 				item->add_watch(watch_id);
-				stats_.get_hit_watch(group_id, item->class_id);
+				stats_.get_hit_watch(group_id, item->class_id, item->total_size());
 			} else {
 				watch_error = true;
 				stats_.get_hit_watch_miss(group_id, item->class_id);
@@ -499,7 +499,7 @@ Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, size_t key_le
 				item = NULL;
 			}
 		} else {
-			stats_.get_hit_no_watch(group_id, item->class_id);
+			stats_.get_hit_no_watch(group_id, item->class_id, item->total_size());
 		}
 	} else {
 		stats_.get_miss(group_id);
@@ -520,7 +520,7 @@ Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, size_t 
 	  if (watch_id != 0) {
 		  if (is_valid_watch_id(watch_id)) {
 			  item->add_watch(watch_id);
-			  stats_.get_touch_hit_watch(group_id, item->class_id);
+			  stats_.get_touch_hit_watch(group_id, item->class_id, item->total_size());
 		  } else {
 			  watch_error = true;
 			  stats_.get_touch_hit_watch_miss(group_id, item->class_id);
@@ -528,7 +528,7 @@ Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, size_t 
 			  item = NULL;
 		  }
 	  } else {
-		  stats_.get_touch_hit_no_watch(group_id, item->class_id);
+		  stats_.get_touch_hit_no_watch(group_id, item->class_id, item->total_size());
 	  }
 	} else {
 	  stats_.get_touch_miss(group_id);
@@ -617,13 +617,13 @@ xixi_reason Cache_Mgr::add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
 				item->add_watch(watch_id);
-				stats_.add_success_watch(item->group_id, item->class_id);
+				stats_.add_success_watch(item->group_id, item->class_id, item->total_size());
 			} else {
 				stats_.add_watch_miss(item->group_id, item->class_id);
 				reason = XIXI_REASON_WATCH_NOT_FOUND;
 			}
 		} else {
-			stats_.add_success(item->group_id, item->class_id);
+			stats_.add_success(item->group_id, item->class_id, item->total_size());
 		}
 
 		if (reason == XIXI_REASON_SUCCESS) {
@@ -651,13 +651,13 @@ xixi_reason Cache_Mgr::set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 		if (item->cache_id == 0 || item->cache_id == old_it->cache_id) {
 			if (watch_id != 0) {
 				if (is_valid_watch_id(watch_id)) {
-					stats_.set_success_watch(item->group_id, item->class_id);
+					stats_.set_success_watch(item->group_id, item->class_id, item->total_size());
 				} else {
 					stats_.set_watch_miss(item->group_id, item->class_id);
 					reason = XIXI_REASON_WATCH_NOT_FOUND;
 				}
 			} else {
-				stats_.set_success(item->group_id, item->class_id);
+				stats_.set_success(item->group_id, item->class_id, item->total_size());
 			}
 			if (reason == XIXI_REASON_SUCCESS) {
 				do_replace(old_it, item);
@@ -676,13 +676,13 @@ xixi_reason Cache_Mgr::set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
 				item->add_watch(watch_id);
-				stats_.set_success_watch(item->group_id, item->class_id);
+				stats_.set_success_watch(item->group_id, item->class_id, item->total_size());
 			} else {
 				stats_.set_watch_miss(item->group_id, item->class_id);
 				reason = XIXI_REASON_WATCH_NOT_FOUND;
 			}
 		} else {
-			stats_.set_success(item->group_id, item->class_id);
+			stats_.set_success(item->group_id, item->class_id, item->total_size());
 		}
 		if (reason == XIXI_REASON_SUCCESS) {
 			do_link(item);
@@ -706,13 +706,13 @@ xixi_reason Cache_Mgr::replace(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 	} else if (it->cache_id == 0 || it->cache_id == old_it->cache_id) {
 		if (watch_id != 0) {
 			if (is_valid_watch_id(watch_id)) {
-				stats_.replace_success_watch(it->group_id, it->class_id);
+				stats_.replace_success_watch(it->group_id, it->class_id, it->total_size());
 			} else {
 				stats_.replace_watch_miss(it->group_id, it->class_id);
 				reason = XIXI_REASON_WATCH_NOT_FOUND;
 			}
 		} else {
-			stats_.replace_success(old_it->group_id, old_it->class_id);
+			stats_.replace_success(old_it->group_id, old_it->class_id, it->total_size());
 		}
 		if (reason == XIXI_REASON_SUCCESS) {
 			do_replace(old_it, it);
@@ -750,13 +750,13 @@ xixi_reason Cache_Mgr::append(Cache_Item* it, uint32_t watch_id, uint64_t&/*out*
 				memcpy(new_it->get_data() + old_it->data_size, it->get_data(), it->data_size);
 				if (watch_id != 0) {
 					if (is_valid_watch_id(watch_id)) {
-						stats_.append_success_watch(it->group_id, it->class_id);
+						stats_.append_success_watch(it->group_id, it->class_id, it->total_size());
 					} else {
 						stats_.append_watch_miss(it->group_id, it->class_id);
 						reason = XIXI_REASON_WATCH_NOT_FOUND;
 					}
 				} else {
-					stats_.append_success(old_it->group_id, old_it->class_id);
+					stats_.append_success(old_it->group_id, old_it->class_id, it->total_size());
 				}
 				if (reason == XIXI_REASON_SUCCESS) {
 					do_replace(old_it, new_it);
@@ -800,13 +800,13 @@ xixi_reason Cache_Mgr::prepend(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 				memcpy(new_it->get_data() + it->data_size, old_it->get_data(), old_it->data_size);
 				if (watch_id != 0) {
 					if (is_valid_watch_id(watch_id)) {
-						stats_.prepend_success_watch(it->group_id, it->class_id);
+						stats_.prepend_success_watch(it->group_id, it->class_id, it->total_size());
 					} else {
 						stats_.prepend_watch_miss(it->group_id, it->class_id);
 						reason = XIXI_REASON_WATCH_NOT_FOUND;
 					}
 				} else {
-					stats_.prepend_success(old_it->group_id, old_it->class_id);
+					stats_.prepend_success(old_it->group_id, old_it->class_id, it->total_size());
 				}
 				if (reason == XIXI_REASON_SUCCESS) {
 					// after notify last watch, then add new watch
