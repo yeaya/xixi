@@ -456,9 +456,9 @@ Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, size_
 		uint32_t expire_time = curr_time_.realtime(expiration);
 #ifdef NOTIFY_EXPIRATION_REDUCE
 		if (expire_time < it->expire_time && expire_time != 0) {
+			it->cache_id = get_cache_id();
 			if (it->watch_item != NULL) {
 				notify_watch(it);
-				it->cache_id = get_cache_id();
 			}
 		}
 #endif
@@ -581,9 +581,9 @@ bool Cache_Mgr::update_base(uint32_t group_id, const uint8_t* key, size_t key_le
 				it->flags = pdu->flags;
 				need_notify = true;
 			}
+			it->cache_id = get_cache_id();
 			if (it->watch_item != NULL && need_notify) {
 				notify_watch(it);
-				it->cache_id = get_cache_id();
 			}
 			cache_id = it->cache_id;
 			stats_.update_base_success(it->group_id, it->class_id);
