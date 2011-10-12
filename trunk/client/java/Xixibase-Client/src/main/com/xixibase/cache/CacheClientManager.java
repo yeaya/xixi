@@ -41,7 +41,7 @@ public class CacheClientManager {
 	private int maintainInterval = 1000 * 3;
 	private int inactiveSocketTimeout = 1000 * 30;
 
-	private boolean nagle = false;
+	private boolean noDelay = false;
 
 	private String[] servers;
 	private WeightMap<Integer> weightMap = new XixiWeightMap<Integer>();
@@ -128,7 +128,11 @@ public class CacheClientManager {
 			log.error("initialize, servers.length == 0");
 			return false;
 		}
-		
+		if (initialized) {
+			log.error("initialize, the manager: " + name + " was already initialized");
+			return false;
+		}
+
 		this.servers = new String[servers.length];
 		System.arraycopy(servers, 0, this.servers, 0, servers.length);
 		
@@ -251,12 +255,12 @@ public class CacheClientManager {
 		return this.socketConnectTimeout;
 	}
 
-	public final void setNagle(boolean nagle) {
-		this.nagle = nagle;
+	public final void setNoDelay(boolean noDelay) {
+		this.noDelay = noDelay;
 	}
 
-	public final boolean getNagle() {
-		return this.nagle;
+	public final boolean isNoDelay() {
+		return this.noDelay;
 	}
 
 	public final WeightMap<Integer> getWeightMaper() {
@@ -288,27 +292,26 @@ public class CacheClientManager {
 	}
 
 	protected final XixiSocket createSocket(String host) {
-		XixiSocket socket = null;
-		try {
-			socket = new TCPSocket(this, host, socketWriteBufferSize, socketTimeout,
-					socketConnectTimeout, nagle);
-		} catch (Exception e) {
-			log.error("manager.createSocket, failed to create Socket for host: " + host
-					+ " e=" + e.toString());
-			socket = null;
+		if (initialized) {
+			try {
+				return new TCPSocket(this, host, socketWriteBufferSize,
+						socketTimeout, socketConnectTimeout, noDelay);
+			} catch (Exception e) {
+				log.error("manager.createSocket, failed to create Socket for host: " + host
+						+ " e=" + e.toString());
+			}
 		}
-
-		return socket;
+		return null;
 	}
 
 	public final String getHost(String key) {
-		if (!this.initialized) {
-			log.error("getHost, manager is not initialized.");
-			return null;
-		}
+//		if (!this.initialized) {
+//			log.error("getHost, manager is not initialized.");
+//			return null;
+//		}
 		
 		Integer hostIndex = weightMap.get(key);
-		// hostIndex must not be null
+// hostIndex must not be null
 //		if (hostIndex != null) {
 			return servers[hostIndex.intValue()];
 //		}
@@ -316,10 +319,10 @@ public class CacheClientManager {
 	}
 
 	public final XixiSocket getSocket(String key) {
-		if (!this.initialized) {
-			log.error("getSocket, manager is not initialized");
-			return null;
-		}
+//		if (!this.initialized) {
+//			log.error("getSocket, manager is not initialized");
+//			return null;
+//		}
 
 		XixiSocket socket = null;
 		Integer hostIndex = weightMap.get(key);
@@ -340,10 +343,10 @@ public class CacheClientManager {
 	}
 
 	public final XixiSocket getSocketByHost(String host) {
-		if (!this.initialized) {
-			log.error("getSocketByHost, manager is not initialized");
-			return null;
-		}
+//		if (!this.initialized) {
+//			log.error("getSocketByHost, manager is not initialized");
+//			return null;
+//		}
 		if (host == null) {
 			log.error("getSocketByHost, host == null");
 			return null;
@@ -368,7 +371,7 @@ public class CacheClientManager {
 	}
 
 	protected final boolean addSocket(String host, XixiSocket socket) {
-		if (this.initialized) {
+		if (initialized) {
 			ArrayList<ConcurrentLinkedQueue<XixiSocket>> activePool = activeSocketPool;
 			if (activePool != null) {
 				Integer index = hostIndexMap.get(host);

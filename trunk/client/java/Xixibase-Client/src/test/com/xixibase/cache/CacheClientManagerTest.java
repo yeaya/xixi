@@ -58,15 +58,17 @@ public class CacheClientManagerTest extends TestCase {
 		assertEquals(mgr.getSocketConnectTimeout(), 15000);
 		mgr.setSocketTimeout(16000);
 		assertEquals(mgr.getSocketTimeout(), 16000);
-		mgr.setNagle(false);
-		assertEquals(mgr.getNagle(), false);
-		assertNull(mgr.getWeightMaper());
+		mgr.setNoDelay(false);
+		assertEquals(mgr.isNoDelay(), false);
+		assertNotNull(mgr.getWeightMaper());
 		mgr.setSocketWriteBufferSize(32 * 1024);
 		assertEquals(mgr.getSocketWriteBufferSize(), 32 * 1024);
 		assertEquals(mgr.getDefaultGroupID(), 315);
 		assertFalse(mgr.isInitialized());
 		boolean ret = mgr.initialize(serverlist);
 		assertTrue(ret);
+		ret = mgr.initialize(serverlist);
+		assertFalse(ret);
 		assertTrue(mgr.isInitialized());
 		assertNotNull(mgr.getWeightMaper());
 		mgr.shutdown();
@@ -76,6 +78,9 @@ public class CacheClientManagerTest extends TestCase {
 	
 	public void testCreateSocket() {
 		CacheClientManager mgr = CacheClientManager.getInstance();
+		int size = mgr.getSocketWriteBufferSize();
+		assertEquals(32768, size);
+		mgr.setSocketWriteBufferSize(64 * 1024);
 		mgr.initialize(serverlist);
 		XixiSocket socket = mgr.createSocket(serverlist[0]);
 		assertNotNull(socket);
@@ -110,6 +115,7 @@ public class CacheClientManagerTest extends TestCase {
 		mgr.setMaxActiveConn(2);
 		mgr.setInitConn(5);
 		mgr.initialize(serverlist);
+		mgr.setSocketWriteBufferSize(64 * 1024);
 		int serverCount = mgr.getServers().length;
 	
 		int activeCount = mgr.getActiveSocketCount();

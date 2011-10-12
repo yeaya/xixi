@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.xixibase.cache.multi.MultiUpdateBaseItem;
-import com.xixibase.util.CurrentTick;
 import com.xixibase.util.Log;
 
 class GroupItem {
@@ -475,20 +474,15 @@ class LocalCacheTouch extends Thread {
 			String key = it.next();
 			CacheItem item = touchMap.remove(key);//e.getValue();
 			if (item != null) {
-				MultiUpdateBaseItem mitem = new MultiUpdateBaseItem();
-				lists.add(mitem);
-				mitem.key = key;
-				mitem.cacheID = item.cacheID;
-				long curr_time = CurrentTick.get();
-				if (item.getExpireTime() > curr_time) {
-					long expiration = item.getExpiration();
-					if (expiration <= 0xFFFFFFFFL) {
-						mitem.expiration = (int)expiration;
-					} else {
-						mitem.expiration = (int)0xFFFFFFFFL;
-					}
+				long expiration = item.getExpiration();
+				if (expiration < 0) {
+					// delete this item from server
 				} else {
-					mitem.expiration = 0;
+					MultiUpdateBaseItem mitem = new MultiUpdateBaseItem();
+					lists.add(mitem);
+					mitem.key = key;
+					mitem.cacheID = item.cacheID;
+					mitem.expiration = (int)expiration;
 				}
 			}
 		}

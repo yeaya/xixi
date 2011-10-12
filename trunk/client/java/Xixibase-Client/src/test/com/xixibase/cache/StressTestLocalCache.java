@@ -396,7 +396,7 @@ public class StressTestLocalCache {
 		mgr.setSocketWriteBufferSize(64 * 1024);//(1 * 1024 * 1024);
 		mgr.setInitConn(10);
 
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		mgr.initialize(serverlist);
 		mgr.enableLocalCache();
 		LocalCache localCache = mgr.getLocalCache();

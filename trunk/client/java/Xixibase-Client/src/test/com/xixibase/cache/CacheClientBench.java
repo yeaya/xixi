@@ -41,7 +41,7 @@ public class CacheClientBench  {
 		
 		CacheClientManager manager = CacheClientManager.getInstance("CacheClientBench");
 		manager.setInitConn(1);
-		manager.setNagle(false);
+		manager.setNoDelay(false);
 		manager.initialize(serverlist, weights, weightMap);
 		manager.enableLocalCache();
 		manager.getLocalCache().setMaxCacheSize(128 * 1024 * 1024);

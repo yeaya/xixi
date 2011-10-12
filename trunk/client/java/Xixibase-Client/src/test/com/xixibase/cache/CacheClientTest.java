@@ -220,7 +220,7 @@ public class CacheClientTest extends TestCase {
 	public void testSetString() {
 		String value = "test of string encoding";
 		CacheClientManager mgr = CacheClientManager.getInstance("test1");
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
 		CacheClient cc = mgr.createClient();
@@ -232,7 +232,7 @@ public class CacheClientTest extends TestCase {
 		assertEquals(s, value);
 		mgr.shutdown();
 		mgr = CacheClientManager.getInstance("test2");
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.MD5_HASH));
 		cc = mgr.createClient();
@@ -282,7 +282,7 @@ public class CacheClientTest extends TestCase {
 		String input = "test of string encoding";
 
 		CacheClientManager mgr = CacheClientManager.getInstance("testWeightMap");
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
 		cc1 = mgr.createClient();
@@ -301,7 +301,7 @@ public class CacheClientTest extends TestCase {
 	public void testWeightMap2() {
 		String input = "test of string encoding";
 		CacheClientManager mgr = CacheClientManager.getInstance("testWeightMap2");
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		Integer[] weights = new Integer[2];
 		weights[0] = new Integer(0);
 		weights[1] = new Integer(118);
@@ -317,7 +317,7 @@ public class CacheClientTest extends TestCase {
 		mgr.shutdown();
 		
 		mgr = CacheClientManager.getInstance("test3");
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		weights = new Integer[2];
 		weights[0] = new Integer(1);
 		weights[1] = new Integer(8);

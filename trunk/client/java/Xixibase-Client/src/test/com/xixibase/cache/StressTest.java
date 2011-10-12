@@ -231,7 +231,7 @@ public class StressTest {
 
 		mgr.setInitConn(10);
 
-		mgr.setNagle(false);
+		mgr.setNoDelay(false);
 		mgr.initialize(serverlist);
 		
 		ArrayList<TestWork> worklist = new ArrayList<TestWork>();
