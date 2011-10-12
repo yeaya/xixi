@@ -97,12 +97,15 @@ public class CacheClientTest extends TestCase {
 		assertEquals("value", cc1.get("xixi"));
 		assertNull(cc1.get("xixi2"));
 		String cn = cc1.getTransCoder().getEncodingCharsetName();
+		boolean isSanitizeKeys = cc1.getTransCoder().isSanitizeKeys(); 
 		cc1.getTransCoder().setSanitizeKeys(true);
 		cc1.getTransCoder().setEncodingCharsetName("errorCharsetName");
 		assertNull(cc1.get("xixi"));
+		cc1.getTransCoder().setSanitizeKeys(isSanitizeKeys);
 		mgr1.shutdown();
 		cc1.getTransCoder().setEncodingCharsetName(cn);
 		assertNull(cc1.get("xixi"));
+		assertNull(cc1.getL("xixi"));
 		
 		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
@@ -189,6 +192,10 @@ public class CacheClientTest extends TestCase {
 		cc1.set("xixi", Boolean.TRUE);
 		Boolean b = (Boolean) cc1.get("xixi");
 		assertEquals(b.booleanValue(), true);
+		
+		cc1.set("xixi", Boolean.FALSE);
+		b = (Boolean) cc1.get("xixi");
+		assertEquals(b.booleanValue(), false);
 	}
 
 	public void testSetIntegers() {
@@ -267,8 +274,35 @@ public class CacheClientTest extends TestCase {
 		assertTrue(item.cacheID != 0);
 		assertEquals((short)0x1234, item.getOption1());
 		assertEquals((byte)0xF1, item.getOption2());
+		assertEquals((short)0x1234, cc1.getTransCoder().getOption1());
+		assertEquals((byte)0xF1, cc1.getTransCoder().getOption2());
 		cc1.delete("xixi");
 		assertNull(cc1.getBase("xixi"));
+	}
+	
+	public void testGetBaseError() {
+		cc1.set("xixi", "base");
+		CacheBaseItem item = cc1.getBase(null);
+		assertNull(item);
+		boolean isSanitizeKeys = cc1.getTransCoder().isSanitizeKeys();
+		String cn = cc1.getTransCoder().getEncodingCharsetName();
+		cc1.getTransCoder().setSanitizeKeys(true);
+		cc1.getTransCoder().setEncodingCharsetName("encodingCharsetName");
+		item = cc1.getBase("xixi");
+		assertNull(item);
+		
+		cc1.getTransCoder().setSanitizeKeys(isSanitizeKeys);
+		cc1.getTransCoder().setEncodingCharsetName(cn);
+		
+		mgr1.shutdown();
+		
+		item = cc1.getBase("xixi");
+		assertNull(item);
+		
+		mgr1 = CacheClientManager.getInstance(managerName1);
+		mgr1.setSocketWriteBufferSize(64 * 1024);
+		mgr1.initialize(serverlist);
+		mgr1.enableLocalCache();
 	}
 	
 	public void testKeyExsits() {
@@ -346,23 +380,23 @@ public class CacheClientTest extends TestCase {
 	}
 
 	public void testSetStringBuffer() {
-		cc1.set("xixi", new StringBuffer("hello"));
+		cc1.set("xixi", new StringBuffer("0315"));
 		StringBuffer o = (StringBuffer) cc1.get("xixi");
-		assertEquals(o.toString(), "hello");
+		assertEquals(o.toString(), "0315");
 	}
 	
 	public void testSetStringBuilder() {
-		cc1.set("xixi", new StringBuilder("hello"));
+		cc1.set("xixi", new StringBuilder("0315"));
 		StringBuilder o = (StringBuilder) cc1.get("xixi");
-		assertEquals(o.toString(), "hello");
+		assertEquals(o.toString(), "0315");
 	}
 	
 	public void testGetCacheItem() {
-		cc1.set("xixi", new StringBuilder("hello"));
+		cc1.set("xixi", new StringBuilder("0315"));
 		CacheItem item = cc1.gets("xixi");
 		assertNotNull(item);
 		assertTrue(item.cacheID != 0);
-		assertEquals(item.value.toString(), "hello");
+		assertEquals(item.value.toString(), "0315");
 	}
 
 	public void testSetShort() {
@@ -897,5 +931,30 @@ public class CacheClientTest extends TestCase {
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
 				true, XixiWeightMap.CRC32_HASH, weights);
 		assertTrue(ccb.runIt());
+	}
+	
+	public void testUpdateFlags() {
+		CacheClientManager mgr = CacheClientManager.getInstance("testUpdateFlags");
+		mgr.setSocketWriteBufferSize(64 * 1024);
+		mgr.initialize(serverlist);
+		CacheClientImpl cc = new CacheClientImpl(mgr, 315);
+		cc.flush();
+		cc.set("xixi", "0315", 5, 0, false);
+		CacheBaseItem item = cc.getBase("xixi");
+		long cacheID = item.getCacheID();
+		assertTrue(cacheID != 0);
+		assertEquals(0, item.getOption1());
+		assertEquals(0, item.getOption2());
+		int flags = item.getFlags();
+		flags = CacheBaseItem.setOption1(flags, (short)3);
+		flags = CacheBaseItem.setOption2(flags, (byte)15);
+		boolean ret = cc.updateFlags("xixi", 0, cc.getGroupID(), flags);
+		assertTrue(ret);
+		item = cc.getBase("xixi");
+		assertTrue(item.getCacheID() != 0);
+		assertTrue(item.getCacheID() != cacheID);
+		assertEquals(3, item.getOption1());
+		assertEquals(15, item.getOption2());
+		
 	}
 }

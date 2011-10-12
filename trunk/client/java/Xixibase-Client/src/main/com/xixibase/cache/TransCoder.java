@@ -30,7 +30,7 @@ public interface TransCoder {
 	int getCompressionThreshold();
 
 	void setSanitizeKeys(boolean sanitizeKeys);
-	boolean getSanitizeKeys();
+	boolean isSanitizeKeys();
 
 	short getOption1();
 	void setOption1(short option1);

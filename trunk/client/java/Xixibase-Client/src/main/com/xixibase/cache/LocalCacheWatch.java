@@ -45,19 +45,17 @@ class GroupItem {
 		Iterator<CacheItem> it = inactiveCacheMap.values().iterator();
 		while (it.hasNext()) {
 			CacheItem item = it.next();
-			cacheSize.addAndGet(-item.valueSize);
+			cacheSize.addAndGet(-item.itemSize);
 			cacheCount.getAndDecrement();
 		}
 		inactiveCacheMap.clear();
 		it = activeCacheMap.values().iterator();
 		while (it.hasNext()) {
 			CacheItem item = it.next();
-			cacheSize.addAndGet(-item.valueSize);
+			cacheSize.addAndGet(-item.itemSize);
 			cacheCount.getAndDecrement();
 		}
 		activeCacheMap.clear();
-
-//???		cacheIDMap.clear();
 	}
 	
 	public synchronized void dropInactive(int maxCount) {
@@ -65,7 +63,6 @@ class GroupItem {
 	//			+ " activeSize=" + activeCacheMap.size());
 		LinkedList<CacheItem> list = new LinkedList<CacheItem>();
 		Iterator<CacheItem> it = inactiveCacheMap.values().iterator();
-		
 		while (maxCount > 0 && it.hasNext()) {
 			CacheItem item = it.next();
 			list.add(item);
@@ -73,11 +70,11 @@ class GroupItem {
 		}
 		while (!list.isEmpty()) {
 			CacheItem item = list.pop();
-			Object key = cacheIDMap.remove(new Long(item.cacheID));
-			if (key != null) {
-				item = inactiveCacheMap.remove(key);
+			CacheItem item2 = cacheIDMap.remove(new Long(item.cacheID));
+			if (item2 != null) {
+				item = inactiveCacheMap.remove(item2.key);
 				if (item != null) {
-					cacheSize.addAndGet(-item.valueSize);
+					cacheSize.addAndGet(-item.itemSize);
 					cacheCount.getAndDecrement();
 				}
 			}
@@ -86,9 +83,9 @@ class GroupItem {
 		Iterator<Entry<String, CacheItem>> ite = activeCacheMap.entrySet().iterator();
 		while (ite.hasNext()) {
 			Entry<String, CacheItem> e = ite.next();
-			String key = e.getKey();
+	//		String key = e.getKey();
 			CacheItem item = e.getValue();
-			inactiveCacheMap.put(key, item);
+			inactiveCacheMap.put(item.key, item);
 		}
 		activeCacheMap.clear();
 	}
@@ -110,32 +107,32 @@ class GroupItem {
 	public synchronized void put(String key, CacheItem value) {
 		CacheItem oldItem = inactiveCacheMap.put(key, value);
 		if (oldItem != null) {
-			cacheSize.addAndGet(-oldItem.valueSize);
+			cacheSize.addAndGet(-oldItem.itemSize);
 			cacheCount.getAndDecrement();
 			cacheIDMap.remove(new Long(oldItem.cacheID));
 		} else {
 			oldItem = activeCacheMap.remove(key);
 			if (oldItem != null) {
-				cacheSize.addAndGet(-oldItem.valueSize);
+				cacheSize.addAndGet(-oldItem.itemSize);
 				cacheCount.getAndDecrement();
 				cacheIDMap.remove(new Long(oldItem.cacheID));
 			}
 		}
-		cacheSize.addAndGet(value.valueSize);
+		cacheSize.addAndGet(value.itemSize);
 		cacheCount.getAndIncrement();
 		cacheIDMap.put(new Long(value.cacheID), value);
 	}
-	
+
 	public synchronized CacheItem remove(String key) {
 		CacheItem item = activeCacheMap.remove(key);
 		if (item != null) {
-			cacheSize.addAndGet(-item.valueSize);
+			cacheSize.addAndGet(-item.itemSize);
 			cacheCount.getAndDecrement();
 			cacheIDMap.remove(new Long(item.cacheID));
 		} else {
 			item = inactiveCacheMap.remove(key);
 			if (item != null) {
-				cacheSize.addAndGet(-item.valueSize);
+				cacheSize.addAndGet(-item.itemSize);
 				cacheCount.getAndDecrement();
 				cacheIDMap.remove(new Long(item.cacheID));
 			}
@@ -143,24 +140,24 @@ class GroupItem {
 		return item;
 	}
 	
-	public void update(CacheItem it) {
+	public synchronized void update(CacheItem it) {
 		CacheItem item = activeCacheMap.remove(it.key);
 		if (item != null) {
-			if (item.cacheID != it.cacheID) {
-				activeCacheMap.put(it.key, item);
-			} else {
-				cacheSize.addAndGet(-item.valueSize);
+//			if (item.cacheID != it.cacheID) {
+//				activeCacheMap.put(it.key, item);
+//			} else {
+				cacheSize.addAndGet(-item.itemSize);
 				cacheCount.getAndDecrement();
-			}
+//			}
 		} else {
 			item = inactiveCacheMap.remove(it.key);
 			if (item != null) {
-				if (item.cacheID != it.cacheID) {
-					inactiveCacheMap.put(it.key, item);
-				} else {
-					cacheSize.addAndGet(-item.valueSize);
+//				if (item.cacheID != it.cacheID) {
+//					inactiveCacheMap.put(it.key, item);
+//				} else {
+					cacheSize.addAndGet(-item.itemSize);
 					cacheCount.getAndDecrement();
-				}					
+//				}					
 			}
 		}		
 	}
@@ -173,8 +170,6 @@ class LocalCacheWatch extends Thread {
 	private CacheClientManager manager;
 	private int watchID = 0;
 	private boolean runFlag = false;
-//	private HashMap<String, CacheItem> inactiveCacheMap = new HashMap<String, CacheItem>();
-//	private ConcurrentHashMap<String, CacheItem> activeCacheMap = new ConcurrentHashMap<String, CacheItem>();
 	private ConcurrentHashMap<Integer, GroupItem> groupMap = new ConcurrentHashMap<Integer, GroupItem>();
 	private HashMap<Long, CacheItem> cacheIDMap = new HashMap<Long, CacheItem>();
 	private AtomicLong cacheSize = null;
@@ -217,22 +212,6 @@ class LocalCacheWatch extends Thread {
 			GroupItem item = it.next();
 			item.clear();
 		}
-	/*	
-		Iterator<CacheItem> it = inactiveCacheMap.values().iterator();
-		while (it.hasNext()) {
-			CacheItem item = it.next();
-			cacheSize.addAndGet(-item.valueSize);
-			cacheCount.getAndDecrement();
-		}
-		inactiveCacheMap.clear();
-		it = activeCacheMap.values().iterator();
-		while (it.hasNext()) {
-			CacheItem item = it.next();
-			cacheSize.addAndGet(-item.valueSize);
-			cacheCount.getAndDecrement();
-		}
-		activeCacheMap.clear();
-*/
 		cacheIDMap.clear();
 	}
 
@@ -242,69 +221,14 @@ class LocalCacheWatch extends Thread {
 			GroupItem item = it.next();
 			item.dropInactive(maxCount);
 		}
-/*		log.debug("dropInactive host=" + host + " inactiveSize=" + inactiveCacheMap.size()
-				+ " activeSize=" + activeCacheMap.size());
-		LinkedList<CacheItem> list = new LinkedList<CacheItem>();
-		Iterator<CacheItem> it = inactiveCacheMap.values().iterator();
-		
-		while (maxCount > 0 && it.hasNext()) {
-			CacheItem item = it.next();
-			list.add(item);
-			maxCount--;
-		}
-		while (!list.isEmpty()) {
-			CacheItem item = list.pop();
-			Object key = cacheIDMap.remove(new Long(item.cacheID));
-			if (key != null) {
-				item = inactiveCacheMap.remove(key);
-				if (item != null) {
-					cacheSize.addAndGet(-item.valueSize);
-					cacheCount.getAndDecrement();
-				}
-			}
-		}
-
-		Iterator<Entry<String, CacheItem>> ite = activeCacheMap.entrySet().iterator();
-		while (ite.hasNext()) {
-			Entry<String, CacheItem> e = ite.next();
-			String key = e.getKey();
-			CacheItem item = e.getValue();
-			inactiveCacheMap.put(key, item);
-		}
-		activeCacheMap.clear();
-*/
 	}
 
 	public CacheItem get(int groupID, String key) {
 		GroupItem gitem = groupMap.get(new Integer(groupID));
 		if (gitem != null) {
 			return gitem.get(groupID, key);
-			/*
-			CacheItem item = gitem.activeCacheMap.get(key);
-			if (item != null) {
-				return item;
-			}
-			synchronized (gitem) {
-				item = gitem.inactiveCacheMap.remove(key);
-				if (item != null) {
-					gitem.activeCacheMap.put(key, item);
-				}
-			}
-			return item;*/
 		}
 		return null;
-		/*
-		CacheItem item = activeCacheMap.get(key);
-		if (item != null) {
-			return item;
-		}
-		synchronized (this) {
-			item = inactiveCacheMap.remove(key);
-			if (item != null) {
-				activeCacheMap.put(key, item);
-			}
-		}
-		return item;*/
 	}
 	
 	public CacheItem getAndTouch(int groupID, String key, int expiration) {
@@ -324,23 +248,6 @@ class LocalCacheWatch extends Thread {
 			groupMap.putIfAbsent(new Integer(value.groupID), gitem);
 			gitem.put(key, value);
 		}
-		/*
-		CacheItem oldItem = inactiveCacheMap.put(key, value);
-		if (oldItem != null) {
-			cacheSize.addAndGet(-oldItem.valueSize);
-			cacheCount.getAndDecrement();
-			cacheIDMap.remove(new Long(oldItem.cacheID));
-		} else {
-			oldItem = activeCacheMap.remove(key);
-			if (oldItem != null) {
-				cacheSize.addAndGet(-oldItem.valueSize);
-				cacheCount.getAndDecrement();
-				cacheIDMap.remove(new Long(oldItem.cacheID));
-			}
-		}
-		cacheSize.addAndGet(value.valueSize);
-		cacheCount.getAndIncrement();
-		cacheIDMap.put(new Long(value.cacheID), value);*/
 	}
 
 	public synchronized CacheItem remove(int groupID, String key) {
@@ -349,21 +256,6 @@ class LocalCacheWatch extends Thread {
 			return gitem.remove(key);
 		}
 		return null;
-		/*
-		CacheItem item = activeCacheMap.remove(key);
-		if (item != null) {
-			cacheSize.addAndGet(-item.valueSize);
-			cacheCount.getAndDecrement();
-			cacheIDMap.remove(new Long(item.cacheID));
-		} else {
-			item = inactiveCacheMap.remove(key);
-			if (item != null) {
-				cacheSize.addAndGet(-item.valueSize);
-				cacheCount.getAndDecrement();
-				cacheIDMap.remove(new Long(item.cacheID));
-			}
-		}
-		return item;*/
 	}
 
 	protected synchronized void update(long[] cacheIDList) {
@@ -376,26 +268,6 @@ class LocalCacheWatch extends Thread {
 				if (gitem != null) {
 					gitem.update(it);
 				}
-				/*
-				CacheItem item = activeCacheMap.remove(it.key);
-				if (item != null) {
-					if (item.cacheID != cacheIDList[i]) {
-						activeCacheMap.put(it.key, item);
-					} else {
-						cacheSize.addAndGet(-item.valueSize);
-						cacheCount.getAndDecrement();
-					}
-				} else {
-					item = inactiveCacheMap.remove(it.key);
-					if (item != null) {
-						if (item.cacheID != cacheIDList[i]) {
-							inactiveCacheMap.put(it.key, item);
-						} else {
-							cacheSize.addAndGet(-item.valueSize);
-							cacheCount.getAndDecrement();
-						}					
-					}
-				}*/
 			}
 		}
 	}
@@ -422,6 +294,7 @@ class LocalCacheWatch extends Thread {
 
 			long[] cacheIDList = cc.checkWatch(host, watchID, maxNextCheckInterval, ackCacheID);
 			long endTime = System.currentTimeMillis();
+			// for test try { Thread.sleep(10); } catch (InterruptedException e) {}
 			if (cacheIDList == null) {
 				if (!runFlag) {
 					break;

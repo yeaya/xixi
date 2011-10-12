@@ -91,4 +91,16 @@ public class CacheBaseItem {
 		int t = flags >> 8;
 		return (byte)(t & 0xFF);
 	}
+	
+	public static int setOption1(int flags, short option1) {
+		int option = option1;
+		option = option << 16;
+		return (flags & 0xFFFF) + option; 
+	}
+	
+	public static int setOption2(int flags, byte option2) {
+		int option = option2;
+		option = (option << 8) & 0xFF00;
+		return (flags & 0xFFFF00FF) + option;
+	}
 }

@@ -78,7 +78,7 @@ public class ObjectTransCoder implements TransCoder {
 		this.sanitizeKeys = sanitizeKeys;
 	}
 	
-	public boolean getSanitizeKeys() {
+	public boolean isSanitizeKeys() {
 		return sanitizeKeys;
 	}
 

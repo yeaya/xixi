@@ -18,7 +18,7 @@ package com.xixibase.cache;
 
 public final class CacheItem extends CacheBaseItem {
 	protected Object value;
-	protected int valueSize;
+	protected int itemSize;
 /*
 	public CacheItem(long cacheID, long expireTime, int groupID, int flags,
 			Object value, int dataSize) {
@@ -31,7 +31,7 @@ public final class CacheItem extends CacheBaseItem {
 			Object value, int dataSize) {
 		super(key, cacheID, expiration, groupID, flags);
 		this.value = value;
-		this.valueSize = dataSize + 1024;
+		this.itemSize = key.length() * 2 + dataSize + 1024;
 	}
 	
 	public Object getValue() {

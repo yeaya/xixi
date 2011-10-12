@@ -87,12 +87,13 @@ public class CacheClientImpl extends Defines {
 		}
 
 		String host = manager.getHost(key);
-		if (host == null) {
-			lastError = "get, failed to get host";
-			log.error(lastError);
-			return null;
-		}
-		
+// manager.getHost never return null
+//		if (host == null) {
+//			lastError = "get, failed to get host";
+//			log.error(lastError);
+//			return null;
+//		}
+
 		CacheItem item = null;
 		int watchID = 0;
 		if ((getFlag & LOCAL_CACHE) == LOCAL_CACHE) {
@@ -171,7 +172,6 @@ public class CacheClientImpl extends Defines {
 				lastError = "get, response error, reason=" + reason;
 				log.debug(lastError);
 			}
-			return null;
 		} catch (IOException e) {
 			lastError = "get, exception=" + e.getMessage();
 			log.error(lastError);
@@ -242,7 +242,6 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "getBase, response error, reason=" + reason;
 				log.debug(lastError);
-				return null;
 			}
 		} catch (IOException e) {
 			lastError = "getBase, exception=" + e.getMessage();
@@ -264,15 +263,15 @@ public class CacheClientImpl extends Defines {
 		return null;
 	}
 
-	public boolean updateFlags(String key, long cacheID, int flags) {
-		return updateBase(XIXI_UPDATE_BASE_SUB_OP_FLAGS, key, cacheID, 0, flags, 0);
+	public boolean updateFlags(String key, long cacheID, int groupID, int flags) {
+		return updateBase(XIXI_UPDATE_BASE_SUB_OP_FLAGS, key, cacheID, groupID, flags, 0);
 	}
 	
-	public boolean updateExpiration(String key, long cacheID, int expiration) {
-		return updateBase(XIXI_UPDATE_BASE_SUB_OP_EXPIRATION, key, cacheID, 0, 0, expiration);
+	public boolean updateExpiration(String key, long cacheID, int groupID, int expiration) {
+		return updateBase(XIXI_UPDATE_BASE_SUB_OP_EXPIRATION, key, cacheID, groupID, 0, expiration);
 	}
 
-	public boolean updateBase(byte subOp, String key, long cacheID, int groupID, int flags, int expiration) {
+	protected boolean updateBase(byte subOp, String key, long cacheID, int groupID, int flags, int expiration) {
 		lastError = null;
 		if (key == null) {
 			lastError = "updateBase, key == null";
@@ -865,7 +864,7 @@ public class CacheClientImpl extends Defines {
 			log.error(lastError);
 			return 0;
 		}
-		int watchID = 0;
+
 		try {
 			ByteBuffer writeBuffer = socket.getWriteBuffer();
 			writeBuffer.clear();
@@ -881,7 +880,8 @@ public class CacheClientImpl extends Defines {
 			byte category = dis.readByte();
 			byte type = dis.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_CREATE_WATCH_RES) {
-				watchID = dis.readInt();
+				int watchID = dis.readInt();
+				return watchID;
 			} else {
 				short reason = dis.readShort();
 				lastError = "createWatch, response error, reason=" + reason;
@@ -896,8 +896,6 @@ public class CacheClientImpl extends Defines {
 					socket = null;
 				}
 			}
-
-			return watchID;
 		} catch (IOException e) {
 			lastError = "createWatch, exception=" + e.getMessage();
 			log.error(lastError);
@@ -924,7 +922,7 @@ public class CacheClientImpl extends Defines {
 				socket = null;
 			}
 		}
-		return watchID;
+		return 0;
 	}
 	
 	protected long[] checkWatch(String host, int watchID, int maxNextCheckInterval, long ackCacheID) {
@@ -974,8 +972,6 @@ public class CacheClientImpl extends Defines {
 					socket = null;
 				}
 			}
-
-			return null;
 		} catch (IOException e) {
 			lastError = "checkWatch, e=" + e.getMessage();
 			log.error(lastError);
