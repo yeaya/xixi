@@ -29,11 +29,11 @@ public class CacheClient extends Defines {
 	public CacheClient(CacheClientManager manager, int groupID) {
 		client = new CacheClientImpl(manager, groupID);
 	}
-
+/*
 	public CacheClient(String managerName, int groupID) {
 		client = new CacheClientImpl(managerName, groupID);
 	}
-
+*/
 	public int getGroupID() {
 		return client.getGroupID();
 	}
@@ -311,7 +311,7 @@ public class CacheClient extends Defines {
 			return null;
 		}
 	}
-	
+/*
 	public Map<String, Map<String, String>> statsGetAndClearStats(String[] servers, byte class_id) {
 		Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 		if (client.statsGetAndClearStats(servers, class_id, result)) {
@@ -320,7 +320,7 @@ public class CacheClient extends Defines {
 			return null;
 		}
 	}
-	
+*/
 	public Map<String, Map<String, String>> statsGetGroupStats(String[] servers, int groupID, byte class_id) {
 		Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 		if (client.statsGetGroupStats(servers, groupID, class_id, result)) {
@@ -329,7 +329,7 @@ public class CacheClient extends Defines {
 			return null;
 		}
 	}
-	
+/*
 	public Map<String, Map<String, String>> statsGetAndClearGroupStats(String[] servers, int groupID, byte class_id) {
 		Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 		if (client.statsGetAndClearGroupStats(servers, groupID, class_id, result)) {
@@ -338,4 +338,5 @@ public class CacheClient extends Defines {
 			return null;
 		}
 	}
+*/
 }

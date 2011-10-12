@@ -5,6 +5,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.lang.Integer;
 
 import com.xixibase.util.CurrentTick;
@@ -46,8 +50,8 @@ public class CacheClientTest extends TestCase {
 	public void testFlush() {
 		CacheClient cca = mgr1.createClient(3);
 		CacheClient ccb = mgr1.createClient(15);
-		cca.set("xixi1", "bar1");
-		ccb.set("xixi2", "bar2");
+		cca.set("xixi1", "0315");
+		ccb.set("xixi2", "20080315");
 		int count = cca.flush();
 		assertEquals(1, count);
 		count = ccb.flush();
@@ -133,16 +137,16 @@ public class CacheClientTest extends TestCase {
 		assertNull(ccb.getLastError());
 	}
 
-	public void testObjectTransCoderEncodeIntLong() {
-		int oint = 0x12345678;
-		byte[] b = ObjectTransCoder.encodeInt(oint);
+	public void testObjectTransCoderEncode() {
+		int myInt = 0x12345678;
+		byte[] b = ObjectTransCoder.encodeInt(myInt);
 		int intValue = ObjectTransCoder.decodeInt(b);
-		assertEquals(intValue, oint);
+		assertEquals(intValue, myInt);
 		
-		long olong = 0x1234567890123456L;
-		b = ObjectTransCoder.encodeLong(olong);
+		long myLong = 0x1234567890123456L;
+		b = ObjectTransCoder.encodeLong(myLong);
 		long longValue = ObjectTransCoder.decodeLong(b);
-		assertEquals(longValue, olong);
+		assertEquals(longValue, myLong);
 	}
 	
 	public void testTransCoder() {
@@ -276,30 +280,36 @@ public class CacheClientTest extends TestCase {
 
 	public void testWeightMap() {
 		String input = "test of string encoding";
-		cc1.set("xixi", input);
-		String s = (String) cc1.get("xixi");
-		assertEquals(s, input);
 
-		CacheClientManager mgr = CacheClientManager.getInstance("test1");
+		CacheClientManager mgr = CacheClientManager.getInstance("testWeightMap");
 		mgr.setNagle(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
 		cc1 = mgr.createClient();
+		assertFalse(mgr.getWeightMaper().isConsistent());
+		assertEquals(XixiWeightMap.CRC32_HASH, mgr.getWeightMaper().getHashingAlg());
+		
 		cc1.set("xixi", input);
-		s = (String) cc1.get("xixi");
+		String s = (String) cc1.get("xixi");
 		assertEquals(s, input);
 		cc1.set("xixi1", input);
 		s = (String) cc1.get("xixi1");
 		assertEquals(s, input);
 		mgr.shutdown();
-		
-		mgr = CacheClientManager.getInstance("test2");
+	}
+	
+	public void testWeightMap2() {
+		String input = "test of string encoding";
+		CacheClientManager mgr = CacheClientManager.getInstance("testWeightMap2");
 		mgr.setNagle(false);
-		mgr.initialize(serverlist, null,
+		Integer[] weights = new Integer[2];
+		weights[0] = new Integer(0);
+		weights[1] = new Integer(118);
+		mgr.initialize(serverlist, weights,
 				new XixiWeightMap<Integer>(true, XixiWeightMap.NATIVE_HASH));
 		cc1 = mgr.createClient();
 		cc1.set("xixi", input);
-		s = (String) cc1.get("xixi");
+		String s = (String) cc1.get("xixi");
 		assertEquals(s, input);
 		cc1.set("xixi2", input, 10);
 		s = (String) cc1.get("xixi2");
@@ -308,8 +318,8 @@ public class CacheClientTest extends TestCase {
 		
 		mgr = CacheClientManager.getInstance("test3");
 		mgr.setNagle(false);
-		Integer[] weights = new Integer[2];
-		weights[0] = new Integer(2);
+		weights = new Integer[2];
+		weights[0] = new Integer(1);
 		weights[1] = new Integer(8);
 		mgr.initialize(serverlist, weights,
 				new XixiWeightMap<Integer>(true, XixiWeightMap.MD5_HASH));
@@ -395,33 +405,14 @@ public class CacheClientTest extends TestCase {
 		assertEquals(item, item2);
 	}
 
-	public void testSetStringObjectDateInteger() throws InterruptedException {
-		String expected, actual;
-		cc1.set("xixi", "bar", 1);
-		expected = "bar";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+	public void testSetExpire() throws InterruptedException {
+		cc1.set("xixi", "0315", 1);
+		assertEquals("0315", cc1.get("xixi"));
 
 		Thread.sleep(2000);
 
 		boolean res = cc1.keyExists("xixi");
 		assertFalse(res);
-	}
-
-	public void testSetStringObjectInteger() {
-		String expected, actual;
-		cc1.set("xixi", "bar");
-		expected = "bar";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
-	}
-	
-	public void testSetExp() throws InterruptedException {
-		cc1.set("xixi", new Integer(100), 1);
-
-		Thread.sleep(2000);
-
-		assertNull(cc1.get("xixi"));
 	}
 
 	public void testGetTouch() throws InterruptedException {
@@ -460,34 +451,6 @@ public class CacheClientTest extends TestCase {
 		d = item.getExpiration();
 		assertEquals(0, d);
 		assertNull(cc1.getLastError());
-	}
-
-	public void testGetTouchL() throws InterruptedException {
-		long beginTime = CurrentTick.get();
-		cc1.set("xixi", "session", 100);
-		CacheItem item = cc1.getsW("xixi");
-		assertNotNull(item);
-		long d = item.getExpireTime() - beginTime;
-		assertEquals(100, d);
-
-		Thread.sleep(2000);
-		
-		item = cc1.gets("xixi");
-		assertNotNull(item);
-		d = item.getExpiration();
-		assertEquals(98, d);
-		
-		item = cc1.getAndTouchL("xixi", 100);
-		assertNotNull(item);
-		d = item.getExpiration();
-		assertEquals(100, d);
-	
-		Thread.sleep(50);
-		
-		item = cc1.gets("xixi");
-		assertNotNull(item);
-		d = item.getExpiration();
-		assertTrue(d <= 100 && d >= 99);
 	}
 
 	public void testDelta() {
@@ -568,223 +531,169 @@ public class CacheClientTest extends TestCase {
 	public void testAdd() {
 		cc1.delete("xixi");
 		assertEquals(null, cc1.get("xixi"));
-		cc1.set("xixi", "bar");
-		String tt = (String) cc1.get("xixi");
-		assertEquals("bar", tt);
-		cc1.add("xixi", "bar2");
-		String tt2 = (String) cc1.get("xixi");
-		assertEquals("bar", tt2);
-		assertEquals(cc1.add(null, "bar2"), 0);
+		cc1.set("xixi", "0315");
+		assertEquals("0315", cc1.get("xixi"));
+		long ret = cc1.add("xixi", "20080315");
+		assertEquals(0, ret);
+		assertEquals("0315", cc1.get("xixi"));
+		assertEquals(cc1.add(null, "ke,ai"), 0);
 		assertEquals(cc1.add("xixi", null), 0);
 	}
 
-	public void testAddStringObjectDate() throws InterruptedException {
-		String expected, actual;
-		cc1.add("xixi", "bar", 1);
-		actual = (String) cc1.get("xixi");
-		expected = "bar";
-		assertEquals(expected, actual);
+	public void testAddExpire() throws InterruptedException {
+		cc1.add("xixi", "0315", 1);
+		assertEquals("0315", cc1.get("xixi"));
 
 		Thread.sleep(2000);
 
-		assertFalse(cc1.keyExists("xixi"));
+		assertNull(cc1.get("xixi"));
 	}
 
-	public void testAddStringObjectDateInteger() throws InterruptedException {
-		String expected, actual;
-		cc1.add("xixi", "bar", 1);
-		actual = (String) cc1.get("xixi");
-		expected = "bar";
-		assertEquals(expected, actual);
+	public void testAddExpire2() throws InterruptedException {
+		cc1.add("xixi", "0315", 3);
+		assertEquals("0315", cc1.get("xixi"));
 
 		Thread.sleep(2000);
 
-		actual = (String) cc1.get("xixi");
-		assertNull(actual);
+		assertEquals("0315", cc1.get("xixi"));
 	}
 
 	public void testReplaceStringObject() {
-		String expected, actual;
-		cc1.set("xixi", "bar1");
-		cc1.replace("xixi", "bar2");
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+		cc1.set("xixi", "0315");
+		cc1.replace("xixi", "20080315");
+		assertEquals("20080315", cc1.get("xixi"));
 	}
 
-	public void testReplaceStringObjectDate() throws InterruptedException {
-		String expected, actual;
-		cc1.set("xixi", "bar1");
-		cc1.replace("xixi", "bar2", 1);
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+	public void testReplaceExpire() throws InterruptedException {
+		cc1.set("xixi", "0315");
+		cc1.replace("xixi", "20080315", 1);
+		assertEquals("20080315", cc1.get("xixi"));
 
 		Thread.sleep(2000);
 
 		assertFalse(cc1.keyExists("xixi"));
 	}
 
-	public void testReplaceStringObjectDateInteger() throws InterruptedException {
-		String expected, actual;
-		cc1.set("xixi", "bar1");
-		cc1.replace("xixi", "bar2", 1);
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+	public void testReplaceExpire2() throws InterruptedException {
+		cc1.set("xixi", "0315");
+		cc1.replace("xixi", "20080315", 3);
+		assertEquals("20080315", cc1.get("xixi"));
 
 		Thread.sleep(2000);
 
-		assertNull(cc1.get("xixi"));
+		assertEquals("20080315", cc1.get("xixi"));
 	}
 
-	public void testReplaceStringObjectInteger() {
-		String expected, actual;
-		cc1.set("xixi", "bar1", CacheClient.NO_EXPIRATION);
-		cc1.replace("xixi", "bar2", CacheClient.NO_EXPIRATION, CacheClient.NO_CAS);
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+	public void testReplace3() {
+		cc1.set("xixi", "0315", CacheClient.NO_EXPIRATION);
+		cc1.replace("xixi", "20080315", CacheClient.NO_EXPIRATION);
+		assertEquals("20080315", cc1.get("xixi"));
+	}
+	
+	public void testReplace4() {
+		cc1.set("xixi", "0315", CacheClient.NO_EXPIRATION);
+		long ret = cc1.replace("xixi", "20080315", 3, 123);
+		assertEquals(0, ret);
+		assertEquals("0315", cc1.get("xixi"));
+		CacheItem item = cc1.gets("xixi");
+		ret = cc1.replace("xixi", "20080315", 3, item.getCacheID());
+		assertTrue(ret != 0);
+		assertEquals("20080315", cc1.get("xixi"));
 	}
 
 	public void testAppend() {
-		String value = "aa";
-		cc1.append("aa", value);
-		assertEquals(0, cc1.append(null, value));
-		assertEquals(0, cc1.append("aa", null));
-		assertEquals(cc1.get("aa"), null);
-		cc1.add("aa", value);
-		assertEquals(cc1.get("aa"), value);
-		assertNotSame(cc1.append("aa", "bb"), 0);
-		assertEquals(cc1.get("aa"), value + "bb");
+		cc1.append("xixi", "03");
+		assertEquals(0, cc1.append(null, "15"));
+		assertEquals(0, cc1.append("xixi", null));
+		assertEquals(cc1.get("xixi"), null);
+		cc1.add("xixi", "03");
+		assertEquals(cc1.get("xixi"), "03");
+		assertNotSame(cc1.append("xixi", "15"), 0);
+		assertEquals(cc1.get("xixi"), "0315");
 	}
 
-	public void testAppendStringObjectInteger() {
-		String actual, expected;
-		cc1.add("xixi", "abc");
-		actual = (String) cc1.get("xixi");
-		expected = "abc";
-		assertEquals(expected, actual);
-
-		cc1.append("xixi", "def");
-		actual = (String) cc1.get("xixi");
-		expected = "abcdef";
-		assertEquals(expected, actual);
+	public void testAppend2() {
+		cc1.add("xixi", "03");
+		long ret = cc1.append("xixi", "15", 123);
+		assertEquals(0, ret);
+		CacheItem item = cc1.gets("xixi");
+		ret = cc1.append("xixi", "15", item.getCacheID());
+		assertTrue(ret != 0);
+		assertEquals("0315", cc1.get("xixi"));
 	}
 
 	public void testPrepend() {
-		String value = "aa";
-		cc1.prepend("aa", value);
-		assertEquals(cc1.get("aa"), null);
-		cc1.add("aa", value);
-		assertEquals(cc1.get("aa"), value);
-		long ret = cc1.prepend("aa", "bb");
+		cc1.prepend("xixi", "03");
+		assertEquals(0, cc1.prepend(null, "15"));
+		assertEquals(0, cc1.prepend("xixi", null));
+		assertEquals(cc1.get("xixi"), null);
+		cc1.add("xixi", "03");
+		assertEquals(cc1.get("xixi"), "03");
+		assertNotSame(cc1.prepend("xixi", "15"), 0);
+		assertEquals(cc1.get("xixi"), "1503");
+	}
+
+	public void testPrepend2() {
+		cc1.add("xixi", "03");
+		long ret = cc1.prepend("xixi", "15", 123);
+		assertEquals(0, ret);
+		CacheItem item = cc1.gets("xixi");
+		ret = cc1.prepend("xixi", "15", item.getCacheID());
 		assertTrue(ret != 0);
-		assertEquals(cc1.get("aa"), "bb" + value);
+		assertEquals("1503", cc1.get("xixi"));
 	}
 
-	public void testPrependStringObjectInteger() {
-		String expected, actual;
-		cc1.set("xixi", "def");
-		cc1.prepend("xixi", "abc");
-		expected = "abcdef";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
-	}
-
-	public void testSetWithVersion() {
-		String value = "aa";
-		cc1.set("aa", value);
-		CacheItem item = cc1.gets("aa");
-		assertEquals(value, item.getValue());
+	public void testCacheIDExpire() {
+		cc1.set("xixi", "0315");
+		CacheItem item = cc1.gets("xixi");
+		assertEquals("0315", item.getValue());
 		
-		cc1.set("aa", "bb", CacheClient.NO_EXPIRATION, item.getCacheID());
-		item = cc1.gets("aa");
-		assertEquals("bb", item.getValue());
-		cc1.set("aa", "cc1");
-		assertEquals("cc1", cc1.get("aa"));
-		cc1.set("aa", "dd", CacheClient.NO_EXPIRATION, item.getCacheID());
-		assertEquals("cc1", cc1.get("aa"));
+		cc1.set("xixi", "20080315", CacheClient.NO_EXPIRATION, item.getCacheID());
+		item = cc1.gets("xixi");
+		assertEquals("20080315", item.getValue());
+		cc1.set("xixi", "0315");
+		assertEquals("0315", cc1.get("xixi"));
+		cc1.set("xixi", "ke,ai", CacheClient.NO_EXPIRATION, item.getCacheID());
+		assertEquals("0315", cc1.get("xixi"));
 	}
 
-	public void testStringObjectIntegerLongWithVersion() {
-		String expected, actual;
-		long ret = cc1.set("xixi", "bar");
-		assertTrue(ret != 0);
+	public void testCacheIDExpire2() throws InterruptedException {
+		cc1.set("xixi", "0315");
 		CacheItem item = cc1.gets("xixi");
-		expected = "bar";
-		actual = (String) item.getValue();
-		assertEquals(expected, actual);
+		assertEquals("0315", item.getValue());
 
-		ret = cc1.set("xixi", "bar1", CacheClient.NO_EXPIRATION, item.getCacheID());
-		expected = "bar1";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
-
-		ret = cc1.set("xixi", "bar2");
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
-
-		ret = cc1.set("xixi", "bar3", CacheClient.NO_EXPIRATION, item.getCacheID());
-		assertTrue(ret == 0);
-	}
-
-	public void testStringObjectDateLongWithVersion() throws InterruptedException {
-		String expected, actual;
-		cc1.set("xixi", "bar");
-		CacheItem item = cc1.gets("xixi");
-		expected = "bar";
-		actual = (String) item.getValue();
-		assertEquals(expected, actual);
-
-		cc1.set("xixi", "bar1", 1, item.getCacheID());
-		expected = "bar1";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+		cc1.set("xixi", "20080315", 1, item.getCacheID());
+		assertEquals("20080315", cc1.get("xixi"));
 
 		Thread.sleep(2000);
 		
 		assertNull(cc1.get("xixi"));
 
-		cc1.set("xixi", "bar2");
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
+		cc1.set("xixi", "ke,ai");
+		assertEquals("ke,ai", cc1.get("xixi"));
 
-		long ret = cc1.set("xixi", "bar3", 1, item.getCacheID());
-		assertTrue(ret == 0);
-	}
-
-	public void testStringObjectDateIntegerLongWithVersion() throws InterruptedException {
-		String expected, actual;
-		cc1.set("xixi", "bar");
-		CacheItem item = cc1.gets("xixi");
-		expected = "bar";
-		actual = (String) item.getValue();
-		assertEquals(expected, actual);
-
-		cc1.set("xixi", "bar1", 1, item.getCacheID());
-		expected = "bar1";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
-
-		Thread.sleep(2000);
-
-		actual = (String) cc1.get("xixi");
-		assertNull(actual);
-
-		cc1.set("xixi", "bar2");
-		expected = "bar2";
-		actual = (String) cc1.get("xixi");
-		assertEquals(expected, actual);
-
-		long ret = cc1.set("xixi", "bar3", 1, item.getCacheID());
+		long ret = cc1.set("xixi", "?", 1, item.getCacheID());
 		assertTrue(ret == 0);
 	}
 
 	public void testBigData() {
+		int ct = cc1.getTransCoder().getCompressionThreshold();
 		cc1.getTransCoder().setCompressionThreshold(0x7FFFFFFF);
+		SerialItem item = new SerialItem("testBigData", 10240);
+		for (int i = 0; i < 10; ++i) {
+			cc1.set("xixi" + i, item);
+			SerialItem item2 = (SerialItem)cc1.get("xixi" + i);
+			assertEquals(item, item2);
+		}
+		item = new SerialItem("testBigData2", 1024 * 1024 * 2);
+		long ret = cc1.set("xixi", item);
+		assertTrue(ret != 0);
+		SerialItem item2 = (SerialItem)cc1.get("xixi");
+		assertEquals(item, item2);
+		cc1.getTransCoder().setCompressionThreshold(ct);
+	}
+	
+	public void testBigData2() {
 		SerialItem item = new SerialItem("testBigData", 10240);
 		for (int i = 0; i < 10; ++i) {
 			cc1.set("xixi" + i, item);
@@ -803,13 +712,16 @@ public class CacheClientTest extends TestCase {
 		
 		private String name;
 		private byte[] buffer;
-//		private HashMap<String, Integer> map = new HashMap<String, Integer>();
+		private HashMap<String, Integer> map = new HashMap<String, Integer>();
 
 		public SerialItem(String name, int size) {
 			this.name = name;
 			buffer = new byte[size];
 			for (int i = 0; i < size; i++) {
 				buffer[i] = (byte)(i & 0xFF);
+			}
+			for (int i = 0; i < 10; i++) {
+				map.put(name + i, new Integer(i));
 			}
 		}
 
@@ -836,6 +748,17 @@ public class CacheClientTest extends TestCase {
 					return false;
 				}
 			}
+			if (map.size() != item.map.size()) {
+				return false;
+			}
+			for (int i = 0; i < 10; i++) {
+				String key = name + i;
+				Integer a = map.get(key);
+				Integer b = item.map.get(key);
+				if (a == null || b == null || !a.equals(b)) {
+					return false;
+				}
+			}
 			return true;
 		}
 	}
@@ -847,8 +770,132 @@ public class CacheClientTest extends TestCase {
 		assertTrue(ret);
 	}
 	
+	private void printStats(String name, Map<String, Map<String, String>> stats) {
+		Iterator<Entry<String, Map<String, String>>> it = stats.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, Map<String, String>> e = it.next();
+			String host = e.getKey();
+			Map<String, String> m = e.getValue();
+			Iterator<Entry<String, String>> it2 = m.entrySet().iterator();
+			while (it2.hasNext()) {
+				Entry<String, String> e2 = it2.next();
+				String key = e2.getKey();
+				String value = e2.getValue();
+				System.out.println(name + " host=" + host + " " + key + "=" + value);
+			}
+		}
+	}
+	public void testStatsGet() {
+		Map<String, Map<String, String>> stats = cc1.statsGetStats(null, (byte)0);
+		assertNotNull(stats);
+		printStats("testStatsGet", stats);
+	}
+	
+	public void testStatsGet2() {
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				false, XixiWeightMap.CRC32_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		Map<String, Map<String, String>> stats = cc1.statsGetStats(null, (byte)0);
+		assertNotNull(stats);
+		printStats("testStatsGet2", stats);
+	}
+	
+	public void testStatsGet3() {
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				true, XixiWeightMap.MD5_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		Map<String, Map<String, String>> stats = cc1.statsGetStats(null, (byte)11);
+		assertNotNull(stats);
+		printStats("testStatsGet3", stats);
+	}
+	
+	public void testStatsGetError() {
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				true, XixiWeightMap.NATIVE_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		String[] serverlist = new String[1];
+		serverlist[0] = "unkknownhost";
+		Map<String, Map<String, String>> stats = cc1.statsGetStats(serverlist, (byte)11);
+		assertNull(stats);
+	}
+	
+	public void testStatsGroupGet() {
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				true, XixiWeightMap.CRC32_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(null, 315, (byte)0);
+		assertNotNull(stats);
+		printStats("testStatsGroupGet", stats);
+	}
+	
+	public void testStatsGroupGet2() {
+		boolean ret = cc1.statsAddGroup(null, 315);
+		assertTrue(ret);
+		
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				false, XixiWeightMap.MD5_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(null, 315, (byte)1);
+		assertNotNull(stats);
+		printStats("testStatsGroupGet2", stats);
+	}
+	
+	public void testStatsGroupGet3() {
+		boolean ret = cc1.statsAddGroup(null, 315);
+		assertTrue(ret);
+		
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				false, 5, null);
+		assertTrue(ccb.runIt());
+		
+		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(null, 315, (byte)0);
+		assertNotNull(stats);
+		
+		ret = cc1.statsRemoveGroup(null, 315);
+		assertTrue(ret);
+		
+		ccb = new CacheClientBench(servers, 1, 100, 315,
+				false, XixiWeightMap.CRC32_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		stats = cc1.statsGetGroupStats(null, 315, (byte)0);
+		assertNotNull(stats);
+		printStats("testStatsGroupGet3", stats);
+	}
+	
+	public void testStatsGroupError() {
+		boolean ret = cc1.statsAddGroup(null, 315);
+		assertTrue(ret);
+		
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				true, XixiWeightMap.CRC32_HASH, null);
+		assertTrue(ccb.runIt());
+		
+		String[] serverlist = new String[1];
+		serverlist[0] = "unkknownhost";
+		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(serverlist, 315, (byte)0);
+		assertNull(stats);
+	}
+	
 	public void testBench() {
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100);
+		assertTrue(ccb.runIt());
+	}
+	
+	public void testBench2() {
+		Integer[] weights = new Integer[5];
+		weights[0] = new Integer(5);
+		weights[1] = new Integer(110);
+		weights[2] = new Integer(1);
+		weights[3] = new Integer(0);
+		weights[4] = new Integer(90);
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
+				true, XixiWeightMap.CRC32_HASH, weights);
 		assertTrue(ccb.runIt());
 	}
 }

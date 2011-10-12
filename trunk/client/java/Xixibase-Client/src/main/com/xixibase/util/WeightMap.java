@@ -22,4 +22,6 @@ public interface WeightMap<V> {
 	public V get(String k);
 	
 	public void clear();
+	public int getHashingAlg();
+	public boolean isConsistent();
 }

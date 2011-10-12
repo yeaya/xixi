@@ -66,7 +66,7 @@ public class CacheBaseItem {
 			return Defines.NO_EXPIRATION;
 		}
 		long currTick = CurrentTick.get();
-		if (currTick != expireTime) {
+		if (currTick < expireTime) {
 			return expireTime - currTick;
 		}
 		return -1L; 

@@ -211,11 +211,6 @@ class LocalCacheWatch extends Thread {
 		clear();
 	}
 
-	public synchronized void addGroup(Integer groupID) {
-		GroupItem item = new GroupItem(cacheSize, cacheCount, cacheIDMap);
-		groupMap.putIfAbsent(groupID, item);
-	}
-	
 	private synchronized void clear() {
 		watchID = 0;
 		Iterator<GroupItem> it = groupMap.values().iterator();

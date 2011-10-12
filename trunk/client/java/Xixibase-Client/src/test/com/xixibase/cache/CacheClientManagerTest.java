@@ -101,8 +101,38 @@ public class CacheClientManagerTest extends TestCase {
 		mgr.shutdown();
 	}
 	
+	public void testMaintain() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("testMaintain");
+		int mi = mgr.getMaintainInterval();
+		int inactiveSocketTimeout = mgr.getInactiveSocketTimeout();
+		mgr.setMaintainInterval(1000);
+		mgr.setInactiveSocketTimeout(1000);
+		mgr.setMaxActiveConn(2);
+		mgr.setInitConn(5);
+		mgr.initialize(serverlist);
+		int serverCount = mgr.getServers().length;
+	
+		int activeCount = mgr.getActiveSocketCount();
+		int inactiveCount = mgr.getInactiveSocketCount();
+		assertEquals(2 * serverCount, activeCount);
+		assertEquals(3 * serverCount, inactiveCount);
+
+		CacheClient cc = mgr.createClient(315);
+		cc.set("xixi", "0315");
+		Thread.sleep(2000);
+		
+		activeCount = mgr.getActiveSocketCount();
+		inactiveCount = mgr.getInactiveSocketCount();
+		assertEquals(2 * serverCount, activeCount);
+		assertTrue(inactiveCount < 3 * serverCount);
+		
+		mgr.setMaintainInterval(mi);
+		mgr.setInactiveSocketTimeout(inactiveSocketTimeout);
+		mgr.shutdown();
+	}
+	
 	public void testError() {
-		CacheClientManager mgr = CacheClientManager.getInstance();
+		CacheClientManager mgr = CacheClientManager.getInstance("testError");
 		boolean ret = mgr.initialize(null);
 		assertFalse(ret);
 		ret = mgr.initialize(new String[0], null);
@@ -111,6 +141,8 @@ public class CacheClientManagerTest extends TestCase {
 		s[0] = "errorHost";
 		ret = mgr.initialize(s);
 		XixiSocket socket = mgr.getSocketByHost(serverlist[0]);
+		assertNull(mgr.getSocketByHost(null));
+		assertNull(mgr.getSocketByHost("unknownhost"));
 		assertNull(socket);
 		socket = mgr.getSocketByHost("errorHost");
 		assertNull(socket);

@@ -118,13 +118,9 @@ public class TCPSocket implements XixiSocket {
 	public void setLastActiveTime(long lastActiveTime) {
 		this.lastActiveTime = lastActiveTime;
 	}
-	
+
 	public long getLastActiveTime() {
 		return lastActiveTime;
-	}
-	
-	public boolean isConnected() {
-		return (socket != null && socket.isConnected());
 	}
 
 	public void write(byte[] b, int off, int len) throws IOException {

@@ -25,33 +25,38 @@ import com.xixibase.cache.multi.MultiUpdateItem;
 public class CacheClientBench  {
 	int start = 1;
 	int runs = 50000;
-	String keyBase = "key";
+	int groupID = 0;
+	String keyBase = "keypublic CacheClientBench(String servers, int start, int runs, int groupID,";
 	String object = "value";
 	CacheClient cc;
 	
-	public CacheClientBench(String servers, int start, int runs) {
-		init(servers);
+	public CacheClientBench(String servers, int start, int runs, int groupID,
+			boolean consistentFlag, int hashingAlg, Integer[] weights) {
 		this.start = start;
 		this.runs = runs;
-	}
-	
-	protected void init(String servers) {
+		this.groupID = groupID;
 		String[] serverlist = servers.split(",");
 
-		String name = "test";
-		CacheClientManager manager = CacheClientManager.getInstance(name);
+		XixiWeightMap<Integer> weightMap = new XixiWeightMap<Integer>(consistentFlag, hashingAlg);
+		
+		CacheClientManager manager = CacheClientManager.getInstance("CacheClientBench");
 		manager.setInitConn(1);
 		manager.setNagle(false);
-		manager.initialize(serverlist);
+		manager.initialize(serverlist, weights, weightMap);
 		manager.enableLocalCache();
 		manager.getLocalCache().setMaxCacheSize(128 * 1024 * 1024);
 		
-		cc = manager.createClient();
+		cc = manager.createClient(groupID);
 		
 		System.out.println("keybaselen=" + keyBase.length() + " objlen=" + object.length());
 	}
+	
+	public CacheClientBench(String servers, int start, int runs) {
+		this(servers, start, runs, 0, false, XixiWeightMap.NATIVE_HASH, null);
+	}
 
 	public boolean runIt() {
+		flush();
 		boolean ret = true;
 		ret &= set();
 		ret &= getW();
@@ -64,7 +69,7 @@ public class CacheClientBench  {
 		ret &= multiSet();
 		ret &= flush();
 		
-		CacheClientManager.getInstance("test").shutdown();
+		CacheClientManager.getInstance("CacheClientBench").shutdown();
 		return ret;
 	}
 
@@ -224,7 +229,7 @@ public class CacheClientBench  {
 		int count = cc.flush();
 		long end = System.currentTimeMillis();
 		long time = end - begin;
-		System.out.println(runs + " flush: " + time + "ms");
+		System.out.println(runs + " flush: " + time + "ms" + " count=" + count);
 		return count == runs;
 	}
 	
@@ -233,7 +238,10 @@ public class CacheClientBench  {
 		if (args.length >= 1) {
 			servers = args[0];
 		}
+	//	XixiWeightMap.MD5_HASH
 		CacheClientBench bench = new CacheClientBench(servers, 1, 50000);
+	//	CacheClientBench bench = new CacheClientBench(servers, 1, 50000, 315,
+//				true, XixiWeightMap.MD5_HASH, null);
 		bench.runIt();
 	}
 }

@@ -33,8 +33,6 @@ public interface XixiSocket {
 
 	public void close();
 
-	public boolean isConnected();
-
 	public int read(byte[] b, int off, int len) throws IOException ;
 
 	public void write(byte[] b, int off, int len) throws IOException ;

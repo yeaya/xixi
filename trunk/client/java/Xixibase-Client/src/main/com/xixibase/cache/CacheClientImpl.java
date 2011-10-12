@@ -47,14 +47,14 @@ public class CacheClientImpl extends Defines {
 
 	public CacheClientImpl(CacheClientManager manager, int groupID) {
 		this.manager = manager;
-		localCache = manager.getLocalCache();
+		this.localCache = manager.getLocalCache();
 		this.groupID = groupID;
 	}
-
+/*
 	public CacheClientImpl(String managerName, int groupID) {
 		this(CacheClientManager.getInstance(managerName), groupID);
 	}
-
+*/
 	public int getGroupID() {
 		return groupID;
 	}
@@ -442,7 +442,6 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "update, response error, reason=" + reason;
 				log.debug(lastError);
-				return NO_CAS;
 			}
 		} catch (IOException e) {
 			lastError = "update, exception=" + e.getMessage();
@@ -510,7 +509,6 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "delete, response error, reason=" + reason;
 				log.debug(lastError);
-				return false;
 			}
 		} catch (IOException e) {
 			lastError = "delete, exception=" + e.getMessage();
@@ -754,19 +752,19 @@ public class CacheClientImpl extends Defines {
 	protected boolean statsGetStats(String[] servers, byte class_id, Map<String, Map<String, String>> result) {
 		return stats(XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY,  servers, 0, class_id, result);
 	}
-	
+/*
 	protected boolean statsGetAndClearStats(String[] servers, byte class_id, Map<String, Map<String, String>> result) {
 		return stats(XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY,  servers, 0, class_id, result);
 	}
-	
+*/
 	protected boolean statsGetGroupStats(String[] servers, int groupID, byte class_id, Map<String, Map<String, String>> result) {
 		return stats(XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY,  servers, groupID, class_id, result);
 	}
-	
+/*
 	protected boolean statsGetAndClearGroupStats(String[] servers, int groupID, byte class_id, Map<String, Map<String, String>> result) {
 		return stats(XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY,  servers, groupID, class_id, result);
 	}
-
+*/
 	protected boolean stats(byte op_flag, String[] servers, int groupID, byte class_id, Map<String, Map<String, String>> result) {
 		lastError = null;
 
@@ -812,13 +810,13 @@ public class CacheClientImpl extends Defines {
 					byte[] buf = new byte[size];
 					dis.read(buf);
 					String str = new String(buf);
-					if (op_flag == XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY
-							|| op_flag == XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY
+					if (op_flag == XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY
+						//	|| op_flag == XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY
 							|| op_flag == XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY
-							|| op_flag == XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY) {
+						/*	|| op_flag == XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY*/) {
 						String[] lines = str.split("\n");
 						for (int j = 0; j < lines.length; j++) {
-							String[] s = lines[i].split("=");
+							String[] s = lines[j].split("=");
 							hm.put(s[0], s[1]);
 						}
 						return true;

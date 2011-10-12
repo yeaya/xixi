@@ -48,14 +48,24 @@ public class XixiWeightMap<V> implements WeightMap<V> {
 	public XixiWeightMap(boolean consistentFlag, int hashingAlg) {
 		this.consistentFlag = consistentFlag;
 		this.hashingAlg = hashingAlg;
-		try {
-			md5 = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-			throw new IllegalStateException("no md5 algorythm found");
+		if (hashingAlg == MD5_HASH) {
+			try {
+				md5 = MessageDigest.getInstance("MD5");
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				throw new IllegalStateException("no md5 algorythm found");
+			}
 		}
 	}
+
+	public final int getHashingAlg() {
+		return hashingAlg;
+	}
 	
+	public final boolean isConsistent() {
+		return consistentFlag;
+	}
+
 	public void clear() {
 		values.clear();
 		weights.clear();
@@ -108,20 +118,12 @@ public class XixiWeightMap<V> implements WeightMap<V> {
 			return key.hashCode();
 		}
 	}
-	
-	public final void setHashingAlg(int alg) {
-		this.hashingAlg = alg;
-	}
-
-	public final int getHashingAlg() {
-		return hashingAlg;
-	}
 
 	private int crc32Hash(byte[] key) {
 		CRC32 checksum = new CRC32();
 		checksum.update(key);
 		long crc = checksum.getValue();
-		return (int)((crc >> 16) & 0xFFFFFFFFL);
+		return (int)crc;
 	}
 
 	private int md5HashingAlg(byte[] key) {
@@ -164,13 +166,20 @@ public class XixiWeightMap<V> implements WeightMap<V> {
 			totalWeight += this.weights.get(i);
 		}
 
-		long interval = 0xFFFFFFFFL / totalWeight;
+		int multi = 1;
+		while (totalWeight * multi < 100) {
+			multi++;
+		}
+
+		long interval = 0xFFFFFFFFL / totalWeight / multi;
 		long offset = 0;
-		for (int i = 0; i < values.size(); i++) {
-			for (int j = 0; j < weights.get(i); j++) {
-				Integer node = (int)offset;
-				consistentBuckets.put(node, values.get(i));
-				offset += interval;
+		for (int m = 0; m < multi; m++) {
+			for (int i = 0; i < values.size(); i++) {
+				for (int j = 0; j < weights.get(i); j++) {
+					Integer node = (int)offset;
+					consistentBuckets.put(node, values.get(i));
+					offset += interval;
+				}
 			}
 		}
 	}

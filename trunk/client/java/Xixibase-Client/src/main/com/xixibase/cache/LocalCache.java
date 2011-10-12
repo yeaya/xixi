@@ -102,14 +102,7 @@ public class LocalCache {
 		}
 		watchMap.clear();
 	}
-	
-	public void addGroup(int groupID) {
-		Iterator<LocalCacheWatch> it = watchMap.values().iterator();
-		while (it.hasNext()) {
-			LocalCacheWatch updater = it.next();
-			updater.addGroup(groupID);
-		}
-	}
+
 	public void dropInactive(int maxDropCount) {
 		Iterator<LocalCacheWatch> it = watchMap.values().iterator();
 		while (it.hasNext()) {

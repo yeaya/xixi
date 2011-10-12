@@ -38,15 +38,17 @@ public class CacheClientManager {
 	private long maxBusyTime = 1000 * 30;
 	private int socketTimeout = 1000 * 30;
 	private int socketConnectTimeout = 1000 * 3;
+	private int maintainInterval = 1000 * 3;
+	private int inactiveSocketTimeout = 1000 * 30;
 
 	private boolean nagle = false;
 
 	private String[] servers;
-	private WeightMap<Integer> weightMap;
+	private WeightMap<Integer> weightMap = new XixiWeightMap<Integer>();
 
 	private ArrayList<ConcurrentLinkedQueue<XixiSocket>> activeSocketPool = new ArrayList<ConcurrentLinkedQueue<XixiSocket>>();
 	private ArrayList<LinkedList<XixiSocket>> inactiveSocketPool = new ArrayList<LinkedList<XixiSocket>>();
-	private HashMap<String, Integer> hostIndexMap;
+	private HashMap<String, Integer> hostIndexMap = new HashMap<String, Integer>();
 
 	private int socketWriteBufferSize = 32768; // 32K, 65536; //64K
 	private LocalCache localCache = null;
@@ -94,6 +96,22 @@ public class CacheClientManager {
 		return 7788;
 	}
 
+	public void setMaintainInterval(int maintainInterval) {
+		this.maintainInterval = maintainInterval;
+	}
+	
+	public int getMaintainInterval() {
+		return maintainInterval;
+	}
+	
+	public void setInactiveSocketTimeout(int inactiveSocketTimeout) {
+		this.inactiveSocketTimeout = inactiveSocketTimeout;
+	}
+	
+	public int getInactiveSocketTimeout() {
+		return inactiveSocketTimeout;
+	}
+	
 	public boolean initialize(String[] servers) {
 		return initialize(servers, null, null);
 	}
@@ -117,15 +135,16 @@ public class CacheClientManager {
 		if (weightMap != null) {
 			this.weightMap = weightMap;
 		} else {
-			this.weightMap = new XixiWeightMap<Integer>();
+			this.weightMap.clear();// = new XixiWeightMap<Integer>();
 		}
-		hostIndexMap = new HashMap<String, Integer>();
+		hostIndexMap.clear();// = new HashMap<String, Integer>();
 		Integer[] values = new Integer[servers.length];
 		for (int i = 0; i < servers.length; i++) {
 			values[i] = new Integer(i);
 		}
 		this.weightMap.set(values, weights);
-		
+
+		this.initialized = true;
 		for (int i = 0; i < servers.length; i++) {
 			activeSocketPool.add(new ConcurrentLinkedQueue<XixiSocket>());
 			inactiveSocketPool.add(new LinkedList<XixiSocket>());
@@ -138,26 +157,46 @@ public class CacheClientManager {
 				addSocket(servers[i], socket);
 			}
 		}
-		this.initialized = true;
 		maintainThread = new MaintainThread();
 		maintainThread.start();
 		return true;
 	}
 	
 	public void shutdown() {
+		initialized = false;
 		managers.remove(name);
 
-		initialized = false;
 		disableLocalCache();
 		closeSocketPool();
 
-		activeSocketPool.clear();
-		inactiveSocketPool.clear();
-		hostIndexMap.clear();
-		hostIndexMap = null;
-		weightMap.clear();
-		weightMap = null;
+	//	activeSocketPool.clear();
+	//	inactiveSocketPool.clear();
+	//	hostIndexMap.clear();
+	//	hostIndexMap = null;
+	//	weightMap.clear();
 		maintainThread = null;
+	}
+	
+	public int getActiveSocketCount() {
+		int count = 0;
+		for (int i = 0; i < activeSocketPool.size(); i++) {
+			ConcurrentLinkedQueue<XixiSocket> queue = activeSocketPool.get(i);
+			count += queue.size();
+		}
+			
+		return count;
+	}
+	
+	public int getInactiveSocketCount() {
+		int count = 0;
+		synchronized (inactiveSocketPool) {
+			for (int i = 0; i < inactiveSocketPool.size(); i++) {
+				LinkedList<XixiSocket> list = inactiveSocketPool.get(i);
+				count += list.size();
+			}
+		}
+			
+		return count;
 	}
 	
 	public void enableLocalCache() {
@@ -269,10 +308,11 @@ public class CacheClientManager {
 		}
 		
 		Integer hostIndex = weightMap.get(key);
-		if (hostIndex != null) {
+		// hostIndex must not be null
+//		if (hostIndex != null) {
 			return servers[hostIndex.intValue()];
-		}
-		return null;
+//		}
+//		return null;
 	}
 
 	public final XixiSocket getSocket(String key) {
@@ -359,7 +399,7 @@ public class CacheClientManager {
 				int count = 0;
 				while (!list.isEmpty()) {
 					XixiSocket socket = list.getLast();
-					if (socket.getLastActiveTime() + 30000 < currTime) {
+					if (socket.getLastActiveTime() + inactiveSocketTimeout < currTime) {
 				//		System.out.println("maintainInactiveSocket, last=" + socket.getLastActiveTime()
 				//				+ " curr=" + currTime);
 						list.pollLast();
@@ -418,7 +458,7 @@ public class CacheClientManager {
 		//		long size = localCache.getCacheSize();
 		//		System.out.println("CacheSize=" + size + " activeSize=" + activeSize);
 				try {
-					Thread.sleep(3000);
+					Thread.sleep(maintainInterval);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

@@ -76,9 +76,9 @@ public class Defines {
 	public static final byte XIXI_STATS_SUB_OP_ADD_GROUP = 0;
 	public static final byte XIXI_STATS_SUB_OP_REMOVE_GROUP = 1;
 	public static final byte XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY = 2;
-	public static final byte XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY = 3;
+//	public static final byte XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY = 3;
 	public static final byte XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY = 4;
-	public static final byte XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY = 5;
+//	public static final byte XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY = 5;
 	
 	public static final byte XIXI_CREATE_WATCH_REQ = 20;
 	public static final byte XIXI_CREATE_WATCH_RES = 21;

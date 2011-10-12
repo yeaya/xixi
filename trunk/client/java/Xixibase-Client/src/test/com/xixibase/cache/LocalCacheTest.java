@@ -16,6 +16,8 @@
 
 package com.xixibase.cache;
 
+import com.xixibase.util.CurrentTick;
+
 import junit.framework.TestCase;
 
 public class LocalCacheTest extends TestCase {
@@ -41,6 +43,7 @@ public class LocalCacheTest extends TestCase {
 		String[] serverlist = servers.split(",");
 		mgr.initialize(serverlist);
 		mgr.enableLocalCache();
+		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
 		CacheClient cc = mgr.createClient();
@@ -50,12 +53,17 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(cc.get("xixi"), "value");
 		assertEquals(cc.getL("xixi"), "value");
+		assertEquals(cc.getsL("xixi").getValue(), "value");
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
 		assertEquals(lc.getCacheSize(), 1029);
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
+		lc.remove(cc.getGroupID(), "xixi");
+		assertNull(lc.get(cc.getGroupID(), "xixi"));
+		assertEquals(cc.getsLW("xixi").getValue(), "value");
+		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
 		lc.setWarningCacheRate(0.8);
@@ -412,6 +420,220 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
 		lc.setWarningCacheRate(0.8);
 		assertEquals(lc.getWarningCacheRate(), 0.8);
+		
+		mgr.shutdown();
+	}
+	
+	public void testGetTouchL() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		
+		long beginTime = CurrentTick.get();
+		cc.set("xixi", "session", 100);
+		CacheItem item = cc.getsL("xixi");
+		assertNotNull(item);
+		long d = item.getExpireTime() - beginTime;
+		assertEquals(100, d);
+
+		Thread.sleep(2000);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(98, d);
+		
+		item = cc.getAndTouchL("xixi", 100);
+		assertNotNull(item);
+		assertNull(lc.get(cc.getGroupID(), "xixi"));
+		d = item.getExpiration();
+		assertEquals(100, d);
+	
+		Thread.sleep(50);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertTrue(d <= 100 && d >= 99);
+		
+		mgr.shutdown();
+	}
+	
+	public void testGetTouchL2() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		
+		long beginTime = CurrentTick.get();
+		cc.set("xixi", "session", 100);
+		CacheItem item = cc.getsW("xixi");
+		assertNotNull(item);
+		long d = item.getExpireTime() - beginTime;
+		assertEquals(100, d);
+
+		Thread.sleep(2000);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(98, d);
+		
+		item = cc.getAndTouchL("xixi", 100);
+		assertNotNull(item);
+		assertNotNull(lc.get(cc.getGroupID(), "xixi"));
+		d = item.getExpiration();
+		assertEquals(100, d);
+	
+		Thread.sleep(50);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertTrue(d <= 100 && d >= 99);
+		
+		mgr.shutdown();
+	}
+	
+	public void testGetTouchW() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		
+		long beginTime = CurrentTick.get();
+		cc.set("xixi", "session", 100);
+		CacheItem item = cc.getsW("xixi");
+		assertNotNull(item);
+		long d = item.getExpireTime() - beginTime;
+		assertEquals(100, d);
+
+		Thread.sleep(2000);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(98, d);
+		
+		item = cc.getAndTouchW("xixi", 100);
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(100, d);
+		
+		assertEquals(100, lc.get(cc.getGroupID(), "xixi").getExpiration());
+	
+		Thread.sleep(50);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertTrue(d <= 100 && d >= 99);
+		
+		mgr.shutdown();
+	}
+	
+	public void testGetTouchLW() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		
+		long beginTime = CurrentTick.get();
+		cc.set("xixi", "session", 100);
+		CacheItem item = cc.getsW("xixi");
+		assertNotNull(item);
+		long d = item.getExpireTime() - beginTime;
+		assertEquals(100, d);
+
+		Thread.sleep(2000);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(98, d);
+		
+		item = cc.getAndTouchLW("xixi", 100);
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(100, d);
+		
+		assertEquals(100, lc.get(cc.getGroupID(), "xixi").getExpiration());
+	
+		Thread.sleep(50);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertTrue(d <= 100 && d >= 99);
+		
+		mgr.shutdown();
+	}
+	
+	public void testGetTouchLW2() throws InterruptedException {
+		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
+		String[] serverlist = servers.split(",");
+		mgr.initialize(serverlist);
+		mgr.enableLocalCache();
+		Thread.sleep(50);
+		LocalCache lc = mgr.getLocalCache();
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		
+		long beginTime = CurrentTick.get();
+		cc.set("xixi", "session", 3);
+		CacheItem item = cc.getsW("xixi");
+		assertNotNull(item);
+		long d = item.getExpireTime() - beginTime;
+		assertEquals(3, d);
+
+		Thread.sleep(2000);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(1, d);
+		
+		item = cc.getAndTouchLW("xixi", 0);
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(0, d);
+		
+		assertEquals(0, lc.get(cc.getGroupID(), "xixi").getExpiration());
+	
+		Thread.sleep(50);
+		
+		item = cc.gets("xixi");
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(0, d);
+	
+		item = cc.getAndTouchLW("xixi", 2);
+		assertNotNull(item);
+		d = item.getExpiration();
+		assertEquals(2, d);
+		
+		Thread.sleep(3000);
+		d = item.getExpiration();
+		assertEquals(-1, d);
+		item = cc.gets("xixi");
+		assertNull(item);
 		
 		mgr.shutdown();
 	}
