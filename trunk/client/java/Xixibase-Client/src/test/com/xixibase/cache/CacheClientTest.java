@@ -1239,6 +1239,13 @@ public class CacheClientTest extends TestCase {
 		ret = cc.updateExpiration(null, 5, item.getCacheID());
 		assertFalse(ret);
 		
+		CacheClientImpl cc2 = new CacheClientImpl(mgr, 315);
+		
+		int watchID = cc2.createWatch(mgr.getServers()[0], 100);
+		assertTrue(watchID != 0);
+		assertNotNull(cc2.checkWatch(mgr.getServers()[0], watchID, 1, 100, 0));
+		assertNull(cc2.checkWatch(mgr.getServers()[0], 99999, 1, 100, 0));
+		
 		mgr.shutdown();
 		ret = cc.updateExpiration("xixi", 0, 0);
 		assertFalse(ret);
@@ -1248,8 +1255,8 @@ public class CacheClientTest extends TestCase {
 		
 		assertNull(cc.incr("xixi"));
 		
-		CacheClientImpl cc2 = new CacheClientImpl(mgr, 315);
+		
 		assertEquals(0, cc2.createWatch(mgr.getServers()[0], 100));
-		assertNull(cc2.checkWatch(mgr.getServers()[0], 1, 100, 0));
+		assertNull(cc2.checkWatch(mgr.getServers()[0], 1, 1, 100, 0));
 	}
 }

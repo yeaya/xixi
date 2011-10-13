@@ -175,6 +175,7 @@ class LocalCacheWatch extends Thread {
 	private AtomicLong cacheSize = null;
 	private AtomicInteger cacheCount = null;
 	private long ackCacheID = 0;
+	private int checkTimeout = 3;
 	private int maxNextCheckInterval = 600;
 	private CacheClientImpl cc = null;
 	private LocalCacheTouch cacheTouch = null;
@@ -289,11 +290,11 @@ class LocalCacheWatch extends Thread {
 	//		log.error("localCache updater " + host + " watchID=" + watchID);
 			long beginTime = System.currentTimeMillis();
 
-			long[] cacheIDList = cc.checkWatch(host, watchID, maxNextCheckInterval, ackCacheID);
+			long[] cacheIDList = cc.checkWatch(host, watchID, checkTimeout, maxNextCheckInterval, ackCacheID);
 			long endTime = System.currentTimeMillis();
 			// for test try { Thread.sleep(10); } catch (InterruptedException e) {}
 			if (cacheIDList == null && runFlag) {
-				cacheIDList = cc.checkWatch(host, watchID, maxNextCheckInterval, ackCacheID);
+				cacheIDList = cc.checkWatch(host, watchID, checkTimeout, maxNextCheckInterval, ackCacheID);
 			}
 			if (cacheIDList != null) {
 				if (cacheIDList.length > 0) {

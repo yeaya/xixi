@@ -945,7 +945,7 @@ public class CacheClientImpl extends Defines {
 		return 0;
 	}
 	
-	protected long[] checkWatch(String host, int watchID, int maxNextCheckInterval, long ackCacheID) {
+	protected long[] checkWatch(String host, int watchID, int checkTimeout, int maxNextCheckInterval, long ackCacheID) {
 		lastError = null;
 		XixiSocket socket = manager.getSocketByHost(host);
 		if (socket == null) {
@@ -954,15 +954,14 @@ public class CacheClientImpl extends Defines {
 			return null;
 		}
 		try {
-			int checkTimeout = 5;
 			ByteBuffer writeBuffer = socket.getWriteBuffer();
 			writeBuffer.clear();
 			writeBuffer.put(XIXI_CATEGORY_CACHE);
 			writeBuffer.put(XIXI_CHECK_WATCH_REQ);
 			writeBuffer.putInt(groupID);
 			writeBuffer.putInt(watchID);
-			writeBuffer.putInt(maxNextCheckInterval);
 			writeBuffer.putInt(checkTimeout);
+			writeBuffer.putInt(maxNextCheckInterval);
 			writeBuffer.putLong(ackCacheID);
 			socket.flush();
 

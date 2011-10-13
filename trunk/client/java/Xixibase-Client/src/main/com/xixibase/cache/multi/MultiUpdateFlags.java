@@ -34,6 +34,8 @@ import com.xixibase.cache.TransCoder;
 import com.xixibase.cache.XixiSocket;
 import com.xixibase.util.Log;
 */
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.xixibase.cache.Defines;
 
 public final class MultiUpdateFlags extends Defines {
@@ -46,7 +48,7 @@ public final class MultiUpdateFlags extends Defines {
 	private Selector selector;
 	private int numConns = 0;
 	private byte opFlag = 0;
-	private int successCount = 0;
+	private AtomicInteger successCount = new AtomicInteger(0);
 	private String lastError = null;
 	
 	public MultiUpdateFlags(CacheClientManager manager, int groupID, TransCoder transCoder) {
@@ -77,24 +79,33 @@ public final class MultiUpdateFlags extends Defines {
 			Iterator<MultiUpdateFlagsItem> it = list.iterator();
 			int index = 0;
 			while (it.hasNext()) {
+				Integer keyIndex = new Integer(index);
+				index++;
 				MultiUpdateFlagsItem item = it.next();
 				if (item == null) {
 					lastError = "multiUpdateFlags, item == null";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				if (item.key == null) {
-					lastError = "multiUpdateFlags, item.key == null";
+					lastError = "multiUpdateExpiration, item.key == null";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
+				
+				byte[] keyBuf = transCoder.encodeKey(item.key);
+				if (keyBuf == null) {
+					lastError = "multiUpdateExpiration, failed to encode key";
+					log.error(lastError);
+					continue;
+				
 
 				String host = manager.getHost(item.key);
 				if (host == null) {
 					lastError = "multiUpdateFlags, can not get host with the key";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				Connection conn = conns.get(host);
@@ -102,8 +113,7 @@ public final class MultiUpdateFlags extends Defines {
 					conn = new Connection();
 					conns.put(host, conn);
 				}
-				conn.add(item, new Integer(index));
-				index++;
+				conn.add(item, keyBuf, keyIndex);
 			}
 
 			selector = Selector.open();

@@ -68,14 +68,27 @@ public final class MultiGet extends Defines {
 			log.error(lastError);
 			return new ArrayList<CacheItem>();
 		}
+		ArrayList<CacheItem> result = new ArrayList<CacheItem>(keys.size());
+		for (int i = 0; i < keys.size(); i++) {
+			result.add(null);
+		}
+		
 		Map<String, Connection> conns = new HashMap<String, Connection>();
 		try {
 			Iterator<String> it = keys.iterator();
 			int index = 0;
 			while (it.hasNext()) {
+				Integer keyIndex = new Integer(index);
+				index++;
 				String key = it.next();
 				if (key == null) {
 					lastError = "multiGet, key == null";
+					log.error(lastError);
+					continue;
+				}
+				byte[] keyBuf = transCoder.encodeKey(key);
+				if (keyBuf == null) {
+					lastError = "multiGet, failed to encode key";
 					log.error(lastError);
 					continue;
 				}
@@ -92,8 +105,7 @@ public final class MultiGet extends Defines {
 					conn = new Connection();
 					conns.put(host, conn);
 				}
-				conn.add(key, new Integer(index));
-				index++;
+				conn.add(key, keyBuf, keyIndex);
 			}
 
 			selector = Selector.open();
@@ -106,7 +118,7 @@ public final class MultiGet extends Defines {
 				
 				XixiSocket socket = manager.getSocketByHost(host);
 				if (socket != null) {
-					conn.init(socket);
+					conn.init(socket, result);
 				}
 			}
 
@@ -130,12 +142,10 @@ public final class MultiGet extends Defines {
 					log.error(lastError);
 					break;
 				}
-
 				timeRemaining = timeout - (System.currentTimeMillis() - startTime);
 			}
 		} catch (IOException e) {
 			log.error("multiGet, exception on " + e);
-			return null;
 		} finally {
 			try {
 				if (selector != null) {
@@ -149,28 +159,7 @@ public final class MultiGet extends Defines {
 				conn.close();
 			}
 		}
-
-		ArrayList<CacheItem> list = new ArrayList<CacheItem>(keys.size());
-		for (int i = 0; i < keys.size(); i++) {
-			list.add(null);
-		}
-		Iterator<Connection> itc = conns.values().iterator();
-		while (itc.hasNext()) {
-			Connection conn = itc.next();
-			merge(conn.keyIndexs, conn.myobjs, list);
-		}
-		return list;
-	}
-	
-	private void merge(ArrayList<Integer> indexs, ArrayList<CacheItem> objs, ArrayList<CacheItem> result) {
-		for (int i = 0; i < indexs.size(); i++) {
-			int index = indexs.get(i).intValue();
-			if (i < objs.size()) {
-				result.set(index, objs.get(i));
-			} else {
-				result.set(index, null); // timeout
-			}
-		}
+		return result;
 	}
 
 	private void handleKey(SelectionKey key) throws IOException {
@@ -205,23 +194,19 @@ public final class MultiGet extends Defines {
 		private SocketChannel channel;
 		private boolean isDone = false;
 		private ArrayList<String> keys = new ArrayList<String>();
+		private ArrayList<byte[]> keyBuffers = new ArrayList<byte[]>();
 		private ArrayList<Integer> keyIndexs = new ArrayList<Integer>();
 		private int currKeyIndex = 0;
-		ArrayList<CacheItem> myobjs = new ArrayList<CacheItem>();
-
-		public void add(String key, Integer index) {
+		private ArrayList<CacheItem> result = null;
+		
+		public void add(String key, byte[] keyBuffer, Integer index) {
 			keys.add(key);
+			keyBuffers.add(keyBuffer);
 			keyIndexs.add(index);
 		}
 
 		private void encode() {
-			String key = keys.get(currKeyIndex);
-			byte[] keyBuf = transCoder.encodeKey(key);
-			if (keyBuf == null) {
-				lastError = "failed to encode key";
-				log.error(lastError);
-				return;
-			}
+			byte[] keyBuf = keyBuffers.get(currKeyIndex);
 			if (outBuffer.limit() < keyBuf.length + 12) {
 				outBuffer = ByteBuffer.allocateDirect(keyBuf.length + 12);
 			}
@@ -232,13 +217,8 @@ public final class MultiGet extends Defines {
 			outBuffer.putShort((short) keyBuf.length);
 			outBuffer.put(keyBuf);
 			currKeyIndex++;
-			while (currKeyIndex < keys.size()) {
-				key = keys.get(currKeyIndex);
-				keyBuf = transCoder.encodeKey(key);
-				if (keyBuf == null) {
-					lastError = "failed to encode key";
-					log.error(lastError);
-				}
+			while (currKeyIndex < keyBuffers.size()) {
+				keyBuf = keyBuffers.get(currKeyIndex);
 				if (outBuffer.limit() - outBuffer.position() < keyBuf.length + 12) {
 					break;
 				}
@@ -252,9 +232,10 @@ public final class MultiGet extends Defines {
 			}
 		}
 		
-		public void init(XixiSocket socket) throws IOException {
+		public void init(XixiSocket socket, ArrayList<CacheItem> result) throws IOException {
 			this.socket = socket;
-			outBuffer = ByteBuffer.allocateDirect(64 * 1024);
+			this.result = result;
+			outBuffer = socket.getWriteBuffer();//ByteBuffer.allocateDirect(64 * 1024);
 			outBuffer.clear();
 			
 			encode();
@@ -271,7 +252,7 @@ public final class MultiGet extends Defines {
 			if (limit > pos) {
 				return outBuffer;
 			}
-			if (currKeyIndex >= keys.size()) {
+			if (currKeyIndex >= keyBuffers.size()) {
 				channel.register(selector, SelectionKey.OP_READ, this);
 				return outBuffer;
 			}
@@ -319,7 +300,7 @@ public final class MultiGet extends Defines {
 		private int dataSize = 0;
 		private int offset = 0;
 		private ByteBuffer data;
-		private int decode_count = 0;
+		private int processedCount = 0;
 		public boolean processResponse() throws IOException {
 			boolean run = true;
 			while(run) {
@@ -361,16 +342,12 @@ public final class MultiGet extends Defines {
 					if (error_res.position() == ERROR_RES_LENGTH) {
 						error_res.flip();
 						short reason = error_res.getShort();
-					//	error_code.reset();
-				//		Object key = keys.get(decode_count);
-						decode_count++;
-						myobjs.add(null);
-						
-					//	mykeys.remove(decode_count);
+						result.set(keyIndexs.get(processedCount).intValue(), null);
+						processedCount++;
 						lastError = "processResponse, response error reason=" + reason; 
 						log.error(lastError);
 						state = 0;
-						if (keys.size() == decode_count) {
+						if (keyBuffers.size() == processedCount) {
 							isDone = true;
 							run = false;
 						} else {
@@ -383,12 +360,8 @@ public final class MultiGet extends Defines {
 				if (state == STATE_READ_DAYA) {
 					offset += channel.read(data);
 					if (offset == dataSize) {
-						String key = keys.get(decode_count);
-						decode_count++;
-						if (keys.size() == decode_count) {
-							isDone = true;
-							run = false;
-						}
+						String key = keys.get(processedCount);
+						
 						byte[] buf = data.array();
 						try {
 							Object obj = transCoder.decode(buf, flags, null);
@@ -400,13 +373,16 @@ public final class MultiGet extends Defines {
 									flags,
 									obj,
 									dataSize);
-							myobjs.add(item);
+							result.set(keyIndexs.get(processedCount).intValue(), item);
 						} catch (IOException e) {
 							log.error("processResponse, failed on transCoder.decode flags="
 									+ flags + " bufLen=" + buf.length + " " + e);
-							myobjs.add(null);
 						}
-
+						processedCount++;
+						if (keys.size() == processedCount) {
+							isDone = true;
+							run = false;
+						}
 						state = 0;
 						data = null;
 						header = ByteBuffer.allocate(HEADER_LENGTH);

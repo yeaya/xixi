@@ -83,6 +83,40 @@ public class MultiOperationTest extends TestCase {
 		}
 	}
 
+	public void testMultiGetError() {
+		assertNull(cc1.multiGet(null));
+		ArrayList<String> allKeyList = new ArrayList<String>();
+		assertEquals(0, cc1.multiGet(allKeyList).size());
+		
+		String[] allKeys = { "key1", "key2", "key4", "key5", "key6", "key7" };
+		String[] setKeys = { "key1", "key3", "key5", "key7" };
+
+		for (String key : setKeys) {
+			cc1.set(key, key + "xixi");
+		}
+		
+		allKeyList.add(null);
+		for (String key : allKeys) {
+			allKeyList.add(key);
+		}
+		allKeyList.add(null);
+
+		List<CacheItem> results = cc1.multiGet(allKeyList);
+
+		HashMap<String, CacheItem> hm = new HashMap<String, CacheItem>();
+		for (int i = 0; i < allKeyList.size(); i++) {
+			hm.put(allKeyList.get(i), results.get(i));
+		}
+		assertEquals(allKeys.length + 2, results.size());
+		for (int i = 0; i < setKeys.length; i++) {
+			String key = setKeys[i];
+			if (!key.equals("key3")) {
+				String val = (String) hm.get(key).getValue();
+				assertEquals(key + "xixi", val);
+			}
+		}
+	}
+	
 	public void testMultiAdd() {
 		int max = 100;
 		ArrayList<MultiUpdateItem> multi = new ArrayList<MultiUpdateItem>();

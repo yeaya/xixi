@@ -22,13 +22,8 @@ public class MultiUpdateExpirationItem {
 	public int expiration;
 	
 	protected short reason = 0;
-	protected long newCacheID;
 	
 	public short getReason() {
 		return reason;
-	}
-	
-	public long getNewCacheID() {
-		return newCacheID;
 	}
 }

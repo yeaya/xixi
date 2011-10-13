@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.xixibase.cache.CacheClientManager;
 import com.xixibase.cache.Defines;
@@ -43,7 +44,7 @@ public final class MultiDelete extends Defines {
 
 	private Selector selector;
 	private int numConns = 0;
-	private int successCount = 0;
+	private AtomicInteger successCount = new AtomicInteger(0);
 	private byte opFlag = XIXI_DELETE_REPLY;
 	private String lastError = null;
 
@@ -74,24 +75,33 @@ public final class MultiDelete extends Defines {
 			Iterator<MultiDeleteItem> it = list.iterator();
 			int index = 0;
 			while (it.hasNext()) {
+				Integer keyIndex = new Integer(index);
+				index++;
 				MultiDeleteItem item = it.next();
 				if (item == null) {
 					lastError = "multiDelete, item == null";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				if (item.key == null) {
-					lastError = "multiUpdate, item.key == null";
+					lastError = "multiDelete, item.key == null";
 					log.error(lastError);
-					return 0;
+					continue;
+				}
+
+				byte[] keyBuf = transCoder.encodeKey(item.key);
+				if (keyBuf == null) {
+					lastError = "multiDelete, failed to encode key";
+					log.error(lastError);
+					continue;
 				}
 
 				String host = manager.getHost(item.key);
 				if (host == null) {
 					lastError = "multiDelete, can not get host with the key";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				Connection conn = conns.get(host);
@@ -99,8 +109,7 @@ public final class MultiDelete extends Defines {
 					conn = new Connection();
 					conns.put(host, conn);
 				}
-				conn.add(item, new Integer(index));
-				index++;
+				conn.add(item, keyBuf, keyIndex);
 			}
 
 			selector = Selector.open();
@@ -158,7 +167,7 @@ public final class MultiDelete extends Defines {
 			}
 		}
 
-		return successCount;
+		return successCount.intValue();
 	}
 
 	private void handleKey(SelectionKey key) throws IOException {
@@ -193,22 +202,19 @@ public final class MultiDelete extends Defines {
 		private SocketChannel channel;
 		private boolean isDone = false;
 		private ArrayList<MultiDeleteItem> items = new ArrayList<MultiDeleteItem>();
+		private ArrayList<byte[]> keyBuffers = new ArrayList<byte[]>();
 		private ArrayList<Integer> itemIndexs = new ArrayList<Integer>();
 		private int currKeyIndex = 0;
 
-		public void add(MultiDeleteItem item, Integer index) {
+		public void add(MultiDeleteItem item, byte[] keyBuffer, Integer index) {
 			items.add(item);
+			keyBuffers.add(keyBuffer);
 			itemIndexs.add(index);
 		}
 
 		private void encode() throws IOException {
 			MultiDeleteItem item = items.get(currKeyIndex);
-			byte[] keyBuf = transCoder.encodeKey(item.key);
-			if (keyBuf == null) {
-				lastError = "encode, failed to encode key";
-				log.error(lastError);
-				return;
-			}
+			byte[] keyBuf = keyBuffers.get(currKeyIndex);
 
 			int totalLen = 17 + keyBuf.length;
 			if (outBuffer.limit() < totalLen) {
@@ -226,13 +232,8 @@ public final class MultiDelete extends Defines {
 			
 			while (currKeyIndex < items.size()) {
 				item = items.get(currKeyIndex);
-				keyBuf = transCoder.encodeKey(item.key);
-				if (keyBuf == null) {
-					lastError = "encode, failed to encode key";
-					log.error(lastError);
-					return;
-				}
-				
+				keyBuf = keyBuffers.get(currKeyIndex);
+
 				totalLen = 17 + keyBuf.length;
 				if (outBuffer.limit() - outBuffer.position() < totalLen) {
 					break;
@@ -248,7 +249,7 @@ public final class MultiDelete extends Defines {
 				currKeyIndex++;
 			}
 		}
-		
+
 		public void init(XixiSocket socket) throws IOException {
 			this.socket = socket;
 			outBuffer = ByteBuffer.allocateDirect(64 * 1024);
@@ -305,7 +306,7 @@ public final class MultiDelete extends Defines {
 		private ByteBuffer header = ByteBuffer.allocate(HEADER_LENGTH);
 		private static final int ERROR_RES_LENGTH = 2;
 		private ByteBuffer error_res = ByteBuffer.allocate(ERROR_RES_LENGTH);
-		private int decode_count = 0;
+		private int processedCount = 0;
 		public boolean processResponse() throws IOException {
 			boolean run = true;
 			while(run) {
@@ -316,11 +317,11 @@ public final class MultiDelete extends Defines {
 						byte category = header.get();
 						byte type = header.get();
 						if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DELETE_RES) {
-							items.get(decode_count).reason = XIXI_REASON_SUCCESS;
-							decode_count++;
-							successCount++;
-							
-							if (items.size() == decode_count) {
+							items.get(processedCount).reason = XIXI_REASON_SUCCESS;
+							processedCount++;
+							successCount.getAndIncrement();
+
+							if (items.size() == processedCount) {
 								isDone = true;
 								run = false;
 							} else {
@@ -341,12 +342,12 @@ public final class MultiDelete extends Defines {
 						error_res.flip();
 						short reason = error_res.getShort();
 
-						items.get(decode_count).reason = reason;
-						decode_count++;
+						items.get(processedCount).reason = reason;
+						processedCount++;
 
 						lastError = "processResponse, response error reason=" + reason;
 						log.error(lastError);
-						if (items.size() == decode_count) {
+						if (items.size() == processedCount) {
 							isDone = true;
 							run = false;
 						} else {

@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.xixibase.cache.CacheClientManager;
 import com.xixibase.cache.Defines;
@@ -44,7 +45,7 @@ public final class MultiUpdate extends Defines {
 	private Selector selector;
 	private int numConns = 0;
 	private byte opFlag = 0;
-	private int successCount = 0;
+	private AtomicInteger successCount = new AtomicInteger(0);
 	private String lastError = null;
 	
 	public MultiUpdate(CacheClientManager manager, int groupID, TransCoder transCoder) {
@@ -75,30 +76,39 @@ public final class MultiUpdate extends Defines {
 			Iterator<MultiUpdateItem> it = list.iterator();
 			int index = 0;
 			while (it.hasNext()) {
+				Integer keyIndex = new Integer(index);
+				index++;
 				MultiUpdateItem item = it.next();
 				if (item == null) {
 					lastError = "multiUpdate, item == null";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				if (item.key == null) {
 					lastError = "multiUpdate, item.key == null";
 					log.error(lastError);
-					return 0;
+					continue;
+				}
+				
+				byte[] keyBuf = transCoder.encodeKey(item.key);
+				if (keyBuf == null) {
+					lastError = "multiUpdate, failed to encode key";
+					log.error(lastError);
+					continue;
 				}
 				
 				if (item.value == null) {
 					lastError = "multiUpdate, item.value == null";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				String host = manager.getHost(item.key);
 				if (host == null) {
 					lastError = "multiUpdate, can not get host with the key";
 					log.error(lastError);
-					return 0;
+					continue;
 				}
 
 				Connection conn = conns.get(host);
@@ -106,8 +116,7 @@ public final class MultiUpdate extends Defines {
 					conn = new Connection();
 					conns.put(host, conn);
 				}
-				conn.add(item, new Integer(index));
-				index++;
+				conn.add(item, keyBuf, keyIndex);
 			}
 
 			selector = Selector.open();
@@ -165,7 +174,7 @@ public final class MultiUpdate extends Defines {
 			}
 		}
 
-		return successCount;
+		return successCount.intValue();
 	}
 
 	private void handleKey(SelectionKey key) throws IOException {
@@ -200,11 +209,13 @@ public final class MultiUpdate extends Defines {
 		private SocketChannel channel;
 		private boolean isDone = false;
 		private ArrayList<MultiUpdateItem> items = new ArrayList<MultiUpdateItem>();
+		private ArrayList<byte[]> keyBuffers = new ArrayList<byte[]>();
 		private ArrayList<Integer> itemIndexs = new ArrayList<Integer>();
 		private int currKeyIndex = 0;
 
-		public void add(MultiUpdateItem item, Integer index) {
+		public void add(MultiUpdateItem item, byte[] keyBuffer, Integer index) {
 			items.add(item);
+			keyBuffers.add(keyBuffer);
 			itemIndexs.add(index);
 		}
 
@@ -216,12 +227,7 @@ public final class MultiUpdate extends Defines {
 		private void encode() throws IOException {
 			if (dataSize == 0) {
 				item = items.get(currKeyIndex);
-				keyBuf = transCoder.encodeKey(item.key);
-				if (keyBuf == null) {
-					lastError = "encode, failed to encode key";
-					log.error(lastError);
-					return;
-				}
+				keyBuf = keyBuffers.get(currKeyIndex);
 
 				int[] outflags = new int[1];
 				data = transCoder.encode(item.value, outflags);
@@ -250,12 +256,7 @@ public final class MultiUpdate extends Defines {
 			
 			while (currKeyIndex < items.size()) {
 				item = items.get(currKeyIndex);
-				keyBuf = transCoder.encodeKey(item.key);
-				if (keyBuf == null) {
-					lastError = "encode, failed to encode key";
-					log.error(lastError);
-					return;
-				}
+				keyBuf = keyBuffers.get(currKeyIndex);
 
 				int[] outflags = new int[1];
 				data = transCoder.encode(item.value, outflags);
@@ -372,7 +373,7 @@ public final class MultiUpdate extends Defines {
 						cacheID = fixed.getLong();
 						items.get(decode_count).newCacheID = cacheID;
 						decode_count++;
-						successCount++;
+						successCount.incrementAndGet();
 						
 						if (items.size() == decode_count) {
 							isDone = true;
