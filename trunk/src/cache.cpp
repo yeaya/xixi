@@ -23,7 +23,6 @@
 #include "log.h"
 #include "peer_cache_pdu.h"
 
-// #define NOTIFY_EXPIRATION_REDUCE
 // #define USING_BOOST_POOL
 
 Cache_Mgr cache_mgr_;
@@ -453,16 +452,7 @@ Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, size_
 		LOG_TRACE("Cache_Mgr.do_get_touch, found, key " << string((char*)key, key_length));
 
 		it->ref_count++;
-		uint32_t expire_time = curr_time_.realtime(expiration);
-#ifdef NOTIFY_EXPIRATION_REDUCE
-		if (expire_time < it->expire_time && expire_time != 0) {
-			it->cache_id = get_cache_id();
-			if (it->watch_item != NULL) {
-				notify_watch(it);
-			}
-		}
-#endif
-		it->expire_time = expire_time;
+		it->expire_time = curr_time_.realtime(expiration);
 	} else {
 		LOG_TRACE("Cache_Mgr.do_get_touch, not found, key " << string((char*)key, key_length));
 	}
@@ -558,7 +548,7 @@ bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, size_t key_lengt
 	 return ret;
 }
 
-bool Cache_Mgr::update_base(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Base_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
+bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
 	Cache_Item* it;
 	bool ret = true;
 	cache_id = 0;
@@ -567,34 +557,55 @@ bool Cache_Mgr::update_base(uint32_t group_id, const uint8_t* key, size_t key_le
 	it = do_get(group_id, key, key_length, hash_value);
 	if (it != NULL) {
 		if (pdu->cache_id == 0 || pdu->cache_id == it->cache_id) {
-			bool need_notify = false;
-			if (pdu->is_update_expiration()) {
-				uint32_t expire_time = curr_time_.realtime(pdu->expiration);
-#ifdef NOTIFY_EXPIRATION_REDUCE
-				if (expire_time < it->expire_time && expire_time != 0) {
-					need_notify = true;
-				}
-#endif
-				it->expire_time = expire_time;
-			}
-			if (pdu->is_update_flags()) {
-				it->flags = pdu->flags;
-				need_notify = true;
-			}
-			it->cache_id = get_cache_id();
-			if (it->watch_item != NULL && need_notify) {
+			it->flags = pdu->flags;
+			if (it->watch_item != NULL) {
 				notify_watch(it);
 			}
+			it->cache_id = get_cache_id();
 			cache_id = it->cache_id;
-			stats_.update_base_success(it->group_id, it->class_id);
+			stats_.update_flags_success(it->group_id, it->class_id);
 			do_release_reference(it);
 		} else {
-			cache_id = -1;
-			stats_.update_base_mismatch(it->group_id, it->class_id);
+			cache_id = it->cache_id;
+			stats_.update_flags_mismatch(it->group_id, it->class_id);
 			ret = false;
 		}
 	} else {
-		stats_.update_base_miss(group_id);
+		stats_.update_flags_miss(group_id);
+		ret = false;
+	}
+	cache_lock_.unlock();
+	return ret;
+}
+
+bool Cache_Mgr::update_expiration(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
+	Cache_Item* it;
+	bool ret = true;
+	cache_id = 0;
+	uint32_t hash_value = hash32(key, key_length, group_id);
+	cache_lock_.lock();
+	it = do_get(group_id, key, key_length, hash_value);
+	if (it != NULL) {
+		if (pdu->cache_id == 0 || pdu->cache_id == it->cache_id) {
+			uint32_t expire_time = curr_time_.realtime(pdu->expiration);
+			uint32_t expiration_id = get_expiration_id(curr_time_.get_current_time(), expire_time);
+			if (expiration_id != it->expiration_id) {
+				expire_list_[it->expiration_id].remove(it);
+				it->expiration_id = expiration_id;
+				expire_list_[expiration_id].push_front(it);
+			}
+			it->expire_time = expire_time;
+
+			cache_id = it->cache_id;
+			stats_.update_expiration_success(it->group_id, it->class_id);
+			do_release_reference(it);
+		} else {
+			cache_id = -1;
+			stats_.update_expiration_mismatch(it->group_id, it->class_id);
+			ret = false;
+		}
+	} else {
+		stats_.update_expiration_miss(group_id);
 		ret = false;
 	}
 	cache_lock_.unlock();

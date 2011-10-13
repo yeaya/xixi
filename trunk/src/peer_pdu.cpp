@@ -30,8 +30,11 @@ bool XIXI_Pdu::decode_pdu(uint8_t* pdu_buffer, XIXI_Pdu_Header& header, uint8_t*
     case XIXI_CHOICE_UPDATE_REQ:
       ((XIXI_Update_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
       break;
-    case XIXI_CHOICE_UPDATE_BASE_REQ:
-      ((XIXI_Update_Base_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
+	case XIXI_CHOICE_UPDATE_FLAGS_REQ:
+		((XIXI_Update_Flags_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
+		break;
+	case XIXI_CHOICE_UPDATE_EXPIRATION_REQ:
+		((XIXI_Update_Expiration_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);
       break;
     case XIXI_CHOICE_DELETE_REQ:
       ((XIXI_Delete_Req_Pdu*)pdu_buffer)->decode_fixed(buf, length);

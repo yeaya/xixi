@@ -42,8 +42,8 @@ public:
 		cs.get_base_hit += get_base_hit;
 		cs.get_base_miss += get_base_miss;
 
-		cs.update_base_success += update_base_success;
-		cs.update_base_mismatch += update_base_mismatch;
+		cs.update_flags_success += update_flags_success;
+		cs.update_flags_mismatch += update_flags_mismatch;
 
 		cs.add_success += add_success;
 		cs.add_success_watch += add_success_watch;
@@ -88,8 +88,8 @@ public:
 		get_base_hit = 0;
 		get_base_miss = 0;
 
-		update_base_success = 0;
-		update_base_mismatch = 0;
+		update_flags_success = 0;
+		update_flags_mismatch = 0;
 
 		add_success = 0;
 		add_success_watch = 0;
@@ -137,8 +137,11 @@ public:
 		append(class_id, "get_base_hit", get_base_hit, out);
 		append(class_id, "get_base_miss", get_base_miss, out);
 
-		append(class_id, "update_base_success", update_base_success, out);
-		append(class_id, "update_base_mismatch", update_base_mismatch, out);
+		append(class_id, "update_flags_success", update_flags_success, out);
+		append(class_id, "update_flags_mismatch", update_flags_mismatch, out);
+
+		append(class_id, "update_expiration_success", update_expiration_success, out);
+		append(class_id, "update_expiration_mismatch", update_expiration_mismatch, out);
 
 		append(class_id, "add_success", add_success, out);
 		append(class_id, "add_success_watch", add_success_watch, out);
@@ -182,8 +185,11 @@ public:
 	uint64_t get_base_hit;
 	uint64_t get_base_miss;
 
-	uint64_t update_base_success;
-	uint64_t update_base_mismatch;
+	uint64_t update_flags_success;
+	uint64_t update_flags_mismatch;
+
+	uint64_t update_expiration_success;
+	uint64_t update_expiration_mismatch;
 
 	uint64_t add_success;
 	uint64_t add_success_watch;
@@ -226,7 +232,8 @@ public:
 		get_miss_ = 0;
 		get_touch_miss_ = 0;
 		get_base_miss_ = 0;
-		update_base_miss_ = 0;
+		update_flags_miss_ = 0;
+		update_expiration_miss_ = 0;
 		replace_miss_ = 0;
 		append_miss_ = 0;
 		prepend_miss_ = 0;
@@ -267,7 +274,8 @@ public:
 		append("get_miss", get_miss_, out);
 		append("get_touch_miss", get_touch_miss_, out);
 		append("get_base_miss_", get_base_miss_, out);
-		append("update_base_miss", update_base_miss_, out);
+		append("update_flags_miss", update_flags_miss_, out);
+		append("update_expiration_miss", update_expiration_miss_, out);
 		append("replace_miss", replace_miss_, out);
 		append("append_miss", append_miss_, out);
 		append("prepend_miss", prepend_miss_, out);
@@ -305,7 +313,8 @@ public:
 	uint64_t get_miss_;
 	uint64_t get_touch_miss_;
 	uint64_t get_base_miss_;
-	uint64_t update_base_miss_;
+	uint64_t update_flags_miss_;
+	uint64_t update_expiration_miss_;
 	uint64_t replace_miss_;
 	uint64_t append_miss_;
 	uint64_t prepend_miss_;
@@ -453,28 +462,53 @@ public:
 		}
 	}
 
-	inline void update_base_success(uint32_t group_id, uint32_t class_id) {
-		group_sum_.cache_stats_[class_id].update_base_success++;
+	inline void update_flags_success(uint32_t group_id, uint32_t class_id) {
+		group_sum_.cache_stats_[class_id].update_flags_success++;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
-			item->cache_stats_[class_id].update_base_success++;
+			item->cache_stats_[class_id].update_flags_success++;
 		}
 	}
-	inline void update_base_mismatch(uint32_t group_id, uint32_t class_id) {
-		group_sum_.cache_stats_[class_id].update_base_mismatch++;
+	inline void update_flags_mismatch(uint32_t group_id, uint32_t class_id) {
+		group_sum_.cache_stats_[class_id].update_flags_mismatch++;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
-			item->cache_stats_[class_id].update_base_mismatch++;
+			item->cache_stats_[class_id].update_flags_mismatch++;
 		}
 	}
-	inline void update_base_miss(uint32_t group_id) {
-		group_sum_.update_base_miss_++;
+	inline void update_flags_miss(uint32_t group_id) {
+		group_sum_.update_flags_miss_++;
 
 		Group_Stats_Item* item = get_group_item(group_id);
 		if (item != NULL) {
-			item->update_base_miss_++;
+			item->update_flags_miss_++;
+		}
+	}
+
+	inline void update_expiration_success(uint32_t group_id, uint32_t class_id) {
+		group_sum_.cache_stats_[class_id].update_expiration_success++;
+
+		Group_Stats_Item* item = get_group_item(group_id);
+		if (item != NULL) {
+			item->cache_stats_[class_id].update_expiration_success++;
+		}
+	}
+	inline void update_expiration_mismatch(uint32_t group_id, uint32_t class_id) {
+		group_sum_.cache_stats_[class_id].update_expiration_mismatch++;
+
+		Group_Stats_Item* item = get_group_item(group_id);
+		if (item != NULL) {
+			item->cache_stats_[class_id].update_expiration_mismatch++;
+		}
+	}
+	inline void update_expiration_miss(uint32_t group_id) {
+		group_sum_.update_expiration_miss_++;
+
+		Group_Stats_Item* item = get_group_item(group_id);
+		if (item != NULL) {
+			item->update_expiration_miss_++;
 		}
 	}
 

@@ -313,8 +313,12 @@ uint32_t Peer_Cache::process_header(uint8_t* data, uint32_t data_len) {
 		next_data_len_ = XIXI_Update_Req_Pdu::get_fixed_body_size();
 		set_state(PEER_STATE_READ_BODY_FIXED);
 		break;
-	case XIXI_CHOICE_UPDATE_BASE_REQ:
-		next_data_len_ = XIXI_Update_Base_Req_Pdu::get_fixed_body_size();
+	case XIXI_CHOICE_UPDATE_FLAGS_REQ:
+		next_data_len_ = XIXI_Update_Flags_Req_Pdu::get_fixed_body_size();
+		set_state(PEER_STATE_READ_BODY_FIXED);
+		break;
+	case XIXI_CHOICE_UPDATE_EXPIRATION_REQ:
+		next_data_len_ = XIXI_Update_Expiration_Req_Pdu::get_fixed_body_size();
 		set_state(PEER_STATE_READ_BODY_FIXED);
 		break;
 	case XIXI_CHOICE_DELETE_REQ:
@@ -378,8 +382,12 @@ void Peer_Cache::process_pdu_fixed(XIXI_Pdu* pdu) {
   case XIXI_CHOICE_UPDATE_REQ:
 	  process_update_req_pdu_fixed((XIXI_Update_Req_Pdu*)pdu);
 	  break;
-  case XIXI_CHOICE_UPDATE_BASE_REQ:
-	  next_data_len_ = ((XIXI_Update_Base_Req_Pdu*)pdu)->key_length;
+  case XIXI_CHOICE_UPDATE_FLAGS_REQ:
+	  next_data_len_ = ((XIXI_Update_Flags_Req_Pdu*)pdu)->key_length;
+	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
+	  break;
+  case XIXI_CHOICE_UPDATE_EXPIRATION_REQ:
+	  next_data_len_ = ((XIXI_Update_Expiration_Req_Pdu*)pdu)->key_length;
 	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
 	  break;
   case XIXI_CHOICE_DELETE_REQ:
@@ -436,8 +444,10 @@ uint32_t Peer_Cache::process_pdu_extras2(XIXI_Pdu* pdu, uint8_t* data, uint32_t 
 		return process_get_req_pdu_extras((XIXI_Get_Req_Pdu*)pdu, data, data_length);
 	case XIXI_CHOICE_GET_TOUCH_REQ:
 		return process_get_touch_req_pdu_extras((XIXI_Get_Touch_Req_Pdu*)pdu, data, data_length);
-	case XIXI_CHOICE_UPDATE_BASE_REQ:
-		return process_update_base_req_pdu_extras((XIXI_Update_Base_Req_Pdu*)pdu, data, data_length);
+	case XIXI_CHOICE_UPDATE_FLAGS_REQ:
+		return process_update_flags_req_pdu_extras((XIXI_Update_Flags_Req_Pdu*)pdu, data, data_length);
+	case XIXI_CHOICE_UPDATE_EXPIRATION_REQ:
+		return process_update_expiration_req_pdu_extras((XIXI_Update_Expiration_Req_Pdu*)pdu, data, data_length);
 	case XIXI_CHOICE_DELETE_REQ:
 		return process_delete_req_pdu_extras((XIXI_Delete_Req_Pdu*)pdu, data, data_length);
 	case XIXI_CHOICE_AUTH_REQ:
@@ -642,21 +652,53 @@ void Peer_Cache::process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu) {
 	cache_item_ = NULL;
 }
 
-uint32_t Peer_Cache::process_update_base_req_pdu_extras(XIXI_Update_Base_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
-	LOG_TRACE2("process_update_base_req_pdu_extras");
+uint32_t Peer_Cache::process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
+	LOG_TRACE2("process_update_flags_req_pdu_extras");
 	uint8_t* key = data;
 	size_t key_length = pdu->key_length;
 	if (data_length < key_length) {
 		return 0;
 	}
 	uint64_t cache_id = 0;
-	bool ret = cache_mgr_.update_base(pdu->group_id, key, key_length, pdu, cache_id);
+	bool ret = cache_mgr_.update_flags(pdu->group_id, key, key_length, pdu, cache_id);
 	if (pdu->reply()) {
 		if (ret) {
-			uint8_t* cb = cache_buf_.prepare(XIXI_Update_Base_Res_Pdu::calc_encode_size());
-			XIXI_Update_Base_Res_Pdu::encode(cb, cache_id);
+			uint8_t* cb = cache_buf_.prepare(XIXI_Update_Flags_Res_Pdu::calc_encode_size());
+			XIXI_Update_Flags_Res_Pdu::encode(cb, cache_id);
 
-			add_write_buf(cb, XIXI_Update_Base_Res_Pdu::calc_encode_size());
+			add_write_buf(cb, XIXI_Update_Flags_Res_Pdu::calc_encode_size());
+
+			set_state(PEER_STATUS_WRITE);
+			next_state_ = PEER_STATE_NEW_CMD;
+		} else {
+			if (cache_id != 0) {
+				write_error(XIXI_REASON_MISMATCH, 0, true);
+			} else {
+				write_error(XIXI_REASON_NOT_FOUND, 0, true);
+			}
+		}
+	} else {
+		set_state(PEER_STATE_NEW_CMD);
+		next_state_ = PEER_STATE_NEW_CMD;
+	}
+	return key_length;
+}
+
+uint32_t Peer_Cache::process_update_expiration_req_pdu_extras(XIXI_Update_Expiration_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
+	LOG_TRACE2("process_update_expiration_req_pdu_extras");
+	uint8_t* key = data;
+	size_t key_length = pdu->key_length;
+	if (data_length < key_length) {
+		return 0;
+	}
+	uint64_t cache_id = 0;
+	bool ret = cache_mgr_.update_expiration(pdu->group_id, key, key_length, pdu, cache_id);
+	if (pdu->reply()) {
+		if (ret) {
+			uint8_t* cb = cache_buf_.prepare(XIXI_Update_Expiration_Res_Pdu::calc_encode_size());
+			XIXI_Update_Expiration_Res_Pdu::encode(cb, cache_id);
+
+			add_write_buf(cb, XIXI_Update_Expiration_Res_Pdu::calc_encode_size());
 
 			set_state(PEER_STATUS_WRITE);
 			next_state_ = PEER_STATE_NEW_CMD;
@@ -899,17 +941,17 @@ void Peer_Cache::handle_read(const boost::system::error_code& err, size_t length
 					try_read();
 				}
 			} else {
-				LOG_INFO2("handle_read peer is closed, rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
+				LOG_DEBUG2("handle_read peer is closed, rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
 			}
 		} else {
 			try_write();
 		}
 	} else {
-		LOG_INFO2("handle_read error rop_count_=" << rop_count_ << " wop_count_=" << wop_count_ << " err=" << err);
+		LOG_DEBUG2("handle_read error rop_count_=" << rop_count_ << " wop_count_=" << wop_count_ << " err=" << err);
 	}
 
 	if (rop_count_ + wop_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT) {
-		LOG_INFO2("handle_read destroy rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
+		LOG_DEBUG2("handle_read destroy rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
 		socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
 	} else {
 		LOG_TRACE2("handle_read end rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
@@ -934,7 +976,7 @@ void Peer_Cache::handle_write(const boost::system::error_code& err) {
 					try_read();
 				}
 			} else {
-				LOG_INFO2("handle_write peer is closed, rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
+				LOG_DEBUG2("handle_write peer is closed, rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
 			}
 		} else {
 			try_write();
@@ -942,7 +984,7 @@ void Peer_Cache::handle_write(const boost::system::error_code& err) {
 	}
 
 	if (rop_count_ + wop_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT) {
-		LOG_INFO2("handle_write destroy rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
+		LOG_DEBUG2("handle_write destroy rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
 		socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
 	} else {
 		LOG_TRACE2("handle_write end rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);

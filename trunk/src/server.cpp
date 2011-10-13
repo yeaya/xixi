@@ -99,7 +99,7 @@ public:
         LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - read_data_size_));
       }
     } else {
-      LOG_INFO("handle_first_read destroy");
+      LOG_DEBUG("handle_first_read destroy");
       socket_->get_io_service().post(boost::bind(&Connection_Help::destroy, this));
     }
   }

@@ -160,7 +160,8 @@ protected:
 #define CLASSID_MIN 1
 #define CLASSID_MAX  200
 
-class XIXI_Update_Base_Req_Pdu;
+class XIXI_Update_Flags_Req_Pdu;
+class XIXI_Update_Expiration_Req_Pdu;
 class XIXI_Stats_Req_Pdu;
 
 class Cache_Mgr {
@@ -175,7 +176,8 @@ public:
 	Cache_Item* get_touch(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id, uint32_t expiration, bool&/*out*/ watch_error);
 	void release_reference(Cache_Item* item);
 	bool get_base(uint32_t group_id, const uint8_t* key, size_t key_length, uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration);
-	bool update_base(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Base_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
+	bool update_flags(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
+	bool update_expiration(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 
 	xixi_reason add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);
 	xixi_reason set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);

@@ -68,7 +68,10 @@ protected:
 	inline void process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu);
 
 	// update base
-	inline uint32_t process_update_base_req_pdu_extras(XIXI_Update_Base_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline uint32_t process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+
+	// update expiration
+	inline uint32_t process_update_expiration_req_pdu_extras(XIXI_Update_Expiration_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// delete
 	inline void process_delete_req_pdu_fixed(XIXI_Delete_Req_Pdu* pdu);

@@ -94,7 +94,7 @@ void Stats::print() {
 	LOG_INFO("get_touch hit/w=" << cs.get_touch_hit_no_watch << "/" << cs.get_touch_hit_watch << " miss=" << group_sum_.get_touch_miss_ << " w_miss=" << cs.get_touch_hit_watch_miss);
 	LOG_INFO("set success=" << cs.set_success << " mismatch=" << cs.set_mismatch);
 	//  LOG_INFO("get_base hit=" << cs.get_base_hit << " miss=" << group_sum_.get_base_miss_);
-	//  LOG_INFO("update_base success=" << cs.update_base_success << " miss=" << group_sum_.update_base_miss_ << " mismatch=" << cs.update_base_mismatch);
+	//  LOG_INFO("update_flags success=" << cs.update_flags_success << " miss=" << group_sum_.update_flags_miss_ << " mismatch=" << cs.update_flags_mismatch);
 }
 
 bool Stats::add_group(uint32_t group_id) {
