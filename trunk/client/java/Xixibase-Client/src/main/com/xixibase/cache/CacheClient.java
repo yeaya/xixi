@@ -55,7 +55,7 @@ public class CacheClient extends Defines {
 	}
 
 	public boolean delete(String key) {
-		return client.delete(key, Defines.NO_CAS);
+		return client.delete(key, NO_CAS);
 	}
 
 	public boolean delete(String key, long cacheID) {
@@ -63,11 +63,11 @@ public class CacheClient extends Defines {
 	}
 
 	public long set(String key, Object value) {
-		return client.set(key, value, Defines.NO_EXPIRATION, Defines.NO_CAS, false);
+		return client.set(key, value, NO_EXPIRATION, NO_CAS, false);
 	}
 
 	public long set(String key, Object value, int expiration) {
-		return client.set(key, value, expiration, Defines.NO_CAS, false);
+		return client.set(key, value, expiration, NO_CAS, false);
 	}
 
 	public long set(String key, Object value, int expiration, long cacheID) {
@@ -75,11 +75,11 @@ public class CacheClient extends Defines {
 	}
 
 	public long setW(String key, Object value) {
-		return client.set(key, value, Defines.NO_EXPIRATION, Defines.NO_CAS, true);
+		return client.set(key, value, NO_EXPIRATION, NO_CAS, true);
 	}
 
 	public long setW(String key, Object value, int expiration) {
-		return client.set(key, value, expiration, Defines.NO_CAS, true);
+		return client.set(key, value, expiration, NO_CAS, true);
 	}
 
 	public long setW(String key, Object value, int expiration, long cacheID) {
@@ -87,7 +87,7 @@ public class CacheClient extends Defines {
 	}
 
 	public long add(String key, Object value) {
-		return client.add(key, value, Defines.NO_EXPIRATION, false);
+		return client.add(key, value, NO_EXPIRATION, false);
 	}
 
 	public long add(String key, Object value, int expiration) {
@@ -95,7 +95,7 @@ public class CacheClient extends Defines {
 	}
 
 	public long addW(String key, Object value) {
-		return client.add(key, value, Defines.NO_EXPIRATION, true);
+		return client.add(key, value, NO_EXPIRATION, true);
 	}
 
 	public long addW(String key, Object value, int expiration) {
@@ -103,11 +103,11 @@ public class CacheClient extends Defines {
 	}
 
 	public long replace(String key, Object value) {
-		return client.replace(key, value, Defines.NO_EXPIRATION, Defines.NO_CAS, false);
+		return client.replace(key, value, NO_EXPIRATION, NO_CAS, false);
 	}
 
 	public long replace(String key, Object value, int expiration) {
-		return client.replace(key, value, expiration, Defines.NO_CAS, false);
+		return client.replace(key, value, expiration, NO_CAS, false);
 	}
 
 	public long replace(String key, Object value, int expiration, long cacheID) {
@@ -115,11 +115,11 @@ public class CacheClient extends Defines {
 	}
 
 	public long replaceW(String key, Object value) {
-		return client.replace(key, value, Defines.NO_EXPIRATION, Defines.NO_CAS, true);
+		return client.replace(key, value, NO_EXPIRATION, NO_CAS, true);
 	}
 
 	public long replaceW(String key, Object value, int expiration) {
-		return client.replace(key, value, expiration, Defines.NO_CAS, true);
+		return client.replace(key, value, expiration, NO_CAS, true);
 	}
 
 	public long replaceW(String key, Object value, int expiration, long cacheID) {
@@ -127,7 +127,7 @@ public class CacheClient extends Defines {
 	}
 
 	public long createDelta(String key, long delta) {
-		return add(key, "" + delta, Defines.NO_EXPIRATION);
+		return add(key, "" + delta, NO_EXPIRATION);
 	}
 	
 	public long createDelta(String key, long delta, int expiration) {
@@ -135,11 +135,11 @@ public class CacheClient extends Defines {
 	}
 	
 	public long setDelta(String key, long delta) {
-		return set(key, "" + delta, Defines.NO_EXPIRATION, Defines.NO_CAS);
+		return set(key, "" + delta, NO_EXPIRATION, NO_CAS);
 	}
 	
 	public long setDelta(String key, long delta, int expiration) {
-		return set(key, "" + delta, expiration, Defines.NO_CAS);
+		return set(key, "" + delta, expiration, NO_CAS);
 	}
 	
 	public long setDelta(String key, long delta, int expiration, long cacheID) {
@@ -147,11 +147,11 @@ public class CacheClient extends Defines {
 	}
 
 	public DeltaItem incr(String key) {
-		return client.incr(key, 1, Defines.NO_CAS);
+		return client.incr(key, 1, NO_CAS);
 	}
 
 	public DeltaItem incr(String key, long delta) {
-		return client.incr(key, delta, Defines.NO_CAS);
+		return client.incr(key, delta, NO_CAS);
 	}
 
 	public DeltaItem incr(String key, long delta, long cacheID) {
@@ -159,11 +159,11 @@ public class CacheClient extends Defines {
 	}
 
 	public DeltaItem decr(String key) {
-		return client.decr(key, 1, Defines.NO_CAS);
+		return client.decr(key, 1, NO_CAS);
 	}
 
 	public DeltaItem decr(String key, long delta) {
-		return client.decr(key, delta, Defines.NO_CAS);
+		return client.decr(key, delta, NO_CAS);
 	}
 
 	public DeltaItem decr(String key, long delta, long cacheID) {
@@ -205,7 +205,23 @@ public class CacheClient extends Defines {
 	public CacheBaseItem getBase(String key) {
 		return client.getBase(key);
 	}
+	
+	public boolean updateExpiration(String key, int expiration) {
+		return client.updateExpiration(key, expiration, NO_CAS);
+	}
+	
+	public boolean updateExpiration(String key, int expiration, long cacheID) {
+		return client.updateExpiration(key, expiration, cacheID);
+	}
 
+	protected boolean updateFlags(String key, int flags) {
+		return client.updateFlags(key, flags, NO_CAS);
+	}
+	
+	protected boolean updateFlags(String key, int flags, long cacheID) {
+		return client.updateFlags(key, flags, cacheID);
+	}
+	
 	public boolean keyExists(String key) {
 		return client.getBase(key) != null;
 	}
@@ -280,7 +296,7 @@ public class CacheClient extends Defines {
 	}
 
 	public long append(String key, Object value) {
-		return client.append(key, value, Defines.NO_CAS);
+		return client.append(key, value, NO_CAS);
 	}
 
 	public long append(String key, Object value, long cacheID) {
@@ -288,7 +304,7 @@ public class CacheClient extends Defines {
 	}
 
 	public long prepend(String key, Object value) {
-		return client.prepend(key, value, Defines.NO_CAS);
+		return client.prepend(key, value, NO_CAS);
 	}
 
 	public long prepend(String key, Object value, long cacheID) {

@@ -290,6 +290,51 @@ public class MultiOperationTest extends TestCase {
 		}
 	}
 	
+	public void testMultiFlags() {
+		int max = 100;
+		ArrayList<MultiUpdateItem> multi = new ArrayList<MultiUpdateItem>();
+		ArrayList<String> keys = new ArrayList<String>();
+		ArrayList<String> values = new ArrayList<String>();
+		for (int i = 0; i < max; i++) {
+			String key = Integer.toString(i);
+			String value = "value" + i;
+			MultiUpdateItem item = new MultiUpdateItem();
+			item.key = key;
+			item.value = value;
+			multi.add(item);
+			keys.add(key);
+			values.add(value);
+		}
+
+		int ret = cc1.multiAdd(multi);
+		assertEquals(max, ret);
+		
+	//	ArrayList<MultiUpdateBaseItem> multibase = new ArrayList<MultiUpdateBaseItem>();
+	//	for (int i = 0; i < max; i++) {
+	//		MultiUpdateBaseItem item = new MultiUpdateBaseItem();
+	//	}
+		
+		ArrayList<MultiDeleteItem> md = new ArrayList<MultiDeleteItem>();
+		for (int i = 0; i < multi.size(); i++) {
+			MultiUpdateItem item = multi.get(i);
+			MultiDeleteItem ditem = new MultiDeleteItem();
+			ditem.key = item.key;
+			ditem.cacheID = item.cacheID;
+			md.add(ditem);
+		}
+		List<CacheItem> results = cc1.multiGet(keys);
+		for (int i = 0; i < max; i++) {
+			CacheItem item = results.get(i);
+			assertEquals(item.getValue(), values.get(i));
+		}
+		cc1.multiDelete(md);
+		results = cc1.multiGet(keys);
+		for (int i = 0; i < max; i++) {
+			CacheItem item = results.get(i);
+			assertNull(item);
+		}
+	}
+	
 	public void testMultiError() {
 		int ret = cc1.multiAdd(null);
 		assertEquals(ret, 0);

@@ -162,16 +162,10 @@ public class ObjectTransCoder implements TransCoder {
 		if (b != null) {
 			if (b.length >= compressionThreshold && compressionThreshold > 0) {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				GZIPOutputStream gos = null;
-				try {
-					gos = new GZIPOutputStream(bos);
-					gos.write(b);
-				} catch (IOException e) {
-					throw new RuntimeException("IO exception compressing data", e);
-				} finally {
-					gos.close();
-					bos.close();
-				}
+				GZIPOutputStream gos = new GZIPOutputStream(bos);
+				gos.write(b);
+				gos.close();
+				bos.close();
 				byte[] c = bos.toByteArray();
 				if (c.length < b.length) {
 					b = c;
@@ -186,23 +180,16 @@ public class ObjectTransCoder implements TransCoder {
 	public Object decode(final byte[] in, int flags, int[]/*out*/ objectSize) throws IOException {
 		byte[] b = in;
 		if ((flags & FLAGS_COMPRESSED) == FLAGS_COMPRESSED) {
-			GZIPInputStream gis = null;
+			GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(b));
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			try {
-				gis = new GZIPInputStream(new ByteArrayInputStream(b));
-				bos = new ByteArrayOutputStream();
-				int count;
-				byte[] t = new byte[4096];
-				while ((count = gis.read(t)) > 0) {
-					bos.write(t, 0, count);
-				}
-				b = bos.toByteArray();
-			} catch (IOException e) {
-				throw new RuntimeException("IOException on uncompressing data, ", e);
-			} finally {
-				gis.close();
-				bos.close();
+			int count;
+			byte[] t = new byte[4096];
+			while ((count = gis.read(t)) > 0) {
+				bos.write(t, 0, count);
 			}
+			gis.close();
+			bos.close();
+			b = bos.toByteArray();
 		}
 		if (objectSize != null) {
 			objectSize[0] = (b.length);
@@ -269,7 +256,7 @@ public class ObjectTransCoder implements TransCoder {
 				try {
 					obj = ois.readObject();
 				} catch (ClassNotFoundException e) {
-					throw new IOException(e.getMessage());
+					throw new IOException(e);
 				}
 				ois.close();
 				return obj;

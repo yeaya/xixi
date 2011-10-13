@@ -81,10 +81,11 @@ public class TCPSocket implements XixiSocket {
 		return this.host;
 	}
 
-	public final void trueClose() throws IOException {
+	public final boolean trueClose() {
 		readBuffer.clear();
 		writeBuffer.clear();
 
+		boolean ret = true;
 		try {
 			socketChannel.close();
 		} catch (IOException e) {
@@ -92,26 +93,24 @@ public class TCPSocket implements XixiSocket {
 				socket.close();
 			} catch (IOException e2) {
 			}
-			throw new IOException("failed on close socketChannel, for host:" + host + ", " + e);
+			ret = false;
 		}
+		socketChannel = null;
 
 		try {
 			socket.close();
 		} catch (IOException e) {
-			throw new IOException("failed on close socket, for host:" + host + ", " + e);
+			ret = false;
 		}
 		socket = null;
+		return ret;
 	}
 
 	public final void close() {
 		readBuffer.clear();
 		writeBuffer.clear();
 		if (!manager.addSocket(host, this)) {
-			try {
-				trueClose();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			trueClose();
 		}
 	}
 

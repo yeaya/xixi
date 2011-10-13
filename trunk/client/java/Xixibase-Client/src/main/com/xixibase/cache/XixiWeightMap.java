@@ -114,7 +114,6 @@ public class XixiWeightMap<V> implements WeightMap<V> {
 		case MD5_HASH:
 			return md5HashingAlg((key).getBytes());
 		default:
-			hashingAlg = NATIVE_HASH;
 			return key.hashCode();
 		}
 	}

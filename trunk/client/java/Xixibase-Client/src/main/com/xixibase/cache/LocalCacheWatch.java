@@ -19,13 +19,12 @@ package com.xixibase.cache;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.xixibase.cache.multi.MultiUpdateBaseItem;
+import com.xixibase.cache.multi.MultiUpdateExpirationItem;
 import com.xixibase.util.Log;
 
 class GroupItem {
@@ -61,15 +60,15 @@ class GroupItem {
 	public synchronized void dropInactive(int maxCount) {
 	//	log.debug("dropInactive host=" + host + " inactiveSize=" + inactiveCacheMap.size()
 	//			+ " activeSize=" + activeCacheMap.size());
-		LinkedList<CacheItem> list = new LinkedList<CacheItem>();
+//		LinkedList<CacheItem> list = new LinkedList<CacheItem>();
 		Iterator<CacheItem> it = inactiveCacheMap.values().iterator();
 		while (maxCount > 0 && it.hasNext()) {
 			CacheItem item = it.next();
-			list.add(item);
+//			list.add(item);
 			maxCount--;
-		}
-		while (!list.isEmpty()) {
-			CacheItem item = list.pop();
+//		}
+	//	while (!list.isEmpty()) {
+		//	CacheItem item = list.pop();
 			CacheItem item2 = cacheIDMap.remove(new Long(item.cacheID));
 			if (item2 != null) {
 				item = inactiveCacheMap.remove(item2.key);
@@ -77,6 +76,7 @@ class GroupItem {
 					cacheSize.addAndGet(-item.itemSize);
 					cacheCount.getAndDecrement();
 				}
+				it = inactiveCacheMap.values().iterator();
 			}
 		}
 
@@ -287,18 +287,12 @@ class LocalCacheWatch extends Thread {
 				}
 			}
 	//		log.error("localCache updater " + host + " watchID=" + watchID);
-			if (!runFlag) {
-				break;
-			}
 			long beginTime = System.currentTimeMillis();
 
 			long[] cacheIDList = cc.checkWatch(host, watchID, maxNextCheckInterval, ackCacheID);
 			long endTime = System.currentTimeMillis();
 			// for test try { Thread.sleep(10); } catch (InterruptedException e) {}
-			if (cacheIDList == null) {
-				if (!runFlag) {
-					break;
-				}
+			if (cacheIDList == null && runFlag) {
 				cacheIDList = cc.checkWatch(host, watchID, maxNextCheckInterval, ackCacheID);
 			}
 			if (cacheIDList != null) {
@@ -342,7 +336,7 @@ class LocalCacheTouch extends Thread {
 	
 	protected int touchToServer() {
 		Iterator<String> it = touchMap.keySet().iterator();
-		ArrayList<MultiUpdateBaseItem> lists = new ArrayList<MultiUpdateBaseItem>();
+		ArrayList<MultiUpdateExpirationItem> lists = new ArrayList<MultiUpdateExpirationItem>();
 		while (it.hasNext()) {
 			String key = it.next();
 			CacheItem item = touchMap.remove(key);//e.getValue();
@@ -351,7 +345,7 @@ class LocalCacheTouch extends Thread {
 				if (expiration < 0) {
 					// delete this item from server
 				} else {
-					MultiUpdateBaseItem mitem = new MultiUpdateBaseItem();
+					MultiUpdateExpirationItem mitem = new MultiUpdateExpirationItem();
 					lists.add(mitem);
 					mitem.key = key;
 					mitem.cacheID = item.cacheID;

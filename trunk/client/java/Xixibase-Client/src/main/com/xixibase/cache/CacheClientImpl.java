@@ -27,8 +27,8 @@ import com.xixibase.cache.multi.MultiDelete;
 import com.xixibase.cache.multi.MultiDeleteItem;
 import com.xixibase.cache.multi.MultiGet;
 import com.xixibase.cache.multi.MultiUpdate;
-import com.xixibase.cache.multi.MultiUpdateBase;
-import com.xixibase.cache.multi.MultiUpdateBaseItem;
+import com.xixibase.cache.multi.MultiUpdateExpiration;
+import com.xixibase.cache.multi.MultiUpdateExpirationItem;
 import com.xixibase.cache.multi.MultiUpdateItem;
 import com.xixibase.util.Log;
 
@@ -145,42 +145,36 @@ public class CacheClientImpl extends Defines {
 				int flags = dis.readInt();
 				expiration = dis.readInt();
 				int dataSize = dis.readInt();//uint32_t data_length;
-				if (dataSize > 0) {
+				if (dataSize >= 0) {
 					byte[] data = input.read(dataSize);
 					int[] objectSize = new int[1];
 					Object obj = transCoder.decode(data, flags, objectSize);
-					if (obj != null) {
-						item = new CacheItem(
-								key,
-								cacheID,
-								expiration,
-								groupID,
-								flags,
-								obj,
-								objectSize[0]);
-						if (watchID != 0) {
-							localCache.put(socket.getHost(), key, item);
-						}
-						return item;
-					} else {
-						lastError = "get, transCode.decode error, flags=" + flags;
-						log.error(lastError);
+					item = new CacheItem(
+							key,
+							cacheID,
+							expiration,
+							groupID,
+							flags,
+							obj,
+							objectSize[0]);
+					if (watchID != 0) {
+						localCache.put(socket.getHost(), key, item);
 					}
+					return item;
 				}
 			} else {
 				short reason = dis.readShort();
 				lastError = "get, response error, reason=" + reason;
 				log.debug(lastError);
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
 			}
 		} catch (IOException e) {
-			lastError = "get, exception=" + e.getMessage();
+			lastError = "get, exception=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "get, failed to close socket e=" + e2.getMessage();
-				log.error(lastError);
-			}
+			socket.trueClose();
 			socket = null;
 		} finally {
 			if (socket != null) {
@@ -242,18 +236,16 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "getBase, response error, reason=" + reason;
 				log.debug(lastError);
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
 			}
 		} catch (IOException e) {
-			lastError = "getBase, exception=" + e.getMessage();
+			lastError = "getBase, exception=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "getBase, failed to close socket e=" + e2.getMessage();
-				log.error(lastError);
-			}
+			socket.trueClose();
 			socket = null;
-		} catch (RuntimeException e) {
 		} finally {
 			if (socket != null) {
 				socket.close();
@@ -262,47 +254,113 @@ public class CacheClientImpl extends Defines {
 		}
 		return null;
 	}
-
+/*
 	public boolean updateFlags(String key, long cacheID, int groupID, int flags) {
-		return updateBase(XIXI_UPDATE_BASE_SUB_OP_FLAGS, key, cacheID, groupID, flags, 0);
+		return updateFlags(XIXI_UPDATE_BASE_SUB_OP_FLAGS, key, cacheID, groupID, flags);
 	}
-	
-	public boolean updateExpiration(String key, long cacheID, int groupID, int expiration) {
-		return updateBase(XIXI_UPDATE_BASE_SUB_OP_EXPIRATION, key, cacheID, groupID, 0, expiration);
-	}
+	*/
+//	public boolean updateExpiration(String key, long cacheID, int groupID, int expiration) {
+//		return updateFlags((byte)2/*XIXI_UPDATE_BASE_SUB_OP_EXPIRATION*/, key, cacheID, groupID, 0, expiration);
+//	}
 
-	protected boolean updateBase(byte subOp, String key, long cacheID, int groupID, int flags, int expiration) {
+	protected boolean updateFlags(String key, int flags, long cacheID) {
 		lastError = null;
 		if (key == null) {
-			lastError = "updateBase, key == null";
+			lastError = "updateFlags, key == null";
 			log.error(lastError);
 			return false;
 		}
 	
 		byte[] keyBuf = transCoder.encodeKey(key);
 		if (keyBuf == null) {
-			lastError = "updateBase, failed to encode key";
+			lastError = "updateFlags, failed to encode key";
 			log.error(lastError);
 			return false;
 		}
 
 		XixiSocket socket = manager.getSocket(key);
 		if (socket == null) {
-			lastError = "updateBase, failed to get socket";
+			lastError = "updateFlags, failed to get socket";
 			log.error(lastError);
 			return false;
 		}
 
 		try {
-			subOp |= XIXI_UPDATE_BASE_REPLY;
+			byte subOp = XIXI_UPDATE_FLAGS_REPLY;
 			ByteBuffer writeBuffer = socket.getWriteBuffer();
 			writeBuffer.clear();
 			writeBuffer.put(XIXI_CATEGORY_CACHE);
-			writeBuffer.put(XIXI_TYPE_UPDATE_BASE_REQ);
+			writeBuffer.put(XIXI_TYPE_UPDATE_FLAGS_REQ);
 			writeBuffer.put(subOp);
 			writeBuffer.putLong(cacheID);
 			writeBuffer.putInt(groupID);
 			writeBuffer.putInt(flags);
+			writeBuffer.putShort((short) keyBuf.length);
+			writeBuffer.put(keyBuf);
+			socket.flush();
+
+			SocketInputStream input = new SocketInputStream(socket);
+			DataInputStream dis = new DataInputStream(input);
+			byte category = dis.readByte();
+			byte type = dis.readByte();
+			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_FLAGS_RES) {
+				dis.readLong(); // rescacheID
+
+				return true;
+			} else {
+				short reason = dis.readShort();
+				lastError = "updateFlags, response error, reason=" + reason;
+				log.debug(lastError);
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
+			}
+		} catch (IOException e) {
+			lastError = "updateFlags, exception=" + e;
+			log.error(lastError);
+			socket.trueClose();
+			socket = null;
+		} finally {
+			if (socket != null) {
+				socket.close();
+				socket = null;
+			}
+		}
+		return false;
+	}
+	
+	public boolean updateExpiration(String key, int expiration, long cacheID) {
+		lastError = null;
+		if (key == null) {
+			lastError = "updateExpiration, key == null";
+			log.error(lastError);
+			return false;
+		}
+	
+		byte[] keyBuf = transCoder.encodeKey(key);
+		if (keyBuf == null) {
+			lastError = "updateExpiration, failed to encode key";
+			log.error(lastError);
+			return false;
+		}
+
+		XixiSocket socket = manager.getSocket(key);
+		if (socket == null) {
+			lastError = "updateExpiration, failed to get socket";
+			log.error(lastError);
+			return false;
+		}
+
+		try {
+			byte subOp = XIXI_UPDATE_EXPIRATION_REPLY;
+			ByteBuffer writeBuffer = socket.getWriteBuffer();
+			writeBuffer.clear();
+			writeBuffer.put(XIXI_CATEGORY_CACHE);
+			writeBuffer.put(XIXI_TYPE_UPDATE_EXPIRATION_REQ);
+			writeBuffer.put(subOp);
+			writeBuffer.putLong(cacheID);
+			writeBuffer.putInt(groupID);
 			writeBuffer.putInt(expiration);
 			writeBuffer.putShort((short) keyBuf.length);
 			writeBuffer.put(keyBuf);
@@ -312,27 +370,24 @@ public class CacheClientImpl extends Defines {
 			DataInputStream dis = new DataInputStream(input);
 			byte category = dis.readByte();
 			byte type = dis.readByte();
-			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_BASE_RES) {
-				dis.readLong(); // rescacheID
+			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_EXPIRATION_RES) {
+				dis.readLong(); // cacheID
 
 				return true;
 			} else {
 				short reason = dis.readShort();
-				lastError = "updateBase, response error, reason=" + reason;
+				lastError = "updateExpiration, response error, reason=" + reason;
 				log.debug(lastError);
-				return false;
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
 			}
 		} catch (IOException e) {
-			lastError = "updateBase, exception=" + e.getMessage();
+			lastError = "updateExpiration, exception=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "updateBase, failed to close socket e=" + e2.getMessage();
-				log.error(lastError);
-			}
+			socket.trueClose();
 			socket = null;
-		} catch (RuntimeException e) {
 		} finally {
 			if (socket != null) {
 				socket.close();
@@ -441,18 +496,16 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "update, response error, reason=" + reason;
 				log.debug(lastError);
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
 			}
 		} catch (IOException e) {
-			lastError = "update, exception=" + e.getMessage();
+			lastError = "update, exception=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "\n failed to close socket, e=" + e2.getMessage();
-				log.error(lastError);
-			}
+			socket.trueClose();
 			socket = null;
-		} catch (RuntimeException e) {
 		} finally {
 			if (socket != null) {
 				socket.close();
@@ -462,7 +515,6 @@ public class CacheClientImpl extends Defines {
 
 		return NO_CAS;
 	}
-
 
 	public boolean delete(String key, long cacheID) {
 		lastError = null;
@@ -508,20 +560,16 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "delete, response error, reason=" + reason;
 				log.debug(lastError);
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
 			}
 		} catch (IOException e) {
-			lastError = "delete, exception=" + e.getMessage();
-			log.error(e.getMessage());
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "\nfailed to close socket, e=" + e2.getMessage();
-				log.error(lastError);
-			}
-			socket = null;
-		} catch (RuntimeException e) {
-			lastError = "delete, RuntimeException, e=" + e.getMessage();
+			lastError = "delete, exception=" + e;
 			log.error(lastError);
+			socket.trueClose();
+			socket = null;
 		} finally {
 			if (socket != null) {
 				socket.close();
@@ -591,17 +639,15 @@ public class CacheClientImpl extends Defines {
 				short reason = dis.readShort();
 				lastError = "delta, response error, reason=" + reason;
 				log.debug(lastError);
+				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+					socket.trueClose();
+					socket = null;
+				}
 			}
 		} catch (IOException e) {
-			lastError = "delta, exception=" + e.getMessage();
+			lastError = "delta, exception=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "delta, failed to close socket e=" + e2.getMessage();
-				log.error(lastError);
-			}
-
+			socket.trueClose();
 			socket = null;
 		} finally {
 			if (socket != null) {
@@ -660,17 +706,17 @@ public class CacheClientImpl extends Defines {
 		lastError = multi.getLastError();
 		return ret;
 	}
-	
-	public int multiUpdateFlags(List<MultiUpdateBaseItem> items) {
-		MultiUpdateBase multi = new MultiUpdateBase(this.manager, this.groupID, this.transCoder);
-		int ret = multi.multiUpdateBase(items, XIXI_UPDATE_BASE_SUB_OP_FLAGS);
+/*
+	public int multiUpdateFlags(List<MultiUpdateFlagsItem> items) {
+		MultiupdateFlags multi = new MultiupdateFlags(this.manager, this.groupID, this.transCoder);
+		int ret = multi.multiupdateFlags(items, XIXI_UPDATE_BASE_SUB_OP_FLAGS);
 		lastError = multi.getLastError();
 		return ret;
 	}
-
-	public int multiUpdateExpiration(List<MultiUpdateBaseItem> items) {
-		MultiUpdateBase multi = new MultiUpdateBase(this.manager, this.groupID, this.transCoder);
-		int ret = multi.multiUpdateBase(items, XIXI_UPDATE_BASE_SUB_OP_EXPIRATION);
+*/
+	public int multiUpdateExpiration(List<MultiUpdateExpirationItem> items) {
+		MultiUpdateExpiration multi = new MultiUpdateExpiration(this.manager, this.groupID, this.transCoder);
+		int ret = multi.multiUpdateExpiration(items);
 		lastError = multi.getLastError();
 		return ret;
 	}
@@ -718,16 +764,15 @@ public class CacheClientImpl extends Defines {
 					short reason = dis.readShort();
 					lastError = "flush, response error, reason=" + reason;
 					log.debug(lastError);
+					if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+						socket.trueClose();
+						socket = null;
+					}
 				}
 			} catch (IOException e) {
-				lastError = "exception, " + e.getMessage();
+				lastError = "exception, " + e;
 				log.error(lastError);
-				try {
-					socket.trueClose();
-				} catch (IOException e2) {
-					lastError += " failed to close socket, e=" + e2.getMessage();
-					log.error(lastError);
-				}
+				socket.trueClose();
 				socket = null;
 			} finally {
 				if (socket != null) {
@@ -775,7 +820,7 @@ public class CacheClientImpl extends Defines {
 			return false;
 		}
 
-		boolean success = true;
+		boolean ret = true;
 
 		for (int i = 0; i < servers.length; i++) {
 			HashMap<String, String> hm = new HashMap<String, String>();
@@ -786,7 +831,7 @@ public class CacheClientImpl extends Defines {
 			if (socket == null) {
 				lastError = "stats, can not to get socket by host:" + servers[i];
 				log.error(lastError);
-				success = false;
+				ret = false;
 				continue;
 			}
 
@@ -818,31 +863,26 @@ public class CacheClientImpl extends Defines {
 							String[] s = lines[j].split("=");
 							hm.put(s[0], s[1]);
 						}
-						return true;
 					} else {
-						if (str.equals("success")) {
-							return true;
-						} else {
-							return false;
+						if (!str.equals("success")) {
+							ret = false;
 						}
 					}
 				} else {
 					short reason = dis.readShort();
 					lastError = "stats, response error, reason=" + reason;
 					log.debug(lastError);
-					return false;
+					ret = false;
+					if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
+						socket.trueClose();
+						socket = null;
+					}
 				}
 			} catch (IOException e) {
-				lastError = "exception, " + e.getMessage();
+				lastError = "exception, " + e;
 				log.error(lastError);
-				try {
-					socket.trueClose();
-				} catch (IOException e2) {
-					lastError += " failed to close socket exception, " + e2.getMessage();
-					log.error(lastError);
-				}
-
-				success = false;
+				ret = false;
+				socket.trueClose();
 				socket = null;
 			} finally {
 				if (socket != null) {
@@ -852,7 +892,7 @@ public class CacheClientImpl extends Defines {
 			}
 		}
 
-		return success;
+		return ret;
 	}
 
 	protected int createWatch(String host, int maxNextCheckInterval) {
@@ -887,34 +927,14 @@ public class CacheClientImpl extends Defines {
 				lastError = "createWatch, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
-					try {
-						socket.trueClose();
-					} catch (IOException e2) {
-						lastError += "createWatch, failed to close socket e=" + e2.getMessage();
-						log.error(lastError);
-					}
+					socket.trueClose();
 					socket = null;
 				}
 			}
 		} catch (IOException e) {
-			lastError = "createWatch, exception=" + e.getMessage();
+			lastError = "createWatch, exception=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "createWatch, failed to close socket e=" + e2.getMessage();
-				log.error(lastError);
-			}
-			socket = null;
-		} catch (RuntimeException e) {
-			lastError = "createWatch, RuntimeException=" + e.getMessage();
-			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError = "createWatch, failed to close socket e=" + e2.getMessage();
-				log.error(lastError);
-			}
+			socket.trueClose();
 			socket = null;
 		} finally {
 			if (socket != null) {
@@ -963,34 +983,14 @@ public class CacheClientImpl extends Defines {
 				lastError = "checkWatch, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
-					try {
-						socket.trueClose();
-					} catch (IOException e2) {
-						lastError += "checkWatch, failed to close socket, e=" + e2.getMessage();
-						log.error(lastError);
-					}
+					socket.trueClose();
 					socket = null;
 				}
 			}
 		} catch (IOException e) {
-			lastError = "checkWatch, e=" + e.getMessage();
+			lastError = "checkWatch, e=" + e;
 			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "checkWatch, failed to close socket, e=" + e2.getMessage();
-				log.error(lastError);
-			}
-			socket = null;
-		} catch (RuntimeException e) {
-			lastError = "checkWatch, RuntimeException " + e.getMessage();
-			log.error(lastError);
-			try {
-				socket.trueClose();
-			} catch (IOException e2) {
-				lastError += "checkWatch, failed to close socket, e=" + e2.getMessage();
-				log.error(lastError);
-			}
+			socket.trueClose();
 			socket = null;
 		} finally {
 			if (socket != null) {

@@ -16,7 +16,6 @@
 
 package com.xixibase.cache;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.HashMap;
@@ -406,11 +405,7 @@ public class CacheClientManager {
 				//		System.out.println("maintainInactiveSocket, last=" + socket.getLastActiveTime()
 				//				+ " curr=" + currTime);
 						list.pollLast();
-						try {
-							socket.trueClose();
-						} catch (IOException e) {
-							log.error("maintainInactiveSocket, failed to close socket: " + e.getMessage());
-						}
+						socket.trueClose();
 						count++;
 						if (count >= 2) {
 							break;
@@ -428,11 +423,7 @@ public class CacheClientManager {
 			ConcurrentLinkedQueue<XixiSocket> sockets = activeSocketPool.get(i);
 			XixiSocket socket = sockets.poll();
 			while (socket != null) {
-				try {
-					socket.trueClose();
-				} catch (IOException e) {
-					log.error("failed to close socket: " + e.getMessage());
-				}
+				socket.trueClose();
 				socket = sockets.poll();
 			}
 		}
@@ -442,11 +433,7 @@ public class CacheClientManager {
 				LinkedList<XixiSocket> list = inactiveSocketPool.get(i);
 				XixiSocket socket = list.pollFirst();
 				while (socket != null) {
-					try {
-						socket.trueClose();
-					} catch (IOException e) {
-						log.error("failed to close socket: " + e.getMessage());
-					}
+					socket.trueClose();
 					socket = list.pollFirst();
 				}
 			}

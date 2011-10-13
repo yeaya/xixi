@@ -324,15 +324,12 @@ public final class MultiUpdate extends Defines {
 						return;
 					}
 				} catch (IOException e) {
-					lastError = "close, failed on close socket, " + e.getMessage();
+					lastError = "close, failed on close socket, " + e;
 					log.warn(lastError);
 				}
 	
-				try {
-					socket.trueClose();
-					socket = null;
-				} catch (IOException ignoreMe) {
-				}
+				socket.trueClose();
+				socket = null;
 			}
 		}
 

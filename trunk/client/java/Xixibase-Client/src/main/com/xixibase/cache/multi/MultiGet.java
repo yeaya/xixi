@@ -293,15 +293,12 @@ public final class MultiGet extends Defines {
 						return;
 					}
 				} catch (IOException e) {
-					lastError = "close, exception on close, " + e.getMessage();
+					lastError = "close, exception on close, " + e;
 					log.warn(lastError);
 				}
 	
-				try {
-					socket.trueClose();
-					socket = null;
-				} catch (IOException ignoreMe) {
-				}
+				socket.trueClose();
+				socket = null;
 			}
 		}
 
@@ -393,9 +390,8 @@ public final class MultiGet extends Defines {
 							run = false;
 						}
 						byte[] buf = data.array();
-						Object obj = null;
-						obj = transCoder.decode(buf, flags, null);
-						if (obj != null) {
+						try {
+							Object obj = transCoder.decode(buf, flags, null);
 							CacheItem item = new CacheItem(
 									key,
 									cacheID,
@@ -405,7 +401,9 @@ public final class MultiGet extends Defines {
 									obj,
 									dataSize);
 							myobjs.add(item);
-						} else {
+						} catch (IOException e) {
+							log.error("processResponse, failed on transCoder.decode flags="
+									+ flags + " bufLen=" + buf.length + " " + e);
 							myobjs.add(null);
 						}
 

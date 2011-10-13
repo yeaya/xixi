@@ -19,8 +19,13 @@ package com.xixibase.cache;
 import java.io.IOException;
 
 public interface TransCoder {
+	// if encode failed, return null
 	byte[] encodeKey(final String key);
+	
+	// never return null
 	byte[] encode(final Object object, int[]/*out*/ flags) throws IOException;
+	
+	// never return null
 	Object decode(final byte[] in, int flags, int[]/*out*/ objectSize) throws IOException;
 	
 	void setEncodingCharsetName(String encodingCharsetName);

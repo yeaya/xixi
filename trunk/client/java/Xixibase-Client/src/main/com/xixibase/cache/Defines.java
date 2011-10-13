@@ -51,28 +51,30 @@ public class Defines {
 	public static final byte XIXI_UPDATE_SUB_OP_PREPEND = 4;
 	public static final byte XIXI_UPDATE_REPLY = (byte)128;
 	
-	public static final byte XIXI_TYPE_UPDATE_BASE_REQ = 8;
-	public static final byte XIXI_TYPE_UPDATE_BASE_RES = 9;
-	public static final byte XIXI_UPDATE_BASE_SUB_OP_FLAGS = 1;
-	public static final byte XIXI_UPDATE_BASE_SUB_OP_EXPIRATION = 2;
-	public static final byte XIXI_UPDATE_BASE_REPLY = (byte)128;
+	public static final byte XIXI_TYPE_UPDATE_FLAGS_REQ = 8;
+	public static final byte XIXI_TYPE_UPDATE_FLAGS_RES = 9;
+	public static final byte XIXI_UPDATE_FLAGS_REPLY = (byte)128;
+
+	public static final byte XIXI_TYPE_UPDATE_EXPIRATION_REQ = 10;
+	public static final byte XIXI_TYPE_UPDATE_EXPIRATION_RES = 11;
+	public static final byte XIXI_UPDATE_EXPIRATION_REPLY = (byte)128;
 	
-	public static final byte XIXI_TYPE_DELETE_REQ = 10;
-	public static final byte XIXI_TYPE_DELETE_RES = 11;
+	public static final byte XIXI_TYPE_DELETE_REQ = 12;
+	public static final byte XIXI_TYPE_DELETE_RES = 13;
 	public static final byte XIXI_DELETE_SUB_OP = 0;
 	public static final byte XIXI_DELETE_REPLY = (byte)128;
 
-	public static final byte XIXI_TYPE_DETLA_REQ = 12;
-	public static final byte XIXI_TYPE_DETLA_RES = 13;
+	public static final byte XIXI_TYPE_DETLA_REQ = 14;
+	public static final byte XIXI_TYPE_DETLA_RES = 15;
 	public static final byte XIXI_DELTA_SUB_OP_INCR = 0;
 	public static final byte XIXI_DELTA_SUB_OP_DECR = 1;
 	public static final byte XIXI_DELTA_REPLY = (byte)128;
 
-	public static final byte XIXI_TYPE_FLUSH_REQ = 14;
-	public static final byte XIXI_TYPE_FLUSH_RES = 15;
+	public static final byte XIXI_TYPE_FLUSH_REQ = 16;
+	public static final byte XIXI_TYPE_FLUSH_RES = 17;
 
-	public static final byte XIXI_TYPE_STATS_REQ = 18;
-	public static final byte XIXI_TYPE_STATS_RES = 19;
+	public static final byte XIXI_TYPE_STATS_REQ = 20;
+	public static final byte XIXI_TYPE_STATS_RES = 21;
 	public static final byte XIXI_STATS_SUB_OP_ADD_GROUP = 0;
 	public static final byte XIXI_STATS_SUB_OP_REMOVE_GROUP = 1;
 	public static final byte XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY = 2;
@@ -80,10 +82,10 @@ public class Defines {
 	public static final byte XIXI_STATS_SUB_OP_GET_STATS_SUM_ONLY = 4;
 //	public static final byte XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_SUM_ONLY = 5;
 	
-	public static final byte XIXI_CREATE_WATCH_REQ = 20;
-	public static final byte XIXI_CREATE_WATCH_RES = 21;
-	public static final byte XIXI_CHECK_WATCH_REQ = 22;
-	public static final byte XIXI_CHECK_WATCH_RES = 23;
+	public static final byte XIXI_CREATE_WATCH_REQ = 22;
+	public static final byte XIXI_CREATE_WATCH_RES = 23;
+	public static final byte XIXI_CHECK_WATCH_REQ = 24;
+	public static final byte XIXI_CHECK_WATCH_RES = 25;
 	
 	public static final short XIXI_REASON_UNKNOWN_COMMAND = 10;
 

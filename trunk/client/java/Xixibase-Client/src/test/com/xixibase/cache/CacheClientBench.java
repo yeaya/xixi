@@ -239,9 +239,9 @@ public class CacheClientBench  {
 			servers = args[0];
 		}
 	//	XixiWeightMap.MD5_HASH
-		CacheClientBench bench = new CacheClientBench(servers, 1, 50000);
-	//	CacheClientBench bench = new CacheClientBench(servers, 1, 50000, 315,
-//				true, XixiWeightMap.MD5_HASH, null);
+	//	CacheClientBench bench = new CacheClientBench(servers, 1, 50000);
+		CacheClientBench bench = new CacheClientBench(servers, 1, 50000, 315,
+				true, XixiWeightMap.NATIVE_HASH, null);
 		bench.runIt();
 	}
 }

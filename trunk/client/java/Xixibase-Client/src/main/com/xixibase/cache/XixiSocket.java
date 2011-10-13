@@ -29,7 +29,7 @@ public interface XixiSocket {
 	
 	public String getHost();
 
-	public void trueClose() throws IOException ;
+	public boolean trueClose();
 
 	public void close();
 
