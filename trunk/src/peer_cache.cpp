@@ -830,30 +830,34 @@ void Peer_Cache::process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu
 	std::list<uint64_t> updated_list;
 	uint32_t updated_count = 0;
 	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
-	cache_mgr_.check_watch_and_set_callback(pdu->group_id, pdu->watch_id, updated_list, updated_count, pdu->ack_cache_id, sp, pdu->max_next_check_interval);
+	bool ret = cache_mgr_.check_watch_and_set_callback(pdu->group_id, pdu->watch_id, updated_list, updated_count, pdu->ack_cache_id, sp, pdu->max_next_check_interval);
 	//  LOG_INFO2("process_check_watch_req_pdu_fixed watch_id=" << pdu->watch_id << " ack=" << pdu->ack_cache_id << " updated_count=" << updated_count);
 
-	if (updated_count > 0) {
-		uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
-
-		uint8_t* buf = cache_buf_.prepare(size);
-		if (buf != NULL) {
-			XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
-
-			add_write_buf(buf, size);
-
-			set_state(PEER_STATUS_WRITE);
-			next_state_ = PEER_STATE_NEW_CMD;
-		} else {
-			write_error(XIXI_REASON_OUT_OF_MEMORY, 0, true);
-		}
+	if (!ret) {
+		write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
 	} else {
-		//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
-		timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
-		timer_->expires_from_now(boost::posix_time::seconds(pdu->check_timeout));
-		timer_->async_wait(boost::bind(&Peer_Cache::handle_timer, this,
-			boost::asio::placeholders::error, pdu->watch_id));
-		set_state(PEER_STATUS_ASYNC_WAIT);
+		if (updated_count > 0) {
+			uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
+
+			uint8_t* buf = cache_buf_.prepare(size);
+			if (buf != NULL) {
+				XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
+
+				add_write_buf(buf, size);
+
+				set_state(PEER_STATUS_WRITE);
+				next_state_ = PEER_STATE_NEW_CMD;
+			} else {
+				write_error(XIXI_REASON_OUT_OF_MEMORY, 0, true);
+			}
+		} else {
+			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
+			timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
+			timer_->expires_from_now(boost::posix_time::seconds(pdu->check_timeout));
+			timer_->async_wait(boost::bind(&Peer_Cache::handle_timer, this,
+				boost::asio::placeholders::error, pdu->watch_id));
+			set_state(PEER_STATUS_ASYNC_WAIT);
+		}
 	}
 }
 
@@ -1037,22 +1041,26 @@ void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t wat
 	std::list<uint64_t> updated_list;
 	uint32_t updated_count = 0;
 	lock_.lock();
-	cache_mgr_.check_watch_and_clear_callback(watch_id, updated_list, updated_count);
+	bool ret = cache_mgr_.check_watch_and_clear_callback(watch_id, updated_list, updated_count);
 	//  LOG_INFO2("handle_timer watch_id=" << watch_id << " updated_count=" << updated_count);
 
-	uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
-
-	uint8_t* buf = cache_buf_.prepare(size);
-	if (buf != NULL) {
-		XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
-
-		add_write_buf(buf, size);
-
-		set_state(PEER_STATE_NEW_CMD);
-		next_state_ = PEER_STATE_NEW_CMD;
-		try_write();
+	if (!ret) {
+		write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
 	} else {
-		write_error(XIXI_REASON_OUT_OF_MEMORY, 0, true);
+		uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
+
+		uint8_t* buf = cache_buf_.prepare(size);
+		if (buf != NULL) {
+			XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
+
+			add_write_buf(buf, size);
+
+			set_state(PEER_STATE_NEW_CMD);
+			next_state_ = PEER_STATE_NEW_CMD;
+			try_write();
+		} else {
+			write_error(XIXI_REASON_OUT_OF_MEMORY, 0, true);
+		}
 	}
 
 	delete timer_;

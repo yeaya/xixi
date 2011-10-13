@@ -1003,14 +1003,14 @@ uint32_t Cache_Mgr::create_watch(uint32_t group_id, uint32_t max_next_check_inte
 
 bool Cache_Mgr::check_watch_and_set_callback(uint32_t group_id, uint32_t watch_id, std::list<uint64_t>& updated_list, uint32_t& updated_count,
 											 uint64_t ack_cache_id, boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t max_next_check_interval) {
-	 bool ret = false;
+	 bool ret = true;
 	 cache_lock_.lock();
 	 std::map<uint32_t, shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
 	 if (it != watch_map_.end()) {
 		 it->second->check_and_set_callback(updated_list, updated_count, ack_cache_id, sp, curr_time_.realtime(max_next_check_interval));
-		 ret = true;
 		 stats_.check_watch(group_id);
 	 } else {
+		 ret = false;
 		 stats_.check_watch_miss(group_id);
 	 }
 	 cache_lock_.unlock();
@@ -1018,12 +1018,13 @@ bool Cache_Mgr::check_watch_and_set_callback(uint32_t group_id, uint32_t watch_i
 }
 
 bool Cache_Mgr::check_watch_and_clear_callback(uint32_t watch_id, std::list<uint64_t>& updated_list, uint32_t& updated_count) {
-	bool ret = false;
+	bool ret = true;
 	cache_lock_.lock();
 	std::map<uint32_t, shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
 	if (it != watch_map_.end()) {
 		it->second->check_and_clear_callback(updated_list, updated_count);
-		ret = true;
+	} else {
+		ret = false;
 	}
 	cache_lock_.unlock();
 	return ret;

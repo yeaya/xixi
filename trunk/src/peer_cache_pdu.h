@@ -485,15 +485,15 @@ public:
 	void decode_fixed(uint8_t* buf, uint32_t length) {
 		group_id = DECODE_UINT32(buf);
 		watch_id = DECODE_UINT32(buf + 4);
-		max_next_check_interval = DECODE_UINT32(buf + 8);
-		check_timeout = DECODE_UINT32(buf + 12);
+		check_timeout = DECODE_UINT32(buf + 8);
+		max_next_check_interval = DECODE_UINT32(buf + 12);
 		ack_cache_id = DECODE_UINT64(buf + 16);
 	}
 
 	uint32_t group_id;
 	uint32_t watch_id;
-	uint32_t max_next_check_interval;
 	uint32_t check_timeout;
+	uint32_t max_next_check_interval;
 	uint64_t ack_cache_id;
 };
 
