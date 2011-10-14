@@ -165,6 +165,9 @@ public class TCPSocket implements XixiSocket {
 			if (r1 == 0) {
 				readFromChannel();
 				r1 = readBuffer.remaining();
+				if (r1 == 0) {
+					throw new IOException("TCPSocket.read failed on read, len=" + len);
+				}
 			}
 			r1 = r1 < remain ? r1 : remain;
 			readBuffer.get(b, off, r1);
