@@ -131,6 +131,9 @@ public class TCPSocket implements XixiSocket {
 				if (remain == 0) {
 					writeToChannel();
 					remain = writeBuffer.remaining();
+					if (remain == 0) {
+						throw new IOException("TCPSocket.write failed on write, len=" + len);
+					}
 				}
 				int w = len < remain ? len : remain;
 				writeBuffer.put(b, off, w);
