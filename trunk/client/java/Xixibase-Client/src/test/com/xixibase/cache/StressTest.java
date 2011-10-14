@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import org.apache.log4j.BasicConfigurator;
 
 interface Runable {
-	public void run();
+	public boolean run();
 }
 class TestWork extends Thread {
 	
@@ -33,7 +33,10 @@ class TestWork extends Thread {
 		while (list_.size() > 0) {
 			for (int i = 0; i < list_.size(); i++) {
 				Runable r = (Runable)list_.get(i);
-				r.run();
+				if (!r.run()) {
+					list_.remove(i);
+					break;
+				}
 			}
 		}
 	} 
@@ -42,7 +45,10 @@ class TestWork extends Thread {
 class TestCase1 implements Runable {
 	CacheClient cc = null;
 	long id = 0;
-	int cacheItemCount = 0; 
+	int keyCount = 0; 
+	int maxSetCount = 0;
+	int maxGetCount = 0;
+	
 	int cachepos = 0;
 	long setcount = 0;
 	long getcount = 0;
@@ -59,15 +65,15 @@ class TestCase1 implements Runable {
 	String key = "key";
 	String data = "data";
 	static boolean runflag = true;
-	void calc() {
-		if (setcount + getcount > 100) {
+	void calc(boolean flags) {
+//		if (setcount + getcount > 100) {
 			synchronized(lock) {
 				totalset += setcount;
 				totalget += getcount;
 				setpersec += setcount;
 				getpersec += getcount;
 				long curtime = System.currentTimeMillis() / 1000;
-				if (curtime != lasttotalreporttime) {
+				if (curtime != lasttotalreporttime || flags) {
 					System.out.println("testCase1 " + index++ + " " + curtime + " set " + setpersec + "/" + totalset + " get " + getpersec + "/" + totalget);
 					lasttotalreporttime = curtime;
 					setpersec = 0;
@@ -76,15 +82,15 @@ class TestCase1 implements Runable {
 				setcount = 0;
 				getcount = 0;
 			}
-		} else {
+	/*	} else {
 			try {
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}
+		}*/
 	}
-	TestCase1(long id, int cacheItemCount) {
+	TestCase1(long id, int keyCount, int maxSetCount, int maxGetCount) {
 		this.id = id;
 		key = "id." + id;// + " " + key;
 		for (int i = 0; i < 3; i++) {
@@ -93,43 +99,55 @@ class TestCase1 implements Runable {
 		for (int i = 0; i < 10; i++) {
 			data += "-";
 		}
-		this.cacheItemCount = cacheItemCount;
+		this.keyCount = keyCount;
+		this.maxSetCount = maxSetCount;
+		this.maxGetCount = maxGetCount;
 		
 		String mgrName = "stresstest";
 		CacheClientManager mgr = CacheClientManager.getInstance(mgrName);
 		cc = mgr.createClient();
 	}
-	public void run() {
+	public boolean run() {
 	//	System.out.println("testCase1 run"); 
 		
 		if (!runflag) {
-			return;
+			return false;
+		}
+		
+		if (totalset >= maxSetCount && totalget >= maxGetCount) {
+			calc(true);
+			return false;
 		}
 
-		step1();
+		if (totalset < maxSetCount) {
+			step1();
+		}
 
-		step2();
+		if (totalget < maxGetCount) {
+			step2();
+		}
 	//	checkall();
-		calc();
+		calc(false);
+		return true;
 	}
 
 	int bachCount = 200;
 	void step1() {
 	//	int start = cachepos;
 		int count = bachCount;
-		if (cacheItemCount - cachepos < count) {
-			count = cacheItemCount - cachepos;
+		if (keyCount - cachepos < count) {
+			count = keyCount - cachepos;
 			if (count == 0) {
 			//	cachepos = 0;
-				if (cacheItemCount - cachepos >= bachCount) {
+				if (keyCount - cachepos >= bachCount) {
 					count = 0;
 				} else {
-					count = cacheItemCount - cachepos;
+					count = keyCount - cachepos;
 				}
 			}
 		}
 		
-		if (cacheItemCount == 0) {
+		if (keyCount == 0) {
 			count = 0;
 		}
 		
@@ -207,24 +225,13 @@ class TestCase1 implements Runable {
 }
 
 public class StressTest {
-
-	protected static CacheClient cc = null;
-	private static String[] serverlist;
-	long setUpTime = System.currentTimeMillis();
-	long tearDownTime = System.currentTimeMillis();
 	
-	public static void main(String[] args) {
-		
-		BasicConfigurator.configure();
-		String myservers;
-		if (args.length < 1) {
-			System.out.println("parameter: server_address(localhost:7788)");
-			myservers = "localhost:7788";
-		} else {
-			myservers = args[0];
-		}
-		String servers = myservers;
-		serverlist = servers.split(",");
+	public StressTest() {
+	}
+
+	public boolean runIt(String servers, int threadCount, int keyCount,
+			int maxSetCount, int maxGetCount) {
+		String[] serverlist = servers.split(",");
 
 		CacheClientManager mgr = CacheClientManager.getInstance("stresstest");
 		mgr.setSocketWriteBufferSize(64 * 1024);//(1 * 1024 * 1024);
@@ -236,27 +243,14 @@ public class StressTest {
 		
 		ArrayList<TestWork> worklist = new ArrayList<TestWork>();
 		
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < threadCount; i++) {
 			ArrayList<Runable> list1 = new ArrayList<Runable>();
-			list1.add(new TestCase1(i, 250000));
+			list1.add(new TestCase1(i, keyCount, maxSetCount, maxGetCount));
 			TestWork work1 = new TestWork(list1);
 			work1.start();
 			worklist.add(work1);
 		}
-		
-		/*
-		ArrayList list2 = new ArrayList();
-		list2.add(new testCase1());
-		list2.add(new testCase1());
-		testWork work2 = new testWork(list2);
-		work2.start();
-		
-		ArrayList list3 = new ArrayList();
-		list3.add(new testCase1());
-		list3.add(new testCase1());
-		testWork work3 = new testWork(list3);
-		work3.start();
-		*/
+
 		try {
 			for (int j = 0; j < worklist.size(); j++) {
 				TestWork work = worklist.get(j);
@@ -265,5 +259,28 @@ public class StressTest {
 		} catch (InterruptedException e) { 
 
 		} 
+		
+		mgr.shutdown();
+		
+		return false;
+	}
+	
+	public static void main(String[] args) {
+		
+		BasicConfigurator.configure();
+		String myservers;
+		if (args.length < 1) {
+			System.out.println("parameter: server_address(localhost:7788)");
+			myservers = "localhost:7788";
+		} else {
+			myservers = args[0];
+		}
+		StressTest st = new StressTest();
+		int threadCount = 16;
+		int keyCount = 100000;
+		int setCount = 100000 * 3;
+		int getCount = 100000 * 10;
+
+		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
 	}
 }

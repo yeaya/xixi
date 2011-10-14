@@ -966,6 +966,16 @@ public class CacheClientTest extends TestCase {
 		assertTrue(ccb.runIt());
 	}
 	
+	public void testStress() {
+		StressTest st = new StressTest();
+		int threadCount = 16;
+		int keyCount = 1000;
+		int setCount = 1000 * 3;
+		int getCount = 1000 * 10;
+
+		st.runIt(servers, threadCount, keyCount, setCount, getCount);
+	}
+	
 	public void testUpdateFlags() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testUpdateFlags");
 		mgr.setSocketWriteBufferSize(64 * 1024);
