@@ -33,7 +33,7 @@
 #define LOG_ERROR2(x)  LOG_ERROR("Peer_Cache id=" << get_peer_id() << " " << x)
 
 Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this) {
-	LOG_TRACE2("Peer_Cache::Peer_Cache()");
+	LOG_DEBUG2("Peer_Cache::Peer_Cache()");
 	rop_count_ = 0;
 	wop_count_ = 0;
 	socket_ = socket;
@@ -51,7 +51,7 @@ Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this) {
 }
 
 Peer_Cache::~Peer_Cache() {
-	LOG_TRACE2("~Peer_Cache::Peer_Cache()");
+	LOG_DEBUG2("~Peer_Cache::Peer_Cache()");
 	cleanup();
 	stats_.close_conn();
 }
@@ -907,6 +907,7 @@ void Peer_Cache::reset_for_new_cmd() {
 }
 
 void Peer_Cache::start(uint8_t* data, uint32_t data_length) {
+	lock_.lock();
 	if (read_buffer_.get_read_buf_size() >= data_length) {
 		memcpy(read_buffer_.get_read_buf(), data, data_length);
 		read_buffer_.read_data_size_ += data_length;
@@ -926,6 +927,7 @@ void Peer_Cache::start(uint8_t* data, uint32_t data_length) {
 		LOG_INFO2("Peer_Cache::start invalid parameter:data_length=" << data_length);
 		socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
 	}
+	lock_.unlock();
 }
 
 void Peer_Cache::handle_read(const boost::system::error_code& err, size_t length) {
@@ -1032,7 +1034,11 @@ uint32_t Peer_Cache::read_some(uint8_t* buf, uint32_t length) {
 	return socket_->read_some(boost::asio::buffer(buf, length), ec);
 }
 
+static volatile uint32_t lastDestroyPeer = 0;
+
 void Peer_Cache::destroy(Peer_Cache* peer) {
+	lastDestroyPeer = peer->peer_id_;
+	peer->next_state_ = PEER_STATE_CLOSED;
 	peer->self_.reset();
 }
 
