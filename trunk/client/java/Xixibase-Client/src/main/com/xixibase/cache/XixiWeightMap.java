@@ -76,9 +76,10 @@ public class XixiWeightMap<V> implements WeightMap<V> {
 	public void set(V[] values, Integer[] weights) {
 		if (values != null && values.length > 0) {
 			for (int i = 0; i < values.length; i++) {
-				this.values.add(values[i]);
 				if (weights != null && i < weights.length && weights[i] != null) {
-					if (weights[i].intValue() <= 100) {
+					if (weights[i].intValue() <= 0) {
+						this.weights.add(1);
+					} else if (weights[i].intValue() <= 100) {
 						this.weights.add(weights[i]);
 					} else {
 						this.weights.add(100);
@@ -86,6 +87,7 @@ public class XixiWeightMap<V> implements WeightMap<V> {
 				} else {
 					this.weights.add(1);
 				}
+				this.values.add(values[i]);
 			}
 			
 			if (consistentFlag) {
