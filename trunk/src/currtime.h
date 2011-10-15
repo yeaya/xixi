@@ -69,4 +69,3 @@ private:
 extern Current_Time curr_time_;
 
 #endif // CURRENT_TIME_H
-

@@ -32,34 +32,34 @@ boost::mutex log_lock_;
 
 void log_init(const char* file_name, int rotation_size) {
 #ifdef USING_BOOST_LOG
-  if (file_name == NULL || rotation_size <= 0) {
-    return;
-  }
-  namespace logging = boost::log;
-  namespace sinks = boost::log::sinks;
-  namespace flt = boost::log::filters;
-  namespace attrs = boost::log::attributes;
-  namespace keywords = boost::log::keywords;
+	if (file_name == NULL || rotation_size <= 0) {
+		return;
+	}
+	namespace logging = boost::log;
+	namespace sinks = boost::log::sinks;
+	namespace flt = boost::log::filters;
+	namespace attrs = boost::log::attributes;
+	namespace keywords = boost::log::keywords;
 
-  logging::init_log_to_file(
-    // file name pattern
-    keywords::file_name = file_name,
-    // rotate files every x size
-    keywords::rotation_size = rotation_size,
-    // ... or at midnight
-    keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
-    // log record format
-    keywords::format = "[%TimeStamp% %ThreadID%]: %_%",
-    keywords::auto_flush = true);
+	logging::init_log_to_file(
+		// file name pattern
+		keywords::file_name = file_name,
+		// rotate files every x size
+		keywords::rotation_size = rotation_size,
+		// ... or at midnight
+		keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
+		// log record format
+		keywords::format = "[%TimeStamp% %ThreadID%]: %_%",
+		keywords::auto_flush = true);
 
-  logging::init_log_to_console(
-    std::cerr,
-    // log record format
-    keywords::format = "[%TimeStamp% %ThreadID%]: %_%",
-    keywords::auto_flush = true);
+	logging::init_log_to_console(
+		std::cerr,
+		// log record format
+		keywords::format = "[%TimeStamp% %ThreadID%]: %_%",
+		keywords::auto_flush = true);
 #endif
 }
 
 void set_log_level(int log_level) {
-  log_level_ = log_level;
+	log_level_ = log_level;
 }

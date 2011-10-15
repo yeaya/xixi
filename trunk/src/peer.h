@@ -49,67 +49,67 @@ class Peer_Mgr;
 // Peer
 //
 class Peer {
-  friend class Peer_Mgr;
+	friend class Peer_Mgr;
 public:
-  Peer();
-  ~Peer();
+	Peer();
+	~Peer();
 
-  PEER_ID get_peer_id() { return peer_id_; };
-
-protected:
-  void set_peer_id(PEER_ID peer_id) { peer_id_ = peer_id; }
+	PEER_ID get_peer_id() { return peer_id_; };
 
 protected:
-  PEER_ID peer_id_;
+	void set_peer_id(PEER_ID peer_id) { peer_id_ = peer_id; }
+
+protected:
+	PEER_ID peer_id_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 // Peer_Mgr
 //
 class Peer_Mgr {
-  typedef std::pair<PEER_ID,Peer*> MapPair;
-  typedef unordered_map<PEER_ID,Peer*> Map;
-  typedef unordered_map<PEER_ID, Peer*>::iterator Iterator; 
+	typedef std::pair<PEER_ID,Peer*> MapPair;
+	typedef unordered_map<PEER_ID,Peer*> Map;
+	typedef unordered_map<PEER_ID, Peer*>::iterator Iterator; 
 public:
-  Peer_Mgr() {
-    peer_id_ = 0;
-  }
+	Peer_Mgr() {
+		peer_id_ = 0;
+	}
 
-  static Peer* get_processor(uint8_t* data, uint32_t data_len);
+	static Peer* get_processor(uint8_t* data, uint32_t data_len);
 
-  void add(Peer* peer) {
-    MapPair v;
-    v.second = peer;
-    lock_.lock();
-    ++peer_id_;
-    v.first = peer_id_;
-    std::pair<Iterator, bool> pair = peer_map_.insert(v);
-    while (!pair.second) {
-      peer_id_++;
-      v.first = peer_id_;
-      pair = peer_map_.insert(v);
-    }
-    peer->set_peer_id(peer_id_);
-    lock_.unlock();
-  }
+	void add(Peer* peer) {
+		MapPair v;
+		v.second = peer;
+		lock_.lock();
+		++peer_id_;
+		v.first = peer_id_;
+		std::pair<Iterator, bool> pair = peer_map_.insert(v);
+		while (!pair.second) {
+			peer_id_++;
+			v.first = peer_id_;
+			pair = peer_map_.insert(v);
+		}
+		peer->set_peer_id(peer_id_);
+		lock_.unlock();
+	}
 
-  void remove(PEER_ID peer_id) {
-    lock_.lock();
-    peer_map_.erase(peer_id);
-    lock_.unlock();
-  }
+	void remove(PEER_ID peer_id) {
+		lock_.lock();
+		peer_map_.erase(peer_id);
+		lock_.unlock();
+	}
 
-  void dispatch_message(PEER_ID peer_id) {
-    lock_.lock();
-    Iterator it = peer_map_.find(peer_id);
-//    it->second->dispatch_message();
-    lock_.unlock();
-  }
+	void dispatch_message(PEER_ID peer_id) {
+		lock_.lock();
+		Iterator it = peer_map_.find(peer_id);
+		//    it->second->dispatch_message();
+		lock_.unlock();
+	}
 
 private:
-  mutex lock_;
-  Map peer_map_;
-  PEER_ID peer_id_;
+	mutex lock_;
+	Map peer_map_;
+	PEER_ID peer_id_;
 };
 
 extern Peer_Mgr peer_mgr_;

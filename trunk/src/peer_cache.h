@@ -17,7 +17,8 @@
 #ifndef PEER_CACHE_H
 #define PEER_CACHE_H
 
-#include "xixi_buffer.hpp"
+#include "defines.h"
+#include <boost/asio/buffer.hpp>
 #include "cache_buffer.hpp"
 #include "util.h"
 #include "cache.h"

@@ -22,13 +22,13 @@
 
 class Auth {
 public:
-  Auth();
-  void init();
+	Auth();
+	void init();
 
-  void login(uint8_t* base64, uint32_t base64_length, std::string& out);
+	void login(uint8_t* base64, uint32_t base64_length, std::string& out);
 
 protected:
-  void login_plain(const string& user_name, const string& password, string& out);
+	void login_plain(const string& user_name, const string& password, string& out);
 };
 
 extern Auth auth_;

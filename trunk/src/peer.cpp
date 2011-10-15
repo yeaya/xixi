@@ -28,12 +28,12 @@
 
 Peer_Mgr peer_mgr_;
 
-Peer::Peer() /*: connection_(NULL)*/ {
-  peer_mgr_.add(this);
-  LOG_TRACE2("Peer::Peer()");
+Peer::Peer() {
+	peer_mgr_.add(this);
+	LOG_TRACE2("Peer::Peer()");
 }
 
 Peer::~Peer() {
-  peer_mgr_.remove(peer_id_);
-  LOG_TRACE2("~Peer::Peer()\n");
+	peer_mgr_.remove(peer_id_);
+	LOG_TRACE2("~Peer::Peer()\n");
 }

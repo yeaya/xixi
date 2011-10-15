@@ -21,24 +21,21 @@ Current_Time curr_time_;
 
 Current_Time::Current_Time()
 : current_time_(8), last_time_(0) {
-  start_time_ = last_time_ = (uint32_t)time(NULL);
+	start_time_ = last_time_ = (uint32_t)time(NULL);
 }
 
 void Current_Time::set_current_time() {
-  uint32_t tt = (uint32_t)time(NULL);
-  if (tt > last_time_) {
-    uint32_t d = tt - last_time_;
-    if (d > 10) {
-      d = 10;
-    }
-    current_time_ += d;
-  }
-  last_time_ = tt;
+	uint32_t tt = (uint32_t)time(NULL);
+	if (tt > last_time_) {
+		uint32_t d = tt - last_time_;
+		if (d > 10) {
+			d = 10;
+		}
+		current_time_ += d;
+	}
+	last_time_ = tt;
 }
 
 uint32_t Current_Time::get_start_time() {
-  return start_time_;
+	return start_time_;
 }
-
-
-

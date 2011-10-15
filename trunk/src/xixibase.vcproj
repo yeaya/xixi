@@ -369,10 +369,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\xixi_buffer.hpp"
-				>
-			</File>
-			<File
 				RelativePath=".\xixi_hash_map.hpp"
 				>
 			</File>

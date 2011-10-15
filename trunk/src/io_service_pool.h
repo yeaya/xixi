@@ -24,23 +24,23 @@
 
 class io_service_pool : private boost::noncopyable {
 public:
-  explicit io_service_pool(std::size_t pool_size, std::size_t thread_size);
-  ~io_service_pool();
+	explicit io_service_pool(std::size_t pool_size, std::size_t thread_size);
+	~io_service_pool();
 
-  void run();
+	void run();
 
-  void stop();
+	void stop();
 
-  boost::asio::io_service& get_io_service();
+	boost::asio::io_service& get_io_service();
 
 private:
-  vector<boost::asio::io_service*> io_services_;
+	vector<boost::asio::io_service*> io_services_;
 
-  vector<boost::asio::io_service::work*> work_;
+	vector<boost::asio::io_service::work*> work_;
 
-  size_t next_io_service_;
+	size_t next_io_service_;
 
-  size_t thread_size_;
+	size_t thread_size_;
 };
 
 #endif // IO_SERVICE_POOL_H

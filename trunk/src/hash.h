@@ -20,12 +20,11 @@
 #include "defines.h"
 
 #ifdef ENDIAN_LITTLE
-  uint32_t hashlittle(const void* key, size_t length, uint32_t initval);
-  #define hash32(key, length, initval) hashlittle(key, length, initval)
+uint32_t hashlittle(const void* key, size_t length, uint32_t initval);
+#define hash32(key, length, initval) hashlittle(key, length, initval)
 #else
-  uint32_t hashbig(const void* key, size_t length, uint32_t initval);
-  #define hash32(key, length, initval) hashbig(key, length, initval)
+uint32_t hashbig(const void* key, size_t length, uint32_t initval);
+#define hash32(key, length, initval) hashbig(key, length, initval)
 #endif
 
 #endif // HASH_H
-

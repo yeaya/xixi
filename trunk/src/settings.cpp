@@ -19,19 +19,19 @@
 Settings settings_;
 
 Settings::Settings() {
-  init();
+	init();
 }
 
 void Settings::init() {
-  port = 7788;
-  inter = "0.0.0.0";
-  maxbytes = 768 * 1024 * 1024;
-  maxconns = 1024;
-  factor = 1.25;
-  pool_size = 2;
-  num_threads = 4;
-  item_size_min = 48;
-  item_size_max = 5 * 1024 * 1024;
+	port = 7788;
+	inter = "0.0.0.0";
+	maxbytes = 768 * 1024 * 1024;
+	maxconns = 1024;
+	factor = 1.25;
+	pool_size = 2;
+	num_threads = 4;
+	item_size_min = 48;
+	item_size_max = 5 * 1024 * 1024;
 
-  max_stats_group = 1024;
+	max_stats_group = 1024;
 }

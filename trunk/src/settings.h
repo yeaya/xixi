@@ -22,21 +22,21 @@
 
 class Settings {
 public:
-  Settings();
-  void init();
+	Settings();
+	void init();
 
-  uint64_t maxbytes;
-  uint32_t maxconns;
-  uint16_t port;
-  string inter;
+	uint64_t maxbytes;
+	uint32_t maxconns;
+	uint16_t port;
+	string inter;
 
-    double factor;            // chunk size growth factor
-  uint32_t pool_size;       // number of io_service to run
-  uint32_t num_threads;     // number of threads to run
-  uint32_t item_size_min;
-  uint32_t item_size_max;
+	double factor;            // chunk size growth factor
+	uint32_t pool_size;       // number of io_service to run
+	uint32_t num_threads;     // number of threads to run
+	uint32_t item_size_min;
+	uint32_t item_size_max;
 
-  uint32_t max_stats_group;
+	uint32_t max_stats_group;
 };
 
 extern Settings settings_;

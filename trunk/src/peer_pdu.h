@@ -63,33 +63,33 @@ const xixi_choice XIXI_CHOICE_SESSION_CREATE_RES = XIXI_CHOICE_COMMON_BASE + 7;
 #define DECODE_REASON(buf) DECODE_UINT16(buf)
 
 struct XIXI_Pdu_Header {
-  inline void encode(uint8_t* buf) {
-    ENCODE_UINT16(buf, choice);
-  }
-  inline void decode(uint8_t* buf) {
-    choice = DECODE_UINT16(buf);
-  }
-  inline static void encode_choice(uint8_t* buf, xixi_choice choice) {
-    ENCODE_UINT16(buf, choice);
-  }
-  inline xixi_category category() {
-    return (xixi_category)(choice >> 8);
-  }
-  inline xixi_command command() {
-    return (xixi_command)(choice);
-  }
+	inline void encode(uint8_t* buf) {
+		ENCODE_UINT16(buf, choice);
+	}
+	inline void decode(uint8_t* buf) {
+		choice = DECODE_UINT16(buf);
+	}
+	inline static void encode_choice(uint8_t* buf, xixi_choice choice) {
+		ENCODE_UINT16(buf, choice);
+	}
+	inline xixi_category category() {
+		return (xixi_category)(choice >> 8);
+	}
+	inline xixi_command command() {
+		return (xixi_command)(choice);
+	}
 
-  xixi_choice choice; // build with(uint8_t category, uint8_t type)
+	xixi_choice choice; // build with(uint8_t category, uint8_t type)
 };
 
 class XIXI_Pdu {
 public:
-  static XIXI_Pdu* new_fixed_pdu(XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length, xixi_reason& error_code);
-  static void delete_pdu(XIXI_Pdu* pdu);
-  static bool decode_pdu(uint8_t* pdu_buffer, XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length);
-  static XIXI_Pdu* decode_pdu_4_ha(XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length);
+	static XIXI_Pdu* new_fixed_pdu(XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length, xixi_reason& error_code);
+	static void delete_pdu(XIXI_Pdu* pdu);
+	static bool decode_pdu(uint8_t* pdu_buffer, XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length);
+	static XIXI_Pdu* decode_pdu_4_ha(XIXI_Pdu_Header& header, uint8_t* buf, uint32_t length);
 
-  xixi_choice choice; // build with(uint8_t category, uint8_t type)
+	xixi_choice choice; // build with(uint8_t category, uint8_t type)
 };
 
 const uint32_t XIXI_PDU_HELLO_REQ_BODY_LENGTH = 2;
@@ -97,38 +97,38 @@ typedef XIXI_Pdu XIXI_Hello_Req_Pdu;
 
 const uint32_t XIXI_PDU_SIMPLE_RES_LENGTH = XIXI_PDU_HEAD_LENGTH;
 struct XIXI_Simple_Res_Pdu : public XIXI_Pdu {
-  static void encode(uint8_t* buf, xixi_choice choice) {
-    ENCODE_CHOICE(buf, choice);
-  }
+	static void encode(uint8_t* buf, xixi_choice choice) {
+		ENCODE_CHOICE(buf, choice);
+	}
 };
 
 const uint32_t XIXI_PDU_SIMPLE_RES_WITH_REQID_LENGTH = XIXI_PDU_CHOICE_LENGTH + 4;
 struct XIXI_Simple_Res_With_ReqID_Pdu : public XIXI_Pdu {
-  static void encode(uint8_t* buf, uint32_t request_id, xixi_choice choice) {
-    ENCODE_CHOICE(buf, choice); buf += XIXI_PDU_CHOICE_LENGTH;
-    ENCODE_UINT32(buf, request_id); buf += 4;
-  }
-  uint32_t request_id;
+	static void encode(uint8_t* buf, uint32_t request_id, xixi_choice choice) {
+		ENCODE_CHOICE(buf, choice); buf += XIXI_PDU_CHOICE_LENGTH;
+		ENCODE_UINT32(buf, request_id); buf += 4;
+	}
+	uint32_t request_id;
 };
 
 const uint32_t XIXI_PDU_ERROR_RES_LENGTH = XIXI_PDU_CHOICE_LENGTH + XIXI_PDU_REASON_LENGTH;
 struct XIXI_Error_Res_Pdu : public XIXI_Pdu {
-  static void encode(uint8_t* buf, xixi_reason reason) {
-    ENCODE_CHOICE(buf, XIXI_CHOICE_ERROR); buf += XIXI_PDU_CHOICE_LENGTH;
-    ENCODE_UINT16(buf, reason);
-  }
-  xixi_reason error_code;
+	static void encode(uint8_t* buf, xixi_reason reason) {
+		ENCODE_CHOICE(buf, XIXI_CHOICE_ERROR); buf += XIXI_PDU_CHOICE_LENGTH;
+		ENCODE_UINT16(buf, reason);
+	}
+	xixi_reason error_code;
 };
 
 const uint32_t XIXI_PDU_ERROR_RES_WITH_REQID_LENGTH = XIXI_PDU_CHOICE_LENGTH + 6;
 struct XIXI_Error_Res_With_ReqID_Pdu : public XIXI_Pdu {
-  static void encode(uint8_t* buf, uint32_t request_id, xixi_reason reason) {
-    ENCODE_CHOICE(buf, XIXI_CHOICE_ERROR); buf += XIXI_PDU_CHOICE_LENGTH;
-    ENCODE_UINT32(buf, request_id); buf += 4;
-    ENCODE_REASON(buf, reason);
-  }
-  uint32_t request_id;
-  xixi_reason error_code;
+	static void encode(uint8_t* buf, uint32_t request_id, xixi_reason reason) {
+		ENCODE_CHOICE(buf, XIXI_CHOICE_ERROR); buf += XIXI_PDU_CHOICE_LENGTH;
+		ENCODE_UINT32(buf, request_id); buf += 4;
+		ENCODE_REASON(buf, reason);
+	}
+	uint32_t request_id;
+	xixi_reason error_code;
 };
 
 const uint32_t XIXI_PDU_BYE_REQ_BODY_LENGTH = 2;

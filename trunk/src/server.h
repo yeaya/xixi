@@ -29,33 +29,33 @@
 class Server {
 
 public:
-  Server(std::size_t pool_size, std::size_t thread_size);
-  ~Server();
+	Server(std::size_t pool_size, std::size_t thread_size);
+	~Server();
 
-  void start();
-  void stop();
-  void run();
+	void start();
+	void stop();
+	void run();
 
-  boost::asio::ip::tcp::socket* create_socket();
-  boost::asio::ip::tcp::resolver& get_resolver() { return resolver_; }
+	boost::asio::ip::tcp::socket* create_socket();
+	boost::asio::ip::tcp::resolver& get_resolver() { return resolver_; }
 
-  std::string& get_server_id() {
-    return server_id_;
-  }
-
-private:
-  void handle_accept(boost::asio::ip::tcp::socket* socket, const boost::system::error_code& err);
-  void handle_timer(const boost::system::error_code& err);
+	std::string& get_server_id() {
+		return server_id_;
+	}
 
 private:
-  std::string server_id_;
-  mutex lock_;
+	void handle_accept(boost::asio::ip::tcp::socket* socket, const boost::system::error_code& err);
+	void handle_timer(const boost::system::error_code& err);
 
-  io_service_pool io_service_pool_;
-  boost::asio::ip::tcp::acceptor acceptor_;
-  boost::asio::ip::tcp::resolver resolver_;
-  boost::asio::deadline_timer timer_;
-  volatile bool stop_flag_;
+private:
+	std::string server_id_;
+	mutex lock_;
+
+	io_service_pool io_service_pool_;
+	boost::asio::ip::tcp::acceptor acceptor_;
+	boost::asio::ip::tcp::resolver resolver_;
+	boost::asio::deadline_timer timer_;
+	volatile bool stop_flag_;
 };
 
 extern Server* svr_;
