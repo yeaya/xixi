@@ -63,7 +63,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies=""
-				OutputFile="$(OutDir)\xixid.exe"
+				OutputFile="$(OutDir)\xixibase.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\3rd\boost\stage\lib"
 				IgnoreDefaultLibraryNames=""
@@ -142,7 +142,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\xixi.exe"
+				OutputFile="$(OutDir)\xixibase.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;&quot;..\3rd\google-perftools\Release&quot;"
 				IgnoreDefaultLibraryNames=""
@@ -224,7 +224,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libtcmalloc_minimal.lib"
-				OutputFile="$(OutDir)\xixi.exe"
+				OutputFile="$(OutDir)\xixibase.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;&quot;..\3rd\google-perftools\Release&quot;;$(NOINHERIT)"
 				IgnoreDefaultLibraryNames=""
