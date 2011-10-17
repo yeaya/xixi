@@ -43,8 +43,8 @@ TARGET = $(BINDIR)/$(BIN)
 all: $(TARGET)
 
 $(TARGET) : $(OBJS)
-		echo "Linking $@"; \
-		$(CC) $(OBJS) $(LINK_OPTIONS) $(GCOV_LINK_OPTION) $(LINK_OBJS) -o $@; \
+	echo "Linking $@"; \
+	$(CC) $(OBJS) $(LINK_OPTIONS) $(GCOV_LINK_OPTION) $(LINK_OBJS) -o $@; \
 
 $(OBJDIR)/%.o : %.cpp
 	@if [ ! -d $(OBJDIR) ]; \
