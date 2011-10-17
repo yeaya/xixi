@@ -9,13 +9,16 @@ Dependencies:
 --------------------------------------------------------------------------------
 Building Xixibase server
 Windows:
+Microsoft Visual Studio 2008
 1. download boost from http://www.boost.org/
 2. create 3rd/boost folder
   xixibase--3rd--boost
           --client
 	  --src
 3. upzip the boost to 3rd/boost
-4. Open xixibase.sln with "Microsoft Visual Studio 2008" and build it.
+4. bootstrap.bat
+5. bjam release threading=multi link=static
+6. build.bat or (Open xixibase.sln with "Microsoft Visual Studio 2008" and build it).
 
 Linux/Mac:
 1. download boost from http://www.boost.org/
