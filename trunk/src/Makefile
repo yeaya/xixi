@@ -35,7 +35,6 @@ LINK_OPTIONS +=
 #GCOV_LINK_OPTION = -lgcov
 
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
-DEPS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.d))
 
 BINDIR = ..
 OBJDIR = $(BINDIR)/obj
@@ -44,27 +43,15 @@ TARGET = $(BINDIR)/$(BIN)
 all: $(TARGET)
 
 $(TARGET) : $(OBJS)
-	@if [ "$(suffix $(BIN))" = ".a" ]; \
-	then \
-		echo "Linking $@"; \
-		ar r $@ $(OBJS) $(LINK_OPTIONS) $(LINK_OBJS); \
-	elif [ "$(suffix $(BIN))" != ".o" ]; \
-	then \
 		echo "Linking $@"; \
 		$(CC) $(OBJS) $(LINK_OPTIONS) $(GCOV_LINK_OPTION) $(LINK_OBJS) -o $@; \
-	fi
 
 $(OBJDIR)/%.o : %.cpp
-	$(CC) -c $(CPPFLAGS) $(GCOV_CPPFLAGS) $(INCLUDE_OPTIONS) $< -o $@
-
-$(OBJDIR)/%.d : %.cpp
 	@if [ ! -d $(OBJDIR) ]; \
 	then \
 		mkdir -p $(OBJDIR); \
 	fi
-	@$(CC) -MM $(CPPFLAGS) $(GCOV_CPPFLAGS) $(INCLUDE_OPTIONS) $< | sed 's,\($*\)\.o[ :]*,$(OBJDIR)\/\1.o $@ : ,g' > $@
-
--include $(DEPS)
+	$(CC) -c $(CPPFLAGS) $(GCOV_CPPFLAGS) $(INCLUDE_OPTIONS) $< -o $@
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(DEPS)
+	rm -f $(TARGET) $(OBJS)
