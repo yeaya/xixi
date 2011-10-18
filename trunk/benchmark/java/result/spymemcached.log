@@ -1,0 +1,31 @@
+java -server -Xms1024m -Xmx2048m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=64m -XX:MaxPermSize=64m -cp mbm.jar:slf4j-api-1.5.6.jar:xmemcached-1.2.6.1.jar:slf4j-log4j12-1.5.6.jar:log4j.jar:java_memcached-release_2.5.1.jar:spy-2.4.jar:memcached-2.5.jar net.rubyeye.memcached.benchmark.spymemcached.Spymemcached
+2011-10-18 04:16:33.407 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=localhost/127.0.0.1:11211, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+Spymemcached startup
+2011-10-18 04:16:33.414 INFO net.spy.memcached.MemcachedConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@96fa474
+warm up
+threads=1,repeats=2000,valueLength=64,tps=6718,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=512,tps=7019,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=1024,tps=6445,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=4096,tps=3555,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=16384,tps=1296,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=10,repeats=2000,valueLength=64,tps=44831,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=512,tps=43442,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=1024,tps=36850,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=4096,tps=26505,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=16384,tps=11273,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=50,repeats=2000,valueLength=64,tps=69820,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=512,tps=61899,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=1024,tps=54670,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=4096,tps=29609,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=16384,tps=9725,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=100,repeats=2000,valueLength=64,tps=74849,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=512,tps=66079,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=1024,tps=56044,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=4096,tps=27802,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=16384,tps=9763,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=300,repeats=2000,valueLength=64,tps=81264,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=512,tps=65536,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=1024,tps=53220,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=4096,tps=25882,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=16384,tps=10628,miss=91797,fail=0,hit=450903,all=600000,hitRate=0.83
+2011-10-18 04:19:37.976 INFO net.spy.memcached.MemcachedClient:  Shut down memcached client

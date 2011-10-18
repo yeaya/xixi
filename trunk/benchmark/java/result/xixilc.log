@@ -1,0 +1,32 @@
+java -server -Xms1024m -Xmx2048m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=64m -XX:MaxPermSize=64m -cp mbm.jar:slf4j-api-1.5.6.jar:xmemcached-1.2.6.1.jar:slf4j-log4j12-1.5.6.jar:log4j.jar:Xixibase-Client_0.1.jar com.xixibase.benchmark.XixibaseLC
+com.xixibase.cache.LocalCache.start, maxCacheSize=67108864
+com.xixibase.cache.LocalCache.start, localCache updater localhost:7788 start
+com.xixibase.cache.LocalCacheWatch.run, host=localhost:7788
+com.xixibase.cache.LocalCache.setMaxCacheSize, maxCacheSize=1073741824
+XixibaseLC Client startup
+warm up
+threads=1,repeats=2000,valueLength=64,tps=109355,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=512,tps=40685,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=1024,tps=24371,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=4096,tps=7588,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=16384,tps=2434,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=10,repeats=2000,valueLength=64,tps=761266,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=512,tps=308190,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=1024,tps=188693,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=4096,tps=57441,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=16384,tps=16414,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=50,repeats=2000,valueLength=64,tps=1061886,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=512,tps=344928,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=1024,tps=234705,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=4096,tps=74645,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=16384,tps=22904,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=100,repeats=2000,valueLength=64,tps=1152027,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=512,tps=366374,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=1024,tps=235403,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=4096,tps=75487,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=16384,tps=24139,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=300,repeats=2000,valueLength=64,tps=883544,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=512,tps=341106,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=1024,tps=230475,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=4096,tps=82333,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=16384,tps=22109,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
