@@ -31,7 +31,7 @@ public final class CacheItem extends CacheBaseItem {
 			Object value, int dataSize) {
 		super(key, cacheID, expiration, groupID, flags);
 		this.value = value;
-		this.itemSize = key.length() * 2 + dataSize + 1024;
+		this.itemSize = (key.length() + dataSize) * 2 + 512;
 	}
 	
 	public Object getValue() {

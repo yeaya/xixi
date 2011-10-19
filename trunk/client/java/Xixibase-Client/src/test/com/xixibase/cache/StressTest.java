@@ -138,7 +138,7 @@ class TestCase1 implements Runable {
 		if (keyCount - cachepos < count) {
 			count = keyCount - cachepos;
 			if (count == 0) {
-			//	cachepos = 0;
+				cachepos = 0;
 				if (keyCount - cachepos >= bachCount) {
 					count = 0;
 				} else {
@@ -231,6 +231,8 @@ public class StressTest {
 
 	public boolean runIt(String servers, int threadCount, int keyCount,
 			int maxSetCount, int maxGetCount) {
+		System.out.println("StressTest.runIt thread=" + threadCount + " keyCount=" + keyCount
+				+ " maxSetCount=" + maxSetCount + " maxGetCount=" + maxGetCount);
 		String[] serverlist = servers.split(",");
 
 		CacheClientManager mgr = CacheClientManager.getInstance("stresstest");
@@ -276,11 +278,16 @@ public class StressTest {
 			myservers = args[0];
 		}
 		StressTest st = new StressTest();
-		int threadCount = 16;
-		int keyCount = 100000;
-		int setCount = 100000 * 3;
-		int getCount = 100000 * 10;
-
+		int threadCount = 2;
+		int keyCount = 1000;
+		int setCount = 1000 * 3;
+		int getCount = 1000 * 10;
+		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
+		
+		threadCount = 16;
+		keyCount = 20000;
+		setCount = 20000 * 3;
+		getCount = 20000 * 10;
 		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
 	}
 }
