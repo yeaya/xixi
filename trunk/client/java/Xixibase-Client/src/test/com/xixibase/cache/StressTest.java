@@ -22,6 +22,7 @@ import org.apache.log4j.BasicConfigurator;
 interface Runable {
 	public boolean run();
 }
+
 class TestWork extends Thread {
 	
 	ArrayList<Runable> list_ = new ArrayList<Runable>();
@@ -50,45 +51,30 @@ class TestCase1 implements Runable {
 	int maxGetCount = 0;
 	
 	int cachepos = 0;
-	long setcount = 0;
-	long getcount = 0;
-	long lastreporttime = 0;
-	
+
 	static long index = 0;
 	static long totalset = 0;
 	static long totalget = 0;
 	static long setpersec = 0;
 	static long getpersec = 0;
 	static long lasttotalreporttime = 0;
-	static String lock = new String();
 	
 	String key = "key";
 	String data = "data";
-	static boolean runflag = true;
-	void calc(boolean flags) {
-//		if (setcount + getcount > 100) {
-			synchronized(lock) {
-				totalset += setcount;
-				totalget += getcount;
-				setpersec += setcount;
-				getpersec += getcount;
-				long curtime = System.currentTimeMillis() / 1000;
-				if (curtime != lasttotalreporttime || flags) {
-					System.out.println("testCase1 " + index++ + " " + curtime + " set " + setpersec + "/" + totalset + " get " + getpersec + "/" + totalget);
-					lasttotalreporttime = curtime;
-					setpersec = 0;
-					getpersec = 0;
-				}
-				setcount = 0;
-				getcount = 0;
+	public static void report(boolean flags, int setcount, int getcount) {
+		synchronized(TestCase1.class) {
+			totalset += setcount;
+			totalget += getcount;
+			setpersec += setcount;
+			getpersec += getcount;
+			long curtime = System.currentTimeMillis() / 1000;
+			if (curtime != lasttotalreporttime || flags) {
+				System.out.println("testCase1 " + index++ + " " + curtime + " set " + setpersec + "/" + totalset + " get " + getpersec + "/" + totalget);
+				lasttotalreporttime = curtime;
+				setpersec = 0;
+				getpersec = 0;
 			}
-	/*	} else {
-			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}*/
+		}
 	}
 	TestCase1(long id, int keyCount, int maxSetCount, int maxGetCount) {
 		this.id = id;
@@ -107,33 +93,27 @@ class TestCase1 implements Runable {
 		CacheClientManager mgr = CacheClientManager.getInstance(mgrName);
 		cc = mgr.createClient();
 	}
+	
 	public boolean run() {
-	//	System.out.println("testCase1 run"); 
-		
-		if (!runflag) {
-			return false;
-		}
-		
-		if (totalset >= maxSetCount && totalget >= maxGetCount) {
-			calc(true);
-			return false;
+		int setcount = 0;
+		int getcount = 0;
+		if (maxSetCount > 0) {
+			setcount = set();
 		}
 
-		if (totalset < maxSetCount) {
-			step1();
+		if (maxGetCount > 0) {
+			getcount = get();
 		}
-
-		if (totalget < maxGetCount) {
-			step2();
+		report(false, setcount, getcount);
+		if (maxSetCount == 0 && maxGetCount == 0) {
+			return false;
 		}
-	//	checkall();
-		calc(false);
 		return true;
 	}
 
 	int bachCount = 200;
-	void step1() {
-	//	int start = cachepos;
+	int set() {
+		int setCount = 0;
 		int count = bachCount;
 		if (keyCount - cachepos < count) {
 			count = keyCount - cachepos;
@@ -151,48 +131,28 @@ class TestCase1 implements Runable {
 			count = 0;
 		}
 		
-	//	String data = "dd";
-		for (int i = 0; runflag && i < count; i++, cachepos++) {
+		for (int i = 0; i < count && maxSetCount > 0; i++, cachepos++, maxSetCount--) {
 			String mykey = key + cachepos;
 			if (cc.set(mykey, data) == 0) {
-			//	runflag = false;
 				System.out.println("id=" + id + " set error, key=" + mykey);
 				break;
-			} else if (cc.get(mykey) == null) {
-			//	runflag = false;
-				System.out.println("id=" + id + " get error, key=" + mykey);
-				if (cc.get(mykey) == null) {
-					System.out.println("again id=" + id + " get error, key=" + mykey);
-				} else {
-					System.out.println("again id=" + id + " get ok, key=" + mykey);
-				}
-				break;
 			}
-			getcount++;
 			
-			setcount++;
-		//	cacheItemCount--;
+			setCount++;
 		}
-	//	cachedItemCount += count;
+		return setCount;
 	}
 	
 	int readpos = 0;
-	void step2() {
+	int get() {
+		int getCount = 0;
 		if (readpos >= cachepos) {
 			readpos = 0;
-		//	System.out.println("cachepos=" + cachepos);
 		}
-//		int start = cachepos;
-	//	int count = bachCount;
-//		if (count > cachepos) {
-	//		count = cachepos;
-		//}
-		for (int i = 0; runflag && i < bachCount && readpos < cachepos; i++, readpos++) {
+
+		for (int i = 0; i < bachCount && readpos < cachepos && maxGetCount > 0; i++, readpos++, maxGetCount--) {
 			String mykey = key + readpos;
-	//	for (int i = 0; runflag && i < cachepos; i++) {
-	//		String mykey = key + i;
 			if (cc.get(mykey) == null) {
-			//	runflag = false;
 				System.out.println("id=" + id + " get error, key=" + mykey);
 				if (cc.get(mykey) == null) {
 					System.out.println("again id=" + id + " get error, key=" + mykey);
@@ -200,27 +160,9 @@ class TestCase1 implements Runable {
 					System.out.println("again id=" + id + " get ok, key=" + mykey);
 				}
 			}
-			getcount++;
+			getCount++;
 		}
-	}
-	
-	void checkall() {
-		if (cachepos >= 0) {
-	
-			for (int i = 0; i < cachepos; i++) {
-				String mykey = key + i;
-				if (cc.get(mykey) == null) {
-				//	runflag = false;
-					System.out.println("id=" + id + " get error, key=" + mykey);
-					if (cc.get(mykey) == null) {
-						System.out.println("again id=" + id + " get error, key=" + mykey);
-					} else {
-						System.out.println("again id=" + id + " get ok, key=" + mykey);
-					}
-				}
-				getcount++;
-			}
-		}
+		return getCount;
 	}
 }
 
@@ -236,7 +178,6 @@ public class StressTest {
 		String[] serverlist = servers.split(",");
 
 		CacheClientManager mgr = CacheClientManager.getInstance("stresstest");
-		mgr.setSocketWriteBufferSize(64 * 1024);//(1 * 1024 * 1024);
 
 		mgr.setInitConn(10);
 
@@ -260,7 +201,8 @@ public class StressTest {
 			}
 		} catch (InterruptedException e) { 
 
-		} 
+		}
+		TestCase1.report(true, 0, 0);
 		
 		mgr.shutdown();
 		
@@ -282,12 +224,12 @@ public class StressTest {
 		int keyCount = 1000;
 		int setCount = 1000 * 3;
 		int getCount = 1000 * 10;
-		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
+//	st.runIt(myservers, threadCount, keyCount, setCount, getCount);
 		
 		threadCount = 16;
-		keyCount = 20000;
-		setCount = 20000 * 3;
-		getCount = 20000 * 10;
+		keyCount = 10000;
+		setCount = 10000 * 1;
+		getCount = 10000 * 3;
 		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
 	}
 }

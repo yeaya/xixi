@@ -77,8 +77,7 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 
 	String key = "key";
 	String data = "data";
-	static boolean runflag = true;
-	int operationType = 7;
+	int operationType = 0;
 	static int updateFinishedPos = 0;
 	static String[] updateMap;
 	static LocalCache localCache;
@@ -87,7 +86,7 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 		updateMap = new String[cacheItemCount];
 		localCache = lc;
 	}
-	void calc() {
+	void report() {
 		totalset += setcount;
 		totalget += getcount;
 		totalmiss += misscount;
@@ -131,14 +130,13 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 				getpersec2.set(0);
 				misspersec2.set(0);
 				notFoundCountPerSec2.set(0);
+				index++;
 			}
-			index++;
 		}
 		if (setcount + getcount + misscount == 0) {
 			try {
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				System.out.println(e.getMessage());
 			}
@@ -165,12 +163,6 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 		cc = mgr.createClient();
 	}
 	public void run() {
-	//	System.out.println("testCase1 run"); 
-		
-		if (!runflag) {
-			return;
-		}
-		
 		if ((operationType & OP_FLAG_GET_LOCAL) == OP_FLAG_GET_LOCAL) {
 			this.getLocal();
 		}
@@ -186,8 +178,7 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 		if ((operationType & OP_FLAG_WATCH) == OP_FLAG_WATCH) {
 			this.updateWatch();
 		}
-	//	checkall();
-		calc();
+		report();
 	}
 
 	void getLocal() {
@@ -195,7 +186,7 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 			readpos = 0;
 		}
 
-		for (int i = 0; runflag && i < bachCount && readpos < updateFinishedPos; i++, readpos++) {
+		for (int i = 0; i < bachCount && readpos < updateFinishedPos; i++, readpos++) {
 			String mykey = key + readpos;
 			String value = (String)cc.getL(mykey);
 			if (value == null) {
@@ -220,7 +211,7 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 			readpos = 0;
 		//	System.out.println("cachepos=" + cachepos);
 		}
-		for (int i = 0; runflag && i < bachCount && readpos < updateFinishedPos; i++, readpos++) {
+		for (int i = 0; i < bachCount && readpos < updateFinishedPos; i++, readpos++) {
 			String mykey = key + readpos;
 			if (cc.get(mykey) == null) {
 				this.notFoundCount++;
@@ -240,7 +231,7 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 			readpos = 0;
 		}
 
-		for (int i = 0; runflag && i < bachCount && readpos < updateFinishedPos; i++, readpos++) {
+		for (int i = 0; i < bachCount && readpos < updateFinishedPos; i++, readpos++) {
 			String mykey = key + readpos;
 			String value = (String)cc.getLW(mykey);
 			if (value == null) {
@@ -278,33 +269,22 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 		}
 
 	//	String data = "dd";
-		for (int i = 0; runflag && i < count; i++, updatepos++) {
+		for (int i = 0; i < count; i++, updatepos++) {
 			String mykey = key + updatepos;
 			String value = mykey + System.currentTimeMillis();
 			if (cc.set(mykey, value) == 0) {
-			//	runflag = false;
 				System.out.println("updateCache id=" + id + " set error, key=" + mykey);
 				break;
-			}/* else if (cc.get(mykey) == null) {
-			//	runflag = false;
-				System.out.println("updateCache id=" + id + " get error, key=" + mykey);
-				if (cc.get(mykey) == null) {
-					System.out.println("updateCache again id=" + id + " get error, key=" + mykey);
-				} else {
-					System.out.println("updateCache again id=" + id + " get ok, key=" + mykey);
-				}
-				break;
-			}*/
+			}
 			updateMap[updatepos] = value;
-		//	getcount++;
-			
+		
 			setcount++;
 		}
 		if (updateFinishedPos < updatepos) {
 			updateFinishedPos = updatepos;
 		}
-	//	cachedItemCount += count;
 	}
+	
 	/*
 	public static final int OP_FLAG_WATCH = 16;
 	*/
@@ -325,50 +305,18 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 		}
 
 	//	String data = "dd";
-		for (int i = 0; runflag && i < count; i++, updatepos++) {
+		for (int i = 0; i < count; i++, updatepos++) {
 			String mykey = key + updatepos;
 			String value = mykey + System.currentTimeMillis();
 			if (cc.setW(mykey, value) == 0) {
-			//	runflag = false;
 				System.out.println("updateCache id=" + id + " set error, key=" + mykey);
 				break;
-			}/* else if (cc.get(mykey) == null) {
-			//	runflag = false;
-				System.out.println("updateCache id=" + id + " get error, key=" + mykey);
-				if (cc.get(mykey) == null) {
-					System.out.println("updateCache again id=" + id + " get error, key=" + mykey);
-				} else {
-					System.out.println("updateCache again id=" + id + " get ok, key=" + mykey);
-				}
-				break;
-			}*/
+			}
 			updateMap[updatepos] = value;
-		//	getcount++;
-			
 			setcount++;
 		}
 		if (updateFinishedPos < updatepos) {
 			updateFinishedPos = updatepos;
-		}
-	//	cachedItemCount += count;
-	}
-
-	void checkall() {
-		if (updatepos >= 0) {
-	
-			for (int i = 0; i < updatepos; i++) {
-				String mykey = key + i;
-				if (cc.get(mykey) == null) {
-				//	runflag = false;
-					System.out.println("id=" + id + " get error, key=" + mykey);
-					if (cc.get(mykey) == null) {
-						System.out.println("again id=" + id + " get error, key=" + mykey);
-					} else {
-						System.out.println("again id=" + id + " get ok, key=" + mykey);
-					}
-				}
-				getcount++;
-			}
 		}
 	}
 }
