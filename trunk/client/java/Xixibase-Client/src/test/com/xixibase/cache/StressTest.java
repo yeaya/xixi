@@ -184,6 +184,9 @@ public class StressTest {
 		mgr.setNoDelay(false);
 		mgr.initialize(serverlist);
 		
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		
 		ArrayList<TestWork> worklist = new ArrayList<TestWork>();
 		
 		for (int i = 0; i < threadCount; i++) {
@@ -227,9 +230,9 @@ public class StressTest {
 //	st.runIt(myservers, threadCount, keyCount, setCount, getCount);
 		
 		threadCount = 16;
-		keyCount = 10000;
-		setCount = 10000 * 1;
-		getCount = 10000 * 3;
+		keyCount = 100000;
+		setCount = 100000 * 1;
+		getCount = 100000 * 3;
 		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
 	}
 }

@@ -250,15 +250,18 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 	}
 
 	int bachCount = 200;
-	int runN = 3;
+	int updateReplayCount = 3;
+	public void setUpdateReplayCount(int updateReplayCount) {
+		this.updateReplayCount = updateReplayCount;
+	}
 	void updateCache() {
 		int count = bachCount;
 		if (count > cacheItemCount - updatepos) {
 			count = cacheItemCount - updatepos;
 			if (count == 0) {
-				if (runN > 0) {
+				if (updateReplayCount > 0) {
 					updatepos = 0;
-					runN--;
+					updateReplayCount--;
 				}
 				if (cacheItemCount - updatepos >= bachCount) {
 					count = bachCount;
@@ -328,7 +331,7 @@ public class StressTestLocalCache {
 	long setUpTime = System.currentTimeMillis();
 	long tearDownTime = System.currentTimeMillis();
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		String myservers;
 		if (args.length < 1) {
 			System.out.println("parameter: server_address(localhost:7788)");
@@ -348,14 +351,26 @@ public class StressTestLocalCache {
 		mgr.initialize(serverlist);
 		mgr.enableLocalCache();
 		LocalCache localCache = mgr.getLocalCache();
-		localCache.setMaxCacheSize(256 * 1024 * 1024);
+		localCache.setMaxCacheSize(512 * 1024 * 1024);
+		
+		CacheClient cc = mgr.createClient();
+		cc.flush();
+		Thread.sleep(500);
 		
 		ArrayList<TestWorkLocalCache> worklist = new ArrayList<TestWorkLocalCache>();
 		
-		TestCaseLocalCache1.initStatic(100000, localCache);
+		int getThreadCount = 16;
+		int keyCount = 200000;
+		int updateReplayCount = 2;
+		System.out.println("StressTestLocalCache getThreadCount=" + getThreadCount
+				+ " keyCount=" + keyCount + " updateReplayCount=" + updateReplayCount);
+		
+		TestCaseLocalCache1.initStatic(keyCount, localCache);
 		ArrayList<RunableLocalCache> list1 = new ArrayList<RunableLocalCache>();
 		int id = 0;
-		list1.add(new TestCaseLocalCache1(pooName, id++, TestCaseLocalCache1.OP_FLAG_UPDATE));
+		TestCaseLocalCache1 tcc = new TestCaseLocalCache1(pooName, id++, TestCaseLocalCache1.OP_FLAG_UPDATE);
+		tcc.setUpdateReplayCount(updateReplayCount);
+		list1.add(tcc);
 		TestWorkLocalCache work1 = new TestWorkLocalCache(list1);
 		work1.start();
 		worklist.add(work1);
@@ -368,7 +383,7 @@ public class StressTestLocalCache {
 			worklist.add(work2);
 		}
 		
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < getThreadCount; i++) {
 			ArrayList<RunableLocalCache> list3 = new ArrayList<RunableLocalCache>();
 			list3.add(new TestCaseLocalCache1(pooName, id++, TestCaseLocalCache1.OP_FLAG_GET_WATCH));
 			TestWorkLocalCache work3 = new TestWorkLocalCache(list3);
