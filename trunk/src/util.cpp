@@ -17,14 +17,14 @@
 #include <ctype.h>
 #include <errno.h>
 #include "util.h"
-
+/*
 #define I32_MAX    0x7fffffffL
 #define UI32_MAX   0xffffffffUL
 #define I64_MAX    (((int64_t)0x7fffffff << 32) | 0xffffffff)
 #define I64_MIN    (-MSVCRT_I64_MAX-1)
 #define UI64_MAX   (((uint64_t)0xffffffff << 32) | 0xffffffff)
-
-bool safe_toui64(const uint8_t* data, uint32_t data_len, uint64_t& out) {
+*/
+bool safe_toui64(const char* data, uint32_t data_len, uint64_t& out) {
 	uint64_t ret = 0;
 	uint64_t temp = 0;
 
@@ -68,7 +68,7 @@ bool safe_toui64(const uint8_t* data, uint32_t data_len, uint64_t& out) {
 	return true;
 }
 
-extern bool safe_toi64(const uint8_t* data, uint32_t data_len, int64_t& out) {
+extern bool safe_toi64(const char* data, uint32_t data_len, int64_t& out) {
 	bool negative = false;
 	int64_t ret = 0;
 	int64_t temp = 0;
@@ -115,7 +115,7 @@ extern bool safe_toi64(const uint8_t* data, uint32_t data_len, int64_t& out) {
 	return true;
 }
 
-extern bool safe_toui32(const uint8_t* data, uint32_t data_len, uint32_t& out) {
+extern bool safe_toui32(const char* data, uint32_t data_len, uint32_t& out) {
 	uint32_t ret = 0;
 	uint32_t temp = 0;
 
@@ -159,7 +159,7 @@ extern bool safe_toui32(const uint8_t* data, uint32_t data_len, uint32_t& out) {
 	return true;
 }
 
-extern bool safe_toi32(const uint8_t* data, uint32_t data_len, int32_t& out) {
+extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out) {
 	bool negative = false;
 	int32_t ret = 0;
 	int32_t temp = 0;
@@ -205,7 +205,7 @@ extern bool safe_toi32(const uint8_t* data, uint32_t data_len, int32_t& out) {
 	out = negative ? -ret : ret;
 	return true;
 }
-
+/*
 bool safe_strtoui64(const char* str, uint64_t& out) {
 	errno = 0;
 	char* endptr = NULL;
@@ -261,3 +261,4 @@ bool safe_strtoi32(const char* str, int32_t& out) {
 	}
 	return (isspace(*endptr) || (*endptr == '\0' && endptr != str));
 }
+*/

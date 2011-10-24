@@ -18,6 +18,7 @@
 #include "settings.h"
 #include "log.h"
 #include "peer_cache.h"
+#include "peer_http.h"
 #include "cache.h"
 #include "currtime.h"
 #include <boost/lexical_cast.hpp>
@@ -72,7 +73,7 @@ public:
 			return;
 		}
 
-		socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - read_data_size_),
+		socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
 			make_custom_alloc_handler(read_allocator_,
 			boost::bind(&Connection_Help::handle_first_read, this,
 			boost::asio::placeholders::error,
@@ -84,19 +85,19 @@ public:
 
 		if (!err) {
 			read_data_size_ += length;
-			if (read_data_size_ >= 1) {
+			if (read_data_size_ >= 4) {
 				boost::asio::io_service& io_service_ = socket_->get_io_service();
 				start_peer(read_buf_, read_data_size_);
 				//  if (socket_ == NULL) {
 				io_service_.post(boost::bind(&Connection_Help::destroy, this));
 				//  }
 			} else {
-				socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - read_data_size_),
+				socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
 					make_custom_alloc_handler(read_allocator_,
 					boost::bind(&Connection_Help::handle_first_read, this,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred)));
-				LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - read_data_size_));
+				LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - 1 - read_data_size_));
 			}
 		} else {
 			LOG_DEBUG("handle_first_read destroy");
@@ -105,9 +106,17 @@ public:
 	}
 
 	void start_peer(uint8_t* data, uint32_t data_len) {
-		if (data_len >= 1) {
+		if (data_len >= 4) {
 			if (data[0] == XIXI_CATEGORY_CACHE) {
 				Peer_Cache* peer = new Peer_Cache(socket_);
+				peer->start(read_buf_, read_data_size_);
+				socket_ = NULL;
+				return;
+			}
+			uint32_t method = *((uint32_t*)data);
+			if (method == GET_METHOD || method == POST_METHOD) {
+				Peer_Http* peer = new Peer_Http(socket_);
+				data[data_len] = '\0';
 				peer->start(read_buf_, read_data_size_);
 				socket_ = NULL;
 				return;
@@ -122,7 +131,7 @@ public:
 private:
 	boost::asio::ip::tcp::socket* socket_;
 
-	uint8_t  read_buf_[1024];
+	uint8_t  read_buf_[1025];
 	uint32_t read_data_size_;
 	Handler_Allocator<> read_allocator_;
 };

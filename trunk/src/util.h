@@ -30,10 +30,10 @@
 #define _strtoi64 strtoll
 #endif
 
-extern bool safe_toui64(const uint8_t* data, uint32_t data_len, uint64_t& out);
-extern bool safe_toi64(const uint8_t* data, uint32_t data_len, int64_t& out);
-extern bool safe_toui32(const uint8_t* data, uint32_t data_len, uint32_t& out);
-extern bool safe_toi32(const uint8_t* data, uint32_t data_len, int32_t& out);
+extern bool safe_toui64(const char* data, uint32_t data_len, uint64_t& out);
+extern bool safe_toi64(const char* data, uint32_t data_len, int64_t& out);
+extern bool safe_toui32(const char* data, uint32_t data_len, uint32_t& out);
+extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out);
 
 template <int a = 0>
 class Swap {

@@ -401,6 +401,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\peer_http.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\peer_http.h"
+				>
+			</File>
+			<File
 				RelativePath=".\peer_pdu.cpp"
 				>
 			</File>
