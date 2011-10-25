@@ -72,6 +72,7 @@ protected:
 	inline uint32_t try_read_command(char* data, uint32_t data_len);
 	inline void process_command(char* command, uint32_t length);
 	inline bool process_cahce_arg(char* agr);
+	inline char* decode_uri(char* uri, uint32_t length, uint32_t& out);
 	
 
 	inline void process_pdu_fixed(XIXI_Pdu* pdu);
@@ -182,7 +183,7 @@ protected:
 
 	uint32_t    swallow_size_;
 
-	Cache_Buffer<MAX_PDU_FIXED_LENGTH * 5> cache_buf_;
+//	Cache_Buffer<MAX_PDU_FIXED_LENGTH * 5> cache_buf_;
 	Cache_Buffer<2048> request_buf_;
 
 	Receive_Buffer<2048, 8192> read_buffer_;
