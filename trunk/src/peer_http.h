@@ -34,6 +34,17 @@ typedef struct token_s {
     size_t length;
 } token_t;
 
+class Http_Request {
+public:
+	uint32_t method;
+	string uri;
+	string cmd;
+	std::vector<string> arg_names;
+	std::vector<string> arg_values;
+	std::vector<string> header_names;
+	std::vector<string> header_values;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // Peer_Http
 //
@@ -60,6 +71,7 @@ protected:
 
 	inline uint32_t try_read_command(char* data, uint32_t data_len);
 	inline void process_command(char* command, uint32_t length);
+	inline bool process_cahce_arg(char* agr);
 	
 
 	inline void process_pdu_fixed(XIXI_Pdu* pdu);
@@ -67,16 +79,13 @@ protected:
 	inline uint32_t process_pdu_extras2(XIXI_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// get
-	inline void process_get(char* command, uint32_t length);
-	inline uint32_t process_get_req_pdu_extras(XIXI_Get_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
-
-	// get touch
-	inline uint32_t process_get_touch_req_pdu_extras(XIXI_Get_Touch_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline void process_get();
 
 	// get base
 	inline uint32_t process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// update
+	inline void process_update(uint8_t sub_op);
 	inline void process_update_req_pdu_fixed(XIXI_Update_Req_Pdu* pdu);
 	inline void process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu);
 
@@ -116,7 +125,7 @@ protected:
 	inline void reset_for_new_cmd();
 	inline void write_simple_res(xixi_choice choice, uint32_t request_id);
 	inline void write_simple_res(xixi_choice choice);
-	inline void write_error(xixi_reason error_code, uint32_t swallow, bool reply);
+	inline void write_error(xixi_reason error_code);
 
 	inline void cleanup();
 
@@ -145,7 +154,21 @@ protected:
 
 	uint32_t next_data_len_;
 
+	Http_Request http_request_;
+
 	vector<token_t> tokens_;
+	uint32_t group_id_;
+	uint32_t watch_id_;
+	uint64_t cache_id_;
+	char* key_;
+	uint32_t key_length_;
+	char* value_;
+	uint32_t value_length_;
+	uint64_t content_length_;
+	uint32_t flags_;
+	uint32_t expiration_;
+	bool touch_flag_;
+
 	XIXI_Pdu_Header read_pdu_header_;
 	XIXI_Pdu* read_pdu_;
 	uint8_t read_pdu_fixed_body_buffer_[MAX_PDU_FIXED_BODY_LENGTH];

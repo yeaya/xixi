@@ -34,8 +34,8 @@ const xixi_reason XIXI_REASON_MISMATCH = 6;
 const xixi_reason XIXI_RES_AUTH_ERROR = 7;
 const xixi_reason XIXI_REASON_UNKNOWN_COMMAND = 8;
 const xixi_reason XIXI_REASON_OUT_OF_MEMORY = 9;
-const xixi_reason XIXI_REASON_WAIT_FOR_ME = 10;
-const xixi_reason XIXI_REASON_PLEASE_TRY_AGAIN = 11;
+//const xixi_reason XIXI_REASON_WAIT_FOR_ME = 10;
+//const xixi_reason XIXI_REASON_PLEASE_TRY_AGAIN = 11;
 const xixi_reason XIXI_REASON_WATCH_NOT_FOUND = 12;
 
 #endif // XIXIBASE_H
