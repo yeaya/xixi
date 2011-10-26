@@ -36,13 +36,29 @@ typedef struct token_s {
 
 class Http_Request {
 public:
+	Http_Request() {
+		reset();
+	}
+	void reset() {
+		method = 0;
+		uri = NULL;
+		uri_length = 0;
+		content_type = NULL;
+		content_type_length = 0;
+		boundary = NULL;
+		boundary_length = 0;
+	}
 	uint32_t method;
-	string uri;
-	string cmd;
-	std::vector<string> arg_names;
-	std::vector<string> arg_values;
-	std::vector<string> header_names;
-	std::vector<string> header_values;
+	char* uri;
+	uint32_t uri_length;
+	char* content_type;
+	uint32_t content_type_length;
+	char* boundary;
+	uint32_t boundary_length;
+//	std::vector<string> arg_names;
+//	std::vector<string> arg_values;
+//	std::vector<string> header_names;
+//	std::vector<string> header_values;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,14 +86,18 @@ protected:
 	inline void set_state(peer_state state);
 
 	inline uint32_t try_read_command(char* data, uint32_t data_len);
-	inline void process_command(char* command, uint32_t length);
-	inline bool process_cahce_arg(char* agr);
+	inline void process_request_header(char* request_header, uint32_t length);
+	inline bool process_request_header_fields(char* request_header_field, uint32_t length);
+	inline bool handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length);
+	inline void process_command();
+	inline bool process_request_arg(char* agr);
 	inline char* decode_uri(char* uri, uint32_t length, uint32_t& out);
+	inline void process_post();
 	
 
-	inline void process_pdu_fixed(XIXI_Pdu* pdu);
-	inline void process_pdu_extras(XIXI_Pdu* pdu);
-	inline uint32_t process_pdu_extras2(XIXI_Pdu* pdu, uint8_t* data, uint32_t data_length);
+//	inline void process_pdu_fixed(XIXI_Pdu* pdu);
+//	inline void process_pdu_extras(XIXI_Pdu* pdu);
+//	inline uint32_t process_pdu_extras2(XIXI_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// get
 	inline void process_get();
@@ -87,26 +107,28 @@ protected:
 
 	// update
 	inline void process_update(uint8_t sub_op);
-	inline void process_update_req_pdu_fixed(XIXI_Update_Req_Pdu* pdu);
-	inline void process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu);
+//	inline void process_update_req_pdu_fixed(XIXI_Update_Req_Pdu* pdu);
+//	inline void process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu);
 
 	// update base
 	inline uint32_t process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// update expiration
-	inline uint32_t process_update_expiration_req_pdu_extras(XIXI_Update_Expiration_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline void process_touch();
 
 	// delete
-	inline void process_delete_req_pdu_fixed(XIXI_Delete_Req_Pdu* pdu);
-	inline uint32_t process_delete_req_pdu_extras(XIXI_Delete_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline void process_delete();
+//	inline void process_delete_req_pdu_fixed(XIXI_Delete_Req_Pdu* pdu);
+//	inline uint32_t process_delete_req_pdu_extras(XIXI_Delete_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// auth
 	inline void process_auth_req_pdu_fixed(XIXI_Auth_Req_Pdu* pdu);
 	inline uint32_t process_auth_req_pdu_extras(XIXI_Auth_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// delta
-	inline void process_delta_req_pdu_fixed(XIXI_Delta_Req_Pdu* pdu);
-	inline uint32_t process_delta_req_pdu_extras(XIXI_Delta_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline void process_delta(bool incr);
+//	inline void process_delta_req_pdu_fixed(XIXI_Delta_Req_Pdu* pdu);
+//	inline uint32_t process_delta_req_pdu_extras(XIXI_Delta_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// hello
 	inline void process_hello_req_pdu_fixed();
@@ -118,10 +140,10 @@ protected:
 	inline void process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu);
 
 	// flush
-	inline void process_flush_req_pdu_fixed(XIXI_Flush_Req_Pdu* pdu);
+	inline void process_flush();
 
 	// stats
-	inline void process_stats_req_pdu_fixed(XIXI_Stats_Req_Pdu* pdu);
+	inline void process_stats();
 
 	inline void reset_for_new_cmd();
 	inline void write_simple_res(xixi_choice choice, uint32_t request_id);
@@ -165,14 +187,16 @@ protected:
 	uint32_t key_length_;
 	char* value_;
 	uint32_t value_length_;
-	uint64_t content_length_;
+	uint8_t* post_data_;
+	uint32_t content_length_;
 	uint32_t flags_;
 	uint32_t expiration_;
 	bool touch_flag_;
+	int64_t delta_;
 
-	XIXI_Pdu_Header read_pdu_header_;
-	XIXI_Pdu* read_pdu_;
-	uint8_t read_pdu_fixed_body_buffer_[MAX_PDU_FIXED_BODY_LENGTH];
+//	XIXI_Pdu_Header read_pdu_header_;
+//	XIXI_Pdu* read_pdu_;
+//	uint8_t read_pdu_fixed_body_buffer_[MAX_PDU_FIXED_BODY_LENGTH];
 
 	uint32_t write_buf_total_;
 

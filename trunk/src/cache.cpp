@@ -870,7 +870,7 @@ xixi_reason Cache_Mgr::remove(uint32_t group_id, const uint8_t* key, uint32_t ke
 }
 
 #define INCR_MAX_STORAGE_LEN 24
-xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*out*/ cache_id, int64_t&/*out*/ value) {
+xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*in and out*/ cache_id, int64_t&/*out*/ value) {
 	xixi_reason reason;
 	uint32_t hash_value = hash32(key, key_length, group_id);
 	cache_lock_.lock();

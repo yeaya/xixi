@@ -186,7 +186,7 @@ public:
 	xixi_reason prepend(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);
 
 	xixi_reason remove(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t cache_id);
-	xixi_reason delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*out*/ cache_id, int64_t&/*out*/ value);
+	xixi_reason delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*in and out*/ cache_id, int64_t&/*out*/ value);
 	bool item_size_ok(size_t key_length, uint32_t data_size);
 
 	uint32_t create_watch(uint32_t group_id, uint32_t max_next_check_interval);
