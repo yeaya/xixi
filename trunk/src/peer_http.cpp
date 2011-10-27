@@ -632,7 +632,7 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 				*(p2) = '\0';
 				value_length = p2 - value;
 			}
-			LOG_INFO2(name << "=" << value);
+	//		LOG_INFO2(name << "=" << value);
 			if (!handle_request_header_field(name, name_length, value, value_length)) {
 				return false;
 			}
