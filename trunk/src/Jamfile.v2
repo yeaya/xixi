@@ -44,6 +44,7 @@ exe xixibase
     util.cpp 
     peer.cpp 
     peer_cache.cpp 
+    peer_http.cpp 
     peer_pdu.cpp 
     auth.cpp
     /boost/system//boost_system

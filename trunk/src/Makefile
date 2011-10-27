@@ -12,6 +12,7 @@ SRCS = cache.cpp \
   util.cpp \
   peer.cpp \
   peer_cache.cpp \
+  peer_http.cpp \
   peer_pdu.cpp \
   auth.cpp
 
