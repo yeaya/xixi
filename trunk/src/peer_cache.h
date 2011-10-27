@@ -113,14 +113,14 @@ protected:
 	inline void handle_write(const boost::system::error_code& err);
 
 	inline void try_read();
-	inline uint32_t try_write();
+	inline bool try_write();
 	inline uint32_t read_some(uint8_t* buf, uint32_t length);
 	inline void add_write_buf(const uint8_t* buf, uint32_t size) {
 		write_buf_.push_back(boost::asio::const_buffer(buf, size));
 		write_buf_total_ += size;
 	}
 
-	static void destroy(Peer_Cache* peer);
+//	static void destroy(Peer_Cache* peer);
 
 	void handle_timer(const boost::system::error_code& err, uint32_t watch_id);
 
@@ -154,8 +154,7 @@ protected:
 	boost::asio::deadline_timer* timer_;
 
 	boost::asio::ip::tcp::socket* socket_;
-	int rop_count_;
-	int wop_count_;
+	int op_count_;
 	Handler_Allocator<> handler_allocator_;
 };
 

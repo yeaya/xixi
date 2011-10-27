@@ -34,8 +34,7 @@
 
 Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this) {
 	LOG_DEBUG2("Peer_Cache::Peer_Cache()");
-	rop_count_ = 0;
-	wop_count_ = 0;
+	op_count_ = 0;
 	socket_ = socket;
 	read_pdu_ = NULL;
 	state_ = PEER_STATE_NEW_CMD;
@@ -911,96 +910,93 @@ void Peer_Cache::start(uint8_t* data, uint32_t data_length) {
 	if (read_buffer_.get_read_buf_size() >= data_length) {
 		memcpy(read_buffer_.get_read_buf(), data, data_length);
 		read_buffer_.read_data_size_ += data_length;
-		process();
-//		read_buffer_.handle_processed();
 
-		if (!is_closed()) {
-			uint32_t size = try_write();
-			if (size == 0) {
-				try_read();
+		process();
+
+		if (state_ != PEER_STATUS_ASYNC_WAIT) {
+			if (!is_closed()) {
+				if (!try_write()) {
+					try_read();
+				}
+			} else {
+				LOG_DEBUG2("start peer is closed, op_count_=" << op_count_ );
 			}
 		} else {
-			LOG_INFO2("Peer_Cache::start closed");
-			socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
+			try_write();
 		}
 	} else {
-		LOG_INFO2("Peer_Cache::start invalid parameter:data_length=" << data_length);
-		socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
+		LOG_INFO2("start invalid parameter:data_length=" << data_length);
 	}
+	bool closed = (op_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT);
 	lock_.unlock();
+	if (closed) {
+		self_.reset();
+	}
 }
 
 void Peer_Cache::handle_read(const boost::system::error_code& err, size_t length) {
 	LOG_TRACE2("handle_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
-
 	lock_.lock();
-	--rop_count_;
+	--op_count_;
 	if (!err) {
 		read_buffer_.read_data_size_ += length;
+
 		process();
-	//	read_buffer_.handle_processed();
 
 		if (state_ != PEER_STATUS_ASYNC_WAIT) {
 			if (!is_closed()) {
-				uint32_t size = try_write();
-				if (size == 0) {
+				if (!try_write()) {
 					try_read();
 				}
 			} else {
-				LOG_DEBUG2("handle_read peer is closed, rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
+				LOG_DEBUG2("handle_read peer is closed, op_count_=" << op_count_);
 			}
 		} else {
 			try_write();
 		}
 	} else {
-		LOG_DEBUG2("handle_read error rop_count_=" << rop_count_ << " wop_count_=" << wop_count_ << " err=" << err);
+		LOG_DEBUG2("handle_read error op_count_=" << op_count_ << " err=" << err);
 	}
 
-	if (rop_count_ + wop_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT) {
-		LOG_DEBUG2("handle_read destroy rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
-		socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
-	} else {
-		LOG_TRACE2("handle_read end rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
-	}
+	bool closed = (op_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT);
 	lock_.unlock();
+	if (closed) {
+		self_.reset();
+	}
 }
 
 void Peer_Cache::handle_write(const boost::system::error_code& err) {
 	LOG_TRACE2("handle_write err=" << err.message() << " err_value=" << err.value());
-
 	lock_.lock();
-	--wop_count_;
+	--op_count_;
 	if (!err) {
 		write_buf_.clear();
+
 		process();
-	//	read_buffer_.handle_processed();
 
 		if (state_ != PEER_STATUS_ASYNC_WAIT) {
 			if (!is_closed()) {
-				uint32_t size = try_write();
-				if (size == 0) {
+				if (!try_write()) {
 					try_read();
 				}
 			} else {
-				LOG_DEBUG2("handle_write peer is closed, rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
+				LOG_DEBUG2("handle_write peer is closed, op_count_=" << op_count_);
 			}
 		} else {
 			try_write();
 		}
 	}
 
-	if (rop_count_ + wop_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT) {
-		LOG_DEBUG2("handle_write destroy rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
-		socket_->get_io_service().post(boost::bind(&Peer_Cache::destroy, this));
-	} else {
-		LOG_TRACE2("handle_write end rop_count_=" << rop_count_ << " wop_count_=" << wop_count_);
-	}
+	bool closed = (op_count_ == 0 && state_ != PEER_STATUS_ASYNC_WAIT);
 	lock_.unlock();
+	if (closed) {
+		self_.reset();
+	}
 }
 
 void Peer_Cache::try_read() {
-	if (rop_count_ == 0) {
-		++rop_count_;
+//	if (op_count_ == 0) {
+		++op_count_;
 		read_buffer_.handle_processed();
 		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size()),
 			make_custom_alloc_handler(handler_allocator_,
@@ -1008,22 +1004,22 @@ void Peer_Cache::try_read() {
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred)));
 		LOG_TRACE2("try_read async_read_some get_read_buf_size=" << read_buffer_.get_read_buf_size());
-	}
+//	}
 }
 
-uint32_t Peer_Cache::try_write() {
-	if (wop_count_ == 0) {
+bool Peer_Cache::try_write() {
+//	if (op_count_ == 0) {
 		if (!write_buf_.empty()) {
-			++wop_count_;
+			++op_count_;
 			async_write(*socket_, write_buf_,
 				make_custom_alloc_handler(handler_allocator_,
 				boost::bind(&Peer_Cache::handle_write, this,
 				boost::asio::placeholders::error)));
 			LOG_TRACE2("try_write async_write write_buf.count=" << write_buf_.size());
+			return true;
 		}
-		return write_buf_.size();
-	}
-	return 0;
+//	}
+	return false;
 }
 
 uint32_t Peer_Cache::read_some(uint8_t* buf, uint32_t length) {
@@ -1032,14 +1028,6 @@ uint32_t Peer_Cache::read_some(uint8_t* buf, uint32_t length) {
 		return 0;
 	}
 	return socket_->read_some(boost::asio::buffer(buf, length), ec);
-}
-
-static volatile uint32_t lastDestroyPeer = 0;
-
-void Peer_Cache::destroy(Peer_Cache* peer) {
-	lastDestroyPeer = peer->peer_id_;
-	peer->next_state_ = PEER_STATE_CLOSED;
-	peer->self_.reset();
 }
 
 void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {

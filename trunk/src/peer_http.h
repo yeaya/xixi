@@ -157,14 +157,14 @@ protected:
 	inline void handle_write(const boost::system::error_code& err);
 
 	inline void try_read();
-	inline uint32_t try_write();
+	inline bool try_write();
 	inline uint32_t read_some(uint8_t* buf, uint32_t length);
 	inline void add_write_buf(const uint8_t* buf, uint32_t size) {
 		write_buf_.push_back(boost::asio::const_buffer(buf, size));
 		write_buf_total_ += size;
 	}
 
-	static void destroy(Peer_Http* peer);
+//	static void destroy(Peer_Http* peer);
 
 	void handle_timer(const boost::system::error_code& err, uint32_t watch_id);
 
@@ -194,10 +194,6 @@ protected:
 	bool touch_flag_;
 	int64_t delta_;
 
-//	XIXI_Pdu_Header read_pdu_header_;
-//	XIXI_Pdu* read_pdu_;
-//	uint8_t read_pdu_fixed_body_buffer_[MAX_PDU_FIXED_BODY_LENGTH];
-
 	uint32_t write_buf_total_;
 
 	uint8_t* read_item_buf_;
@@ -207,7 +203,6 @@ protected:
 
 	uint32_t    swallow_size_;
 
-//	Cache_Buffer<MAX_PDU_FIXED_LENGTH * 5> cache_buf_;
 	Cache_Buffer<2048> request_buf_;
 
 	Receive_Buffer<2048, 8192> read_buffer_;
@@ -216,8 +211,7 @@ protected:
 	boost::asio::deadline_timer* timer_;
 
 	boost::asio::ip::tcp::socket* socket_;
-	int rop_count_;
-	int wop_count_;
+	int op_count_;
 	Handler_Allocator<> handler_allocator_;
 };
 
