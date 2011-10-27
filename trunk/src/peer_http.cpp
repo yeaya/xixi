@@ -540,6 +540,10 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 		request_line_length = p - request_line;
 	}
 	if (request_line_length >= 6) {
+		if (memcmp(request_line + request_line_length - 3, "1.1", 3) == 0) {
+			http_request_.http_11 = true;
+		}
+
 		uint32_t offset = 0;
 		uint32_t method = *((uint32_t*)request_header);
 		bool is_get = true;
@@ -765,6 +769,9 @@ void Peer_Http::process_command() {
 		key_ = http_request_.uri;
 		key_length_ = http_request_.uri_length;
 		process_get();
+	}
+	if (!http_request_.http_11) {
+		next_state_ = PEER_STATE_CLOSING;
 	}
 }
 
