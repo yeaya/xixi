@@ -45,7 +45,7 @@ protected:
 		lock_.unlock();
 	}
 
-	uint32_t process();
+	void process();
 	inline bool is_closed() { return state_ == PEER_STATE_CLOSED; }
 
 	inline void set_state(peer_state state);
@@ -75,7 +75,6 @@ protected:
 	inline uint32_t process_update_expiration_req_pdu_extras(XIXI_Update_Expiration_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// delete
-	inline void process_delete_req_pdu_fixed(XIXI_Delete_Req_Pdu* pdu);
 	inline uint32_t process_delete_req_pdu_extras(XIXI_Delete_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// auth

@@ -119,17 +119,15 @@ void Peer_Cache::write_error(xixi_reason error_code, uint32_t swallow, bool repl
 	}
 }
 
-uint32_t Peer_Cache::process() {
+void Peer_Cache::process() {
 	LOG_TRACE2("process length=" << read_buffer_.read_data_size_);
-	uint32_t offset = 0;
 
-	uint32_t tmp = 0;
 	uint32_t process_reqest_count = 0;
 	bool run = true;
 
 	while (run) {
 
-		LOG_TRACE2("process while state_" << (uint32_t)state_ << " offset=" << offset);
+		LOG_TRACE2("process while state_" << (uint32_t)state_);
 
 		switch (state_) {
 
@@ -138,10 +136,10 @@ uint32_t Peer_Cache::process() {
 		break;
 
 	case PEER_STATE_READ_HEADER:
-		tmp = process_header(read_buffer_.read_curr_, read_buffer_.read_data_size_);
-		if (tmp > 0) {
+		if (read_buffer_.read_data_size_ >= next_data_len_) {
+			uint32_t tmp = process_header(read_buffer_.read_curr_, read_buffer_.read_data_size_);
+//		if (tmp > 0) {
 			process_reqest_count++;
-			offset += tmp;
 			read_buffer_.read_curr_ += tmp;
 			read_buffer_.read_data_size_ -= tmp;
 		} else {
@@ -159,7 +157,6 @@ uint32_t Peer_Cache::process() {
 	case PEER_STATE_READ_BODY_FIXED:
 		if (read_buffer_.read_data_size_ >= next_data_len_) {
 			bool ret = XIXI_Pdu::decode_pdu((uint8_t*)read_pdu_fixed_body_buffer_, read_pdu_header_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
-			offset += next_data_len_;
 			read_buffer_.read_curr_ += next_data_len_;
 			read_buffer_.read_data_size_ -= next_data_len_;
 			if (ret) {
@@ -187,11 +184,10 @@ uint32_t Peer_Cache::process() {
 		if (next_data_len_ == 0) {
 			process_pdu_extras(read_pdu_);
 		} else if (read_buffer_.read_data_size_ > 0) {
-			tmp = read_buffer_.read_data_size_ > next_data_len_ ? next_data_len_ : read_buffer_.read_data_size_;
-			if (read_item_buf_ != read_buffer_.read_curr_) {
-				memmove(read_item_buf_, read_buffer_.read_curr_, tmp);
-			}
-			offset += tmp;
+			uint32_t tmp = read_buffer_.read_data_size_ > next_data_len_ ? next_data_len_ : read_buffer_.read_data_size_;
+//			if (read_item_buf_ != read_buffer_.read_curr_) {
+				memcpy(read_item_buf_, read_buffer_.read_curr_, tmp);
+//			}
 			read_item_buf_ += tmp;
 			next_data_len_ -= tmp;
 			read_buffer_.read_curr_ += tmp;
@@ -206,7 +202,6 @@ uint32_t Peer_Cache::process() {
 			if (size == 0) {
 				run = false;
 			} else {
-				offset += size;
 				read_item_buf_ += size;
 				next_data_len_ -= size;
 				//  read_buffer_.read_data_size_ += size;
@@ -216,9 +211,9 @@ uint32_t Peer_Cache::process() {
 		break;
 
 	case PEER_STATE_READ_BODY_EXTRAS2:
-		tmp = process_pdu_extras2(read_pdu_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
-		if (tmp > 0) {
-			offset += tmp;
+		if (read_buffer_.read_data_size_ >= next_data_len_) {
+			uint32_t tmp = process_pdu_extras2(read_pdu_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
+	//	if (tmp > 0) {
 			read_buffer_.read_curr_ += tmp;
 			read_buffer_.read_data_size_ -= tmp;
 		} else {
@@ -237,9 +232,8 @@ uint32_t Peer_Cache::process() {
 		if (swallow_size_ == 0) {
 			set_state(PEER_STATE_NEW_CMD);
 		} else if (read_buffer_.read_data_size_ > 0) {
-			tmp = read_buffer_.read_data_size_ > swallow_size_ ? swallow_size_ : read_buffer_.read_data_size_;
+			uint32_t tmp = read_buffer_.read_data_size_ > swallow_size_ ? swallow_size_ : read_buffer_.read_data_size_;
 			swallow_size_ -= tmp;
-			offset += tmp;
 			read_buffer_.read_curr_ += tmp;
 			read_buffer_.read_data_size_ -= tmp;
 		} else {
@@ -262,7 +256,7 @@ uint32_t Peer_Cache::process() {
 		set_state(next_state_);
 		next_state_ = PEER_STATE_NEW_CMD;
 		if (state_ == PEER_STATE_NEW_CMD && process_reqest_count < 32) {
-			if (read_buffer_.read_data_size_ >= 2) {
+			if (read_buffer_.read_data_size_ >= XIXI_PDU_HEAD_LENGTH) {
 				set_state(PEER_STATE_READ_HEADER);
 			} else {
 				run = false;
@@ -285,8 +279,6 @@ uint32_t Peer_Cache::process() {
 		break;
 		}
 	}
-
-	return offset;
 }
 
 void Peer_Cache::set_state(peer_state state) {
@@ -295,11 +287,11 @@ void Peer_Cache::set_state(peer_state state) {
 }
 
 uint32_t Peer_Cache::process_header(uint8_t* data, uint32_t data_len) {
-	LOG_TRACE2("process_header choice=" << read_pdu_header_.choice);
-	if (data_len >= XIXI_PDU_HEAD_LENGTH) {
-		read_pdu_header_.decode(data);
+	LOG_TRACE2("process_header data_len=" << data_len);
+//	if (data_len >= XIXI_PDU_HEAD_LENGTH) {
+	read_pdu_header_.decode(data);
 
-		switch (read_pdu_header_.choice) {
+	switch (read_pdu_header_.choice) {
 	case XIXI_CHOICE_GET_REQ:
 		next_data_len_ = XIXI_Get_Req_Pdu::get_fixed_body_size();
 		set_state(PEER_STATE_READ_BODY_FIXED);
@@ -360,79 +352,80 @@ uint32_t Peer_Cache::process_header(uint8_t* data, uint32_t data_len) {
 		write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
 		next_state_ = PEER_STATE_CLOSING;
 		break;
-		}
-		return XIXI_PDU_HEAD_LENGTH;
-	} else {
-		return 0;
-	}  
+	}
+	return XIXI_PDU_HEAD_LENGTH;
+//	}// else {
+//		return 0;
+//	} 
 }
 
 void Peer_Cache::process_pdu_fixed(XIXI_Pdu* pdu) {
 	LOG_TRACE2("process_pdu_fixed choice=" << read_pdu_header_.choice);
 	switch (read_pdu_header_.choice) {
-  case XIXI_CHOICE_GET_REQ:
-	  next_data_len_ = ((XIXI_Get_Req_Pdu*)pdu)->key_length;
-	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
-	  break;
-  case XIXI_CHOICE_GET_TOUCH_REQ:
-	  next_data_len_ = ((XIXI_Get_Touch_Req_Pdu*)pdu)->key_length;
-	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
-	  break;
-  case XIXI_CHOICE_UPDATE_REQ:
-	  process_update_req_pdu_fixed((XIXI_Update_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_UPDATE_FLAGS_REQ:
-	  next_data_len_ = ((XIXI_Update_Flags_Req_Pdu*)pdu)->key_length;
-	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
-	  break;
-  case XIXI_CHOICE_UPDATE_EXPIRATION_REQ:
-	  next_data_len_ = ((XIXI_Update_Expiration_Req_Pdu*)pdu)->key_length;
-	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
-	  break;
-  case XIXI_CHOICE_DELETE_REQ:
-	  process_delete_req_pdu_fixed((XIXI_Delete_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_AUTH_REQ:
-	  process_auth_req_pdu_fixed((XIXI_Auth_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_DELTA_REQ:
-	  process_delta_req_pdu_fixed((XIXI_Delta_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_GET_BASE_REQ:
-	  next_data_len_ = ((XIXI_Get_Base_Req_Pdu*)pdu)->key_length;
-	  set_state(PEER_STATE_READ_BODY_EXTRAS2);
-	  break;
-  case XIXI_CHOICE_FLUSH_REQ:
-	  process_flush_req_pdu_fixed((XIXI_Flush_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_STATS_REQ:
-	  process_stats_req_pdu_fixed((XIXI_Stats_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_CREATE_WATCH_REQ:
-	  process_create_watch_req_pdu_fixed((XIXI_Create_Watch_Req_Pdu*)pdu);
-	  break;
-  case XIXI_CHOICE_CHECK_WATCH_REQ:
-	  process_check_watch_req_pdu_fixed((XIXI_Check_Watch_Req_Pdu*)pdu);
-	  break;
-  default:
-	  LOG_WARNING2("process_pdu_fixed unknown cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
-	  write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
-	  next_state_ = PEER_STATE_CLOSING;
-	  break;
+	case XIXI_CHOICE_GET_REQ:
+		next_data_len_ = ((XIXI_Get_Req_Pdu*)pdu)->key_length;
+		set_state(PEER_STATE_READ_BODY_EXTRAS2);
+		break;
+	case XIXI_CHOICE_GET_TOUCH_REQ:
+		next_data_len_ = ((XIXI_Get_Touch_Req_Pdu*)pdu)->key_length;
+		set_state(PEER_STATE_READ_BODY_EXTRAS2);
+		break;
+	case XIXI_CHOICE_UPDATE_REQ:
+		process_update_req_pdu_fixed((XIXI_Update_Req_Pdu*)pdu);
+		break;
+	case XIXI_CHOICE_UPDATE_FLAGS_REQ:
+		next_data_len_ = ((XIXI_Update_Flags_Req_Pdu*)pdu)->key_length;
+		set_state(PEER_STATE_READ_BODY_EXTRAS2);
+		break;
+	case XIXI_CHOICE_UPDATE_EXPIRATION_REQ:
+		next_data_len_ = ((XIXI_Update_Expiration_Req_Pdu*)pdu)->key_length;
+		set_state(PEER_STATE_READ_BODY_EXTRAS2);
+		break;
+	case XIXI_CHOICE_DELETE_REQ:
+		next_data_len_ = ((XIXI_Delete_Req_Pdu*)pdu)->key_length;
+		set_state(PEER_STATE_READ_BODY_EXTRAS2);
+		break;
+	case XIXI_CHOICE_AUTH_REQ:
+		process_auth_req_pdu_fixed((XIXI_Auth_Req_Pdu*)pdu);
+		break;
+	case XIXI_CHOICE_DELTA_REQ:
+		process_delta_req_pdu_fixed((XIXI_Delta_Req_Pdu*)pdu);
+		break;
+	case XIXI_CHOICE_GET_BASE_REQ:
+		next_data_len_ = ((XIXI_Get_Base_Req_Pdu*)pdu)->key_length;
+		set_state(PEER_STATE_READ_BODY_EXTRAS2);
+		break;
+	case XIXI_CHOICE_FLUSH_REQ:
+		process_flush_req_pdu_fixed((XIXI_Flush_Req_Pdu*)pdu);
+		break;
+	case XIXI_CHOICE_STATS_REQ:
+		process_stats_req_pdu_fixed((XIXI_Stats_Req_Pdu*)pdu);
+		break;
+	case XIXI_CHOICE_CREATE_WATCH_REQ:
+		process_create_watch_req_pdu_fixed((XIXI_Create_Watch_Req_Pdu*)pdu);
+		break;
+	case XIXI_CHOICE_CHECK_WATCH_REQ:
+		process_check_watch_req_pdu_fixed((XIXI_Check_Watch_Req_Pdu*)pdu);
+		break;
+	default:
+		LOG_WARNING2("process_pdu_fixed unknown cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
+		write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
+		next_state_ = PEER_STATE_CLOSING;
+		break;
 	}
 }
 
 void Peer_Cache::process_pdu_extras(XIXI_Pdu* pdu) {
 	LOG_TRACE2("process_pdu_extras choice=" << read_pdu_header_.choice);
 	switch (read_pdu_header_.choice) {
-  case XIXI_CHOICE_UPDATE_REQ:
-	  process_update_req_pdu_extras((XIXI_Update_Req_Pdu*)pdu);
-	  break;
-  default:
-	  LOG_WARNING2("process_pdu_extras unknown cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
-	  write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
-	  next_state_ = PEER_STATE_CLOSING;
-	  break;
+	case XIXI_CHOICE_UPDATE_REQ:
+		process_update_req_pdu_extras((XIXI_Update_Req_Pdu*)pdu);
+		break;
+	default:
+		LOG_WARNING2("process_pdu_extras unknown cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
+		write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
+		next_state_ = PEER_STATE_CLOSING;
+		break;
 	}
 }
 
@@ -508,7 +501,6 @@ uint32_t Peer_Cache::process_get_touch_req_pdu_extras(XIXI_Get_Touch_Req_Pdu* pd
 	if (data_length < key_length) {
 		return 0;
 	}
-
 
 	bool watch_error = false;
 	Cache_Item* it = cache_mgr_.get_touch(pdu->group_id, key, key_length, pdu->watch_id, pdu->expiration, watch_error);
@@ -713,12 +705,6 @@ uint32_t Peer_Cache::process_update_expiration_req_pdu_extras(XIXI_Update_Expira
 		next_state_ = PEER_STATE_NEW_CMD;
 	}
 	return key_length;
-}
-
-void Peer_Cache::process_delete_req_pdu_fixed(XIXI_Delete_Req_Pdu* pdu) {
-	LOG_TRACE2("process_delete_req_pdu_fixed");
-	next_data_len_ = pdu->key_length;
-	set_state(PEER_STATE_READ_BODY_EXTRAS2);
 }
 
 uint32_t Peer_Cache::process_delete_req_pdu_extras(XIXI_Delete_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
@@ -1051,11 +1037,11 @@ void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t wat
 
 			set_state(PEER_STATE_NEW_CMD);
 			next_state_ = PEER_STATE_NEW_CMD;
-			try_write();
 		} else {
 			write_error(XIXI_REASON_OUT_OF_MEMORY, 0, true);
 		}
 	}
+	try_write();
 
 	delete timer_;
 	timer_ = NULL;
