@@ -45,7 +45,7 @@
 // a: ack_cache_id
 // i: interval
 // t: timeout
-// s: stats
+// s: sub op
 
 // XIXI_Get_Req_Pdu
 // uint32_t group_id;
@@ -85,9 +85,7 @@ char* memfind(char* data, uint32_t length, char* sub, uint32_t sub_len) {
 	return NULL;
 }
 
-
-void tokenize_command(char* command, vector<token_t>& tokens)
-{
+void tokenize_command(char* command, vector<token_t>& tokens) {
 	assert(command != NULL);
 
 	char* start = command;
@@ -113,6 +111,15 @@ void tokenize_command(char* command, vector<token_t>& tokens)
 			break;
 		}
 		++end;
+	}
+}
+
+void to_lower(char* buf, uint32_t length) {
+	for (uint32_t i = 0; i < length; i++) {
+		char c = buf[i];
+		if (c >= 'A' && c <= 'Z') {
+			buf[i] = c + ('a' - 'A');
+		}
 	}
 }
 
@@ -368,10 +375,12 @@ void Peer_Http::process() {
 			break;
 
 		case PEER_STATE_CLOSED:
+			run = false;
 			break;
 
 		default:
 			assert(false);
+			run = false;
 			break;
 		}
 	}
@@ -397,7 +406,7 @@ uint32_t Peer_Http::try_read_command(char* data, uint32_t data_len) {
 	if (data_len >= 4096) {
 		LOG_WARNING2("try_read_command header too large > " << data_len);
 		write_error(XIXI_REASON_TOO_LARGE);
-		return 0;
+		return data_len; // ?
 	}
 
 	set_state(PEER_STATE_READ_HEADER);
@@ -430,7 +439,7 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 			offset = 5;
 			is_get = false;
 		} else {
-			LOG_WARNING2("try_read_command error method=" << method);
+			LOG_WARNING2("process_request_header error method=" << method);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
 			return;
 		}
@@ -446,19 +455,19 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 		}
 		
 		if (!process_request_header_fields(request_header_fields, request_header_fields_length)) {
-			LOG_WARNING2("try_read_command failed on process request header fields " << request_header_fields);
+			LOG_WARNING2("process_request_header failed on process request header fields " << request_header_fields);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
 			return;
 		}
 		if (method == POST_METHOD && content_length_ > 0) {
 			if (content_length_ > settings_.item_size_max * 3) {
-				LOG_WARNING2("try_read_command the content length is too large " << content_length_);
+				LOG_WARNING2("process_request_header the content length is too large " << content_length_);
 				write_error(XIXI_REASON_TOO_LARGE);
 				return;
 			}
 			post_data_ = request_buf_.prepare(content_length_ + 1);
 			if (post_data_ == NULL) {
-				LOG_WARNING2("try_read_command out of memory " << content_length_);
+				LOG_WARNING2("process_request_header out of memory " << content_length_);
 				write_error(XIXI_REASON_OUT_OF_MEMORY);
 				return;
 			}
@@ -469,7 +478,7 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 
 			char* buf = (char*)request_buf_.prepare(http_request_.uri_length + 1);
 			if (buf == NULL) {
-				LOG_WARNING2("try_read_command uri out of memory " << (http_request_.uri_length + 1));
+				LOG_WARNING2("process_request_header uri out of memory " << (http_request_.uri_length + 1));
 				write_error(XIXI_REASON_OUT_OF_MEMORY);
 			}
 			memcpy(buf, http_request_.uri, http_request_.uri_length);
@@ -479,7 +488,7 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 			process_command();
 		}
 	} else {
-		LOG_WARNING2("try_read_command error unkown request=" << request_header);
+		LOG_WARNING2("process_request_header error unkown request=" << request_header);
 		write_error(XIXI_REASON_INVALID_PARAMETER);
 	}
 }
@@ -494,6 +503,9 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 		p++;
 		while (*p == ' ') {
 			p++;
+		}
+		if (p == NULL) {
+			break;
 		}
 		char* value = p;
 		uint32_t value_length = 0;
@@ -523,13 +535,15 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 
 bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length) {
 	if (name_length == 12) {
-		if (memcmp(name, "Content-Type", name_length) == 0) {
+		to_lower(name, name_length);
+		if (memcmp(name, "content-type", name_length) == 0) {
 			char* buf = (char*)request_buf_.prepare(value_length + 1);
 			if (buf == NULL) {
 				return false;
 			}
 			memcpy(buf, value, value_length);
 			buf[value_length] = '\0';
+			to_lower(buf, value_length);
 			http_request_.content_type = buf;
 			http_request_.content_type_length = value_length;
 
@@ -544,7 +558,8 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			}
 		}
 	} else if (name_length == 14) {
-		if (memcmp(name, "Content-Length", name_length) == 0) {
+		to_lower(name, name_length);
+		if (memcmp(name, "content-length", name_length) == 0) {
 			if (!safe_toui32(value, value_length, content_length_)) {
 				return false;
 			}
@@ -560,7 +575,7 @@ void Peer_Http::process_command() {
 		if (arg != NULL) {
 			cmd_length = arg - http_request_.uri - 10;
 			if (!process_request_arg(arg + 1)) {
-				LOG_WARNING2("process_cahce_arg failed arg=" << (arg + 1));
+				LOG_WARNING2("process_command failed arg=" << (arg + 1));
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -579,7 +594,7 @@ void Peer_Http::process_command() {
 			} else if (memcmp(cmd, "del", cmd_length) == 0) {
 				process_delete();
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -589,7 +604,7 @@ void Peer_Http::process_command() {
 			} else if (memcmp(cmd, "decr", cmd_length) == 0) {
 				process_delta(false);
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -603,7 +618,7 @@ void Peer_Http::process_command() {
 			} else if (memcmp(cmd, "stats", cmd_length) == 0) {
 				process_stats();
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -611,7 +626,7 @@ void Peer_Http::process_command() {
 			if (memcmp(cmd, "append", cmd_length) == 0) {
 				process_update(XIXI_UPDATE_SUB_OP_APPEND);
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -623,7 +638,7 @@ void Peer_Http::process_command() {
 			} else if (memcmp(cmd, "getbase", cmd_length) == 0) {
 				process_get_base();
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -631,7 +646,7 @@ void Peer_Http::process_command() {
 			if (memcmp(cmd, "checkwatch", cmd_length) == 0) {
 				this->process_check_watch();
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
@@ -639,12 +654,12 @@ void Peer_Http::process_command() {
 			if (memcmp(cmd, "createwatch", cmd_length) == 0) {
 				this->process_create_watch();
 			} else {
-				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
 		} else {
-			LOG_WARNING2("try_read_command error unkown cmd_length=" << cmd_length);
+			LOG_WARNING2("process_command error unkown cmd_length=" << cmd_length);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
 		}
 	} else {

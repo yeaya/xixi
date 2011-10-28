@@ -131,152 +131,152 @@ void Peer_Cache::process() {
 
 		switch (state_) {
 
-	case PEER_STATE_NEW_CMD:
-		reset_for_new_cmd();
-		break;
+		case PEER_STATE_NEW_CMD:
+			reset_for_new_cmd();
+			break;
 
-	case PEER_STATE_READ_HEADER:
-		if (read_buffer_.read_data_size_ >= next_data_len_) {
-			uint32_t tmp = process_header(read_buffer_.read_curr_, read_buffer_.read_data_size_);
-//		if (tmp > 0) {
-			process_reqest_count++;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
+		case PEER_STATE_READ_HEADER:
+			if (read_buffer_.read_data_size_ >= next_data_len_) {
+				uint32_t tmp = process_header(read_buffer_.read_curr_, read_buffer_.read_data_size_);
+				process_reqest_count++;
+				read_buffer_.read_curr_ += tmp;
+				read_buffer_.read_data_size_ -= tmp;
 			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_READ_HEADER, size=" << size);
+				read_buffer_.handle_processed();
+				uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
+				if (size == 0) {
+					run = false;
+				} else {
+					read_buffer_.read_data_size_ += size;
+					//  LOG_INFO2("read_some PEER_STATE_READ_HEADER, size=" << size);
+				}
 			}
-		}
-		break;
+			break;
 
-	case PEER_STATE_READ_BODY_FIXED:
-		if (read_buffer_.read_data_size_ >= next_data_len_) {
-			bool ret = XIXI_Pdu::decode_pdu((uint8_t*)read_pdu_fixed_body_buffer_, read_pdu_header_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
-			read_buffer_.read_curr_ += next_data_len_;
-			read_buffer_.read_data_size_ -= next_data_len_;
-			if (ret) {
-				read_pdu_ = (XIXI_Pdu*)read_pdu_fixed_body_buffer_;
-				read_pdu_->choice = read_pdu_header_.choice;
-				process_pdu_fixed(read_pdu_);
+		case PEER_STATE_READ_BODY_FIXED:
+			if (read_buffer_.read_data_size_ >= next_data_len_) {
+				bool ret = XIXI_Pdu::decode_pdu((uint8_t*)read_pdu_fixed_body_buffer_, read_pdu_header_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
+				read_buffer_.read_curr_ += next_data_len_;
+				read_buffer_.read_data_size_ -= next_data_len_;
+				if (ret) {
+					read_pdu_ = (XIXI_Pdu*)read_pdu_fixed_body_buffer_;
+					read_pdu_->choice = read_pdu_header_.choice;
+					process_pdu_fixed(read_pdu_);
+				} else {
+					LOG_WARNING2("process can not decode pdu cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
+					write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
+					next_state_ = PEER_STATE_CLOSING;
+				}
 			} else {
-				LOG_WARNING2("process can not decode pdu cateory=" << (int)read_pdu_header_.category() << " command=" << (int)read_pdu_header_.command());
-				write_error(XIXI_REASON_UNKNOWN_COMMAND, 0, true);
-				next_state_ = PEER_STATE_CLOSING;
+				read_buffer_.handle_processed();
+				uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
+				if (size == 0) {
+					run = false;
+				} else {
+					read_buffer_.read_data_size_ += size;
+					//  LOG_INFO2("read_some PEER_STATE_READ_BODY_FIXED, size=" << size);
+				}
 			}
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
-			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_READ_BODY_FIXED, size=" << size);
-			}
-		}
-		break;
+			break;
 
-	case PEER_STATE_READ_BODY_EXTRAS:
-		if (next_data_len_ == 0) {
-			process_pdu_extras(read_pdu_);
-		} else if (read_buffer_.read_data_size_ > 0) {
-			uint32_t tmp = read_buffer_.read_data_size_ > next_data_len_ ? next_data_len_ : read_buffer_.read_data_size_;
-//			if (read_item_buf_ != read_buffer_.read_curr_) {
-				memcpy(read_item_buf_, read_buffer_.read_curr_, tmp);
-//			}
-			read_item_buf_ += tmp;
-			next_data_len_ -= tmp;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-			//  if (next_data_len_ == 0) {
-			//    process_pdu_extras(read_pdu_);
-			//  }
-		} else {
-			//  read_buffer_.handle_processed();
-			//  uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			uint32_t size = read_some(read_item_buf_, next_data_len_);
-			if (size == 0) {
-				run = false;
+		case PEER_STATE_READ_BODY_EXTRAS:
+			if (next_data_len_ == 0) {
+				process_pdu_extras(read_pdu_);
+			} else if (read_buffer_.read_data_size_ > 0) {
+				uint32_t tmp = read_buffer_.read_data_size_ > next_data_len_ ? next_data_len_ : read_buffer_.read_data_size_;
+	//			if (read_item_buf_ != read_buffer_.read_curr_) {
+					memcpy(read_item_buf_, read_buffer_.read_curr_, tmp);
+	//			}
+				read_item_buf_ += tmp;
+				next_data_len_ -= tmp;
+				read_buffer_.read_curr_ += tmp;
+				read_buffer_.read_data_size_ -= tmp;
+				//  if (next_data_len_ == 0) {
+				//    process_pdu_extras(read_pdu_);
+				//  }
 			} else {
-				read_item_buf_ += size;
-				next_data_len_ -= size;
-				//  read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_READ_BODY_EXTRAS, size=" << size);
+				//  read_buffer_.handle_processed();
+				//  uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
+				uint32_t size = read_some(read_item_buf_, next_data_len_);
+				if (size == 0) {
+					run = false;
+				} else {
+					read_item_buf_ += size;
+					next_data_len_ -= size;
+					//  read_buffer_.read_data_size_ += size;
+					//  LOG_INFO2("read_some PEER_STATE_READ_BODY_EXTRAS, size=" << size);
+				}
 			}
-		}
-		break;
+			break;
 
-	case PEER_STATE_READ_BODY_EXTRAS2:
-		if (read_buffer_.read_data_size_ >= next_data_len_) {
-			uint32_t tmp = process_pdu_extras2(read_pdu_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
-	//	if (tmp > 0) {
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
+		case PEER_STATE_READ_BODY_EXTRAS2:
+			if (read_buffer_.read_data_size_ >= next_data_len_) {
+				uint32_t tmp = process_pdu_extras2(read_pdu_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
+				read_buffer_.read_curr_ += tmp;
+				read_buffer_.read_data_size_ -= tmp;
 			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_READ_BODY_EXTRAS2, size=" << size);
+				read_buffer_.handle_processed();
+				uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
+				if (size == 0) {
+					run = false;
+				} else {
+					read_buffer_.read_data_size_ += size;
+					//  LOG_INFO2("read_some PEER_STATE_READ_BODY_EXTRAS2, size=" << size);
+				}
 			}
-		}
-		break;
+			break;
 
-	case PEER_STATE_SWALLOW:
-		if (swallow_size_ == 0) {
-			set_state(PEER_STATE_NEW_CMD);
-		} else if (read_buffer_.read_data_size_ > 0) {
-			uint32_t tmp = read_buffer_.read_data_size_ > swallow_size_ ? swallow_size_ : read_buffer_.read_data_size_;
-			swallow_size_ -= tmp;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
+		case PEER_STATE_SWALLOW:
+			if (swallow_size_ == 0) {
+				set_state(PEER_STATE_NEW_CMD);
+			} else if (read_buffer_.read_data_size_ > 0) {
+				uint32_t tmp = read_buffer_.read_data_size_ > swallow_size_ ? swallow_size_ : read_buffer_.read_data_size_;
+				swallow_size_ -= tmp;
+				read_buffer_.read_curr_ += tmp;
+				read_buffer_.read_data_size_ -= tmp;
 			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_SWALLOW, size=" << size);
+				read_buffer_.handle_processed();
+				uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
+				if (size == 0) {
+					run = false;
+				} else {
+					read_buffer_.read_data_size_ += size;
+					//  LOG_INFO2("read_some PEER_STATE_SWALLOW, size=" << size);
+				}
 			}
-		}
-		break;
+			break;
 
-	case PEER_STATUS_ASYNC_WAIT:
-		run = false;
-		break;
-
-	case PEER_STATUS_WRITE:
-		set_state(next_state_);
-		next_state_ = PEER_STATE_NEW_CMD;
-		if (state_ == PEER_STATE_NEW_CMD && process_reqest_count < 32) {
-			if (read_buffer_.read_data_size_ >= XIXI_PDU_HEAD_LENGTH) {
-				set_state(PEER_STATE_READ_HEADER);
-			} else {
-				run = false;
-			}
-		} else {
+		case PEER_STATUS_ASYNC_WAIT:
 			run = false;
-		}
-		break;
+			break;
 
-	case PEER_STATE_CLOSING:
-		set_state(PEER_STATE_CLOSED);
-		run = false;
-		break;
+		case PEER_STATUS_WRITE:
+			set_state(next_state_);
+			next_state_ = PEER_STATE_NEW_CMD;
+			if (state_ == PEER_STATE_NEW_CMD && process_reqest_count < 32) {
+				if (read_buffer_.read_data_size_ >= XIXI_PDU_HEAD_LENGTH) {
+					set_state(PEER_STATE_READ_HEADER);
+				} else {
+					run = false;
+				}
+			} else {
+				run = false;
+			}
+			break;
 
-	case PEER_STATE_CLOSED:
-		break;
+		case PEER_STATE_CLOSING:
+			set_state(PEER_STATE_CLOSED);
+			run = false;
+			break;
 
-	default:
-		assert(false);
-		break;
+		case PEER_STATE_CLOSED:
+			run = false;
+			break;
+
+		default:
+			assert(false);
+			run = false;
+			break;
 		}
 	}
 }
@@ -288,7 +288,7 @@ void Peer_Cache::set_state(peer_state state) {
 
 uint32_t Peer_Cache::process_header(uint8_t* data, uint32_t data_len) {
 	LOG_TRACE2("process_header data_len=" << data_len);
-//	if (data_len >= XIXI_PDU_HEAD_LENGTH) {
+
 	read_pdu_header_.decode(data);
 
 	switch (read_pdu_header_.choice) {
@@ -354,9 +354,6 @@ uint32_t Peer_Cache::process_header(uint8_t* data, uint32_t data_len) {
 		break;
 	}
 	return XIXI_PDU_HEAD_LENGTH;
-//	}// else {
-//		return 0;
-//	} 
 }
 
 void Peer_Cache::process_pdu_fixed(XIXI_Pdu* pdu) {
