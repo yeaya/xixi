@@ -27,7 +27,7 @@ Linux/Mac:
           --client
 	  --src
 3. upzip the boost to 3rd/boost
-4. bootstrap.bat
+4. bootstrap.sh
 5. bjam release threading=multi link=static
 6. go to src folder and make it.
 
