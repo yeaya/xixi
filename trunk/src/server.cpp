@@ -35,6 +35,7 @@ public:
 
 	~Connection_Help() {
 		if (socket_ != NULL) {
+			socket_->close();
 			delete socket_;
 			socket_ = NULL;
 		}
@@ -141,11 +142,11 @@ io_service_pool_(pool_size, thread_size),
 acceptor_(io_service_pool_.get_io_service()),
 resolver_(io_service_pool_.get_io_service()),
 timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(500)) {
-	boost::uuids::basic_random_generator<boost::mt19937> gen;
-	boost::uuids::uuid id = gen();
+//	boost::uuids::basic_random_generator<boost::mt19937> gen;
+//	boost::uuids::uuid id = gen();
 
-	server_id_ = boost::uuids::to_string(id);
-	//LOG_INFO("UUID: " << id);
+//	server_id_ = boost::uuids::to_string(id);
+//	LOG_INFO("UUID: " << id);
 
 	stop_flag_ = false;
 	curr_time_.set_current_time();

@@ -18,9 +18,6 @@
 #include <string>
 #include "settings.h"
 #include "log.h"
-#include <iostream>
-#include <boost/thread/tss.hpp>
-#include <boost/shared_ptr.hpp>
 
 #if defined(_WIN32)
 void console_ctrl_function(DWORD ctrl_type) {
@@ -178,7 +175,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	LOG_INFO("xixibase start.");
+	LOG_INFO(VERSION" start.");
 
 	try {
 #if defined(_WIN32)
@@ -203,7 +200,7 @@ int main(int argc, char* argv[]) {
 	} catch (std::exception& e) {
 		LOG_FATAL("Exception: " << e.what());
 	}
-	LOG_INFO("xixibase stop.");
+	LOG_INFO(VERSION" stop.");
 
 	return 0;
 }
