@@ -91,6 +91,9 @@ public:
 		update_flags_success = 0;
 		update_flags_mismatch = 0;
 
+		update_expiration_success = 0;
+		update_expiration_mismatch = 0;
+
 		add_success = 0;
 		add_success_watch = 0;
 		add_watch_miss = 0;
