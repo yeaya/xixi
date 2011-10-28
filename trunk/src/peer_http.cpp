@@ -26,6 +26,8 @@
 #define READ_BUFFER_HIGHWAT 8192
 #define DATA_BUFFER_SIZE 2048
 
+#define DEFAULT_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
+
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Http id=" << get_peer_id() << " " << x)
 #define LOG_DEBUG2(x)  LOG_DEBUG("Peer_Http id=" << get_peer_id() << " " << x)
 #define LOG_INFO2(x)  LOG_INFO("Peer_Http id=" << get_peer_id() << " " << x)
@@ -40,6 +42,10 @@
 // c: cache_id
 // f: flags
 // d: delta
+// a: ack_cache_id
+// i: interval
+// t: timeout
+// s: stats
 
 // XIXI_Get_Req_Pdu
 // uint32_t group_id;
@@ -56,42 +62,13 @@
 // uint8_t* key;
 // GET /xixibase/get?g=xxx&w=xxx&k=xxx&e=xxx
 
-// XIXI_Get_Base_Req_Pdu
-// uint32_t group_id;
-// uint16_t key_length;
-// uint8_t* key;
-// GET /xixibase/getbase?g=xxx&k=xxx
-
-//onst uint8_t XIXI_UPDATE_SUB_OP_MASK = 7;
-//const uint8_t XIXI_UPDATE_SUB_OP_SET = 0;
-//const uint8_t XIXI_UPDATE_SUB_OP_ADD = 1;
-//const uint8_t XIXI_UPDATE_SUB_OP_REPLACE = 2;
-//const uint8_t XIXI_UPDATE_SUB_OP_APPEND = 3;
-//const uint8_t XIXI_UPDATE_SUB_OP_PREPEND = 4;
-//const uint8_t XIXI_UPDATE_REPLY = 128;
-// XIXI_Update_Req_Pdu
-// uint64_t cache_id;
-// uint32_t group_id;
-// uint32_t flags;
-// uint32_t expiration;
-// uint32_t watch_id;
-// uint16_t key_length;
-// uint32_t data_length;
-// POST /xixibase/set?c=xxx&g=xxx&f=xxx&e=xxx&w=xxx&k=xxx
-// Content_Length: data_length
-// data
-
-
 // data: must not be NULL
 // length: must > 0
 // sub: must not be NULL
 // sub_len: must > 0
 char* memfind(char* data, uint32_t length, char* sub, uint32_t sub_len) {
 	char* p = data;
-	if (length <= sub_len) {
-		if (length == sub_len && memcmp(data, sub, length) == 0) {
-			return data;
-		}
+	if (length < sub_len) {
 		return NULL;
 	}
 	for (uint32_t i = 0; i <= length - sub_len; i++) {
@@ -149,7 +126,7 @@ char* Peer_Http::decode_uri(char* uri, uint32_t length, uint32_t& out) {
 	for (uint32_t i = 0; i < length; i++) {
 		char c = *uri;
 		uri++;
-		if (c == ' ' || c == '\r' || c == '\n' || c == '\0') {
+		if (c == '\0') { // c == ' ' ||  // c == '\r' || c == '\n' || 
 			break;
 		}
 		if (c == '%' && i + 2 < length) {
@@ -176,6 +153,7 @@ char* Peer_Http::decode_uri(char* uri, uint32_t length, uint32_t& out) {
 			}
 			uri++;
 			c = (c1 << 4) + (c2& 0xF);
+			i += 2;
 		}
 		if (c == '+') {
 			c = ' ';
@@ -214,6 +192,10 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this) {
 	expiration_ = 0;
 	touch_flag_ = false;
 	delta_ = 1;
+	ack_cache_id_ = 0;
+	interval_ = 30;
+	timeout_ = 10;
+	sub_op_ = 0;
 
 	stats_.new_conn();
 }
@@ -242,123 +224,72 @@ void Peer_Http::cleanup() {
 	}
 }
 
-void Peer_Http::write_simple_res(xixi_choice choice) {
-	uint8_t* cb = request_buf_.prepare(XIXI_PDU_SIMPLE_RES_LENGTH);
-	XIXI_Simple_Res_Pdu::encode(cb, choice);
-
-	add_write_buf(cb, XIXI_PDU_SIMPLE_RES_LENGTH);
-
-	set_state(PEER_STATUS_WRITE);
-	next_state_ = PEER_STATE_NEW_CMD;
-}
-
-void Peer_Http::write_simple_res(xixi_choice choice, uint32_t request_id) {
-	uint8_t* cb = request_buf_.prepare(XIXI_PDU_SIMPLE_RES_WITH_REQID_LENGTH);
-	XIXI_Simple_Res_With_ReqID_Pdu::encode(cb, request_id, choice);
-
-	add_write_buf(cb, XIXI_PDU_SIMPLE_RES_WITH_REQID_LENGTH);
-
-	set_state(PEER_STATUS_WRITE);
-	next_state_ = PEER_STATE_NEW_CMD;
-}
-
 void Peer_Http::write_error(xixi_reason error_code) {
+	write_buf_.clear();
+	write_buf_total_ = 0;
+
 	char* res = NULL;
+	uint32_t res_size = 0;
 	switch (error_code) {
 		case XIXI_REASON_NOT_FOUND:
-			res = "HTTP/1.1 404 Not Found\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_NOT_FOUND "HTTP/1.1 404 Not Found\r\n""Server: "HTTP_SERVER"\r\n"	"Content-Type: text/html\r\n""Content-Length: 21\r\n\r\n""XIXI_REASON_NOT_FOUND"
+			res = ERROR_XIXI_REASON_NOT_FOUND;
+			res_size = sizeof(ERROR_XIXI_REASON_NOT_FOUND) - 1;
 			break;
 		case XIXI_REASON_EXISTS:
-			res = "HTTP/1.1 405 Method Not Allowed\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_EXISTS "HTTP/1.1 405 Method Not Allowed\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 18\r\n\r\n""XIXI_REASON_EXISTS"
+			res = ERROR_XIXI_REASON_EXISTS;
+			res_size = sizeof(ERROR_XIXI_REASON_EXISTS) - 1;
 			break;
 		case XIXI_REASON_TOO_LARGE:
-			res = "HTTP/1.1 413 Request Entity Too Large\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_TOO_LARGE "HTTP/1.1 413 Request Entity Too Large\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 21\r\n\r\n""XIXI_REASON_TOO_LARGE"
+			res = ERROR_XIXI_REASON_TOO_LARGE;
+			res_size = sizeof(ERROR_XIXI_REASON_TOO_LARGE) - 1;
 			break;
 		case XIXI_REASON_INVALID_PARAMETER:
-			res = "HTTP/1.1 400 Bad Request\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_INVALID_PARAMETER "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 29\r\n\r\n""XIXI_REASON_INVALID_PARAMETER"
+			res = ERROR_XIXI_REASON_INVALID_PARAMETER;
+			res_size = sizeof(ERROR_XIXI_REASON_INVALID_PARAMETER) - 1;
 			break;
 		case XIXI_REASON_INVALID_OPERATION:
-			res = "HTTP/1.1 400 Bad Request\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_INVALID_OPERATION "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 29\r\n\r\n""XIXI_REASON_INVALID_OPERATION"
+			res = ERROR_XIXI_REASON_INVALID_OPERATION;
+			res_size = sizeof(ERROR_XIXI_REASON_INVALID_OPERATION) - 1;
 			break;
 		case XIXI_REASON_MISMATCH:
-			res = "HTTP/1.1 400 Bad Request\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_MISMATCH "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 20\r\n\r\n""XIXI_REASON_MISMATCH"
+			res = ERROR_XIXI_REASON_MISMATCH;
+			res_size = sizeof(ERROR_XIXI_REASON_MISMATCH) - 1;
 			break;
 		case XIXI_RES_AUTH_ERROR:
-			res = "HTTP/1.1 401 Unauthorized\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_RES_AUTH_ERROR "HTTP/1.1 401 Unauthorized\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 19\r\n\r\n""XIXI_RES_AUTH_ERROR"
+			res = ERROR_XIXI_RES_AUTH_ERROR;
+			res_size = sizeof(ERROR_XIXI_RES_AUTH_ERROR) - 1;
 			break;
 		case XIXI_REASON_UNKNOWN_COMMAND:
-			res = "HTTP/1.1 400 Bad Request\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_UNKNOWN_COMMAND "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 28\r\n\r\n""XIXI_REASON_UNKNOWN_COMMAND"
+			res = ERROR_XIXI_REASON_UNKNOWN_COMMAND;
+			res_size = sizeof(ERROR_XIXI_REASON_UNKNOWN_COMMAND) - 1;
 			break;
 		case XIXI_REASON_OUT_OF_MEMORY:
-			res = "HTTP/1.1 500 Internal Server Error\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_OUT_OF_MEMORY "HTTP/1.1 500 Internal Server Error\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 25\r\n\r\n""XIXI_REASON_OUT_OF_MEMORY"
+			res = ERROR_XIXI_REASON_OUT_OF_MEMORY;
+			res_size = sizeof(ERROR_XIXI_REASON_OUT_OF_MEMORY) - 1;
 			break;
-/*		case XIXI_REASON_WAIT_FOR_ME:
-			res = "HTTP/1.1 200 OK\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
-			break;
-		case XIXI_REASON_PLEASE_TRY_AGAIN:
-			res = "HTTP/1.1 200 OK\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
-			break;*/
 		case XIXI_REASON_WATCH_NOT_FOUND:
-			res = "HTTP/1.1 400 Bad Request\r\n"
-				"Server: "VERSION"\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
+#define ERROR_XIXI_REASON_WATCH_NOT_FOUND "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 27\r\n\r\n""XIXI_REASON_WATCH_NOT_FOUND"
+			res = ERROR_XIXI_REASON_WATCH_NOT_FOUND;
+			res_size = sizeof(ERROR_XIXI_REASON_WATCH_NOT_FOUND) - 1;
 			break;
 	}
 
-	add_write_buf((uint8_t*)res, strlen(res));
+	add_write_buf((uint8_t*)res, res_size);
 	set_state(PEER_STATUS_WRITE);
 	next_state_ = PEER_STATE_CLOSING;
 }
 
-uint32_t Peer_Http::process() {
+void Peer_Http::process() {
 	LOG_TRACE2("process length=" << read_buffer_.read_data_size_);
-	uint32_t offset = 0;
 
 	uint32_t tmp = 0;
 	uint32_t process_reqest_count = 0;
@@ -366,145 +297,90 @@ uint32_t Peer_Http::process() {
 
 	while (run) {
 
-		LOG_TRACE2("process while state_" << (uint32_t)state_ << " offset=" << offset);
+		LOG_TRACE2("process while state_" << (uint32_t)state_);
 
 		switch (state_) {
 
-	case PEER_STATE_NEW_CMD:
-		reset_for_new_cmd();
-		break;
+		case PEER_STATE_NEW_CMD:
+			reset_for_new_cmd();
+			break;
 
-	case PEER_STATE_READ_HEADER:
-		tmp = try_read_command((char*)read_buffer_.read_curr_, read_buffer_.read_data_size_);
-		if (tmp > 0) {
-			process_reqest_count++;
-			offset += tmp;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
+		case PEER_STATE_READ_HEADER:
+			tmp = try_read_command((char*)read_buffer_.read_curr_, read_buffer_.read_data_size_);
+			if (tmp > 0) {
+				process_reqest_count++;
+				read_buffer_.read_curr_ += tmp;
+				read_buffer_.read_data_size_ -= tmp;
 			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_READ_HEADER, size=" << size);
+				read_buffer_.handle_processed();
+				uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
+				if (size == 0) {
+					run = false;
+				} else {
+					read_buffer_.read_data_size_ += size;
+					//  LOG_INFO2("read_some PEER_STATE_READ_HEADER, size=" << size);
+				}
 			}
-		}
-		break;
+			break;
 
-	case PEER_STATE_READ_BODY_EXTRAS:
-		if (next_data_len_ == 0) {
-			process_post();
-		} else if (read_buffer_.read_data_size_ > 0) {
-			tmp = read_buffer_.read_data_size_ > next_data_len_ ? next_data_len_ : read_buffer_.read_data_size_;
-			memcpy(read_item_buf_, read_buffer_.read_curr_, tmp);
-			offset += tmp;
-			read_item_buf_ += tmp;
-			next_data_len_ -= tmp;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			uint32_t size = read_some(read_item_buf_, next_data_len_);
-			if (size == 0) {
-				run = false;
+		case PEER_STATE_READ_BODY_EXTRAS:
+			if (next_data_len_ == 0) {
+				process_post();
+			} else if (read_buffer_.read_data_size_ > 0) {
+				tmp = read_buffer_.read_data_size_ > next_data_len_ ? next_data_len_ : read_buffer_.read_data_size_;
+				memcpy(read_item_buf_, read_buffer_.read_curr_, tmp);
+				read_item_buf_ += tmp;
+				next_data_len_ -= tmp;
+				read_buffer_.read_curr_ += tmp;
+				read_buffer_.read_data_size_ -= tmp;
 			} else {
-				offset += size;
-				read_item_buf_ += size;
-				next_data_len_ -= size;
+				uint32_t size = read_some(read_item_buf_, next_data_len_);
+				if (size == 0) {
+					run = false;
+				} else {
+					read_item_buf_ += size;
+					next_data_len_ -= size;
+				}
 			}
-		}
-		break;
-/*
-	case PEER_STATE_READ_BODY_EXTRAS2:
-//		tmp = process_pdu_extras2(read_pdu_, read_buffer_.read_curr_, read_buffer_.read_data_size_);
-		if (tmp > 0) {
-			offset += tmp;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
-			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_READ_BODY_EXTRAS2, size=" << size);
-			}
-		}
-		break;
-*/
-	case PEER_STATE_SWALLOW:
-		if (swallow_size_ == 0) {
-			set_state(PEER_STATE_NEW_CMD);
-		} else if (read_buffer_.read_data_size_ > 0) {
-			tmp = read_buffer_.read_data_size_ > swallow_size_ ? swallow_size_ : read_buffer_.read_data_size_;
-			swallow_size_ -= tmp;
-			offset += tmp;
-			read_buffer_.read_curr_ += tmp;
-			read_buffer_.read_data_size_ -= tmp;
-		} else {
-			read_buffer_.handle_processed();
-			uint32_t size = read_some(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size());
-			if (size == 0) {
-				run = false;
-			} else {
-				read_buffer_.read_data_size_ += size;
-				//  LOG_INFO2("read_some PEER_STATE_SWALLOW, size=" << size);
-			}
-		}
-		break;
+			break;
 
-	case PEER_STATUS_ASYNC_WAIT:
-		run = false;
-		break;
-
-	case PEER_STATUS_WRITE:
-		set_state(next_state_);
-		next_state_ = PEER_STATE_NEW_CMD;
-		if (state_ == PEER_STATE_NEW_CMD && process_reqest_count < 32) {
-			if (read_buffer_.read_data_size_ >= 2) {
-				set_state(PEER_STATE_READ_HEADER);
-			} else {
-				run = false;
-			}
-		} else {
+		case PEER_STATUS_ASYNC_WAIT:
 			run = false;
-		}
-		break;
+			break;
 
-	case PEER_STATE_CLOSING:
-		set_state(PEER_STATE_CLOSED);
-		run = false;
-		break;
+		case PEER_STATUS_WRITE:
+			set_state(next_state_);
+			next_state_ = PEER_STATE_NEW_CMD;
+			if (state_ == PEER_STATE_NEW_CMD && process_reqest_count < 32) {
+				if (read_buffer_.read_data_size_ >= 10) {
+					set_state(PEER_STATE_READ_HEADER);
+				} else {
+					run = false;
+				}
+			} else {
+				run = false;
+			}
+			break;
 
-	case PEER_STATE_CLOSED:
-		break;
+		case PEER_STATE_CLOSING:
+			set_state(PEER_STATE_CLOSED);
+			run = false;
+			break;
 
-	default:
-		assert(false);
-		break;
+		case PEER_STATE_CLOSED:
+			break;
+
+		default:
+			assert(false);
+			break;
 		}
 	}
-
-	return offset;
 }
 
 void Peer_Http::set_state(peer_state state) {
 	LOG_TRACE("state change, from " << (uint32_t)state_ << " to " << (uint32_t)state);
 	state_ = state;
 }
-
-/*
-GET / HTTP/1.1
-GET /xixibase/get?g=222 HTTP/1.1
-
-Accept-Language: zh-cn
-User-Agent: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; .NET CLR 2.0.50727; .NET CLR 3.0.04506.648; .NET CLR 3.5.21022; InfoPath.2; 360SE)
-Accept-Encoding: gzip, deflate
-Host: localhost:7788
-Connection: Keep-Alive
-*/
 
 uint32_t Peer_Http::try_read_command(char* data, uint32_t data_len) {
 	char* p = memfind(data, data_len, "\r\n\r\n", 4);
@@ -519,7 +395,8 @@ uint32_t Peer_Http::try_read_command(char* data, uint32_t data_len) {
 	}
 
 	if (data_len >= 4096) {
-		set_state(PEER_STATE_CLOSING);
+		LOG_WARNING2("try_read_command header too large > " << data_len);
+		write_error(XIXI_REASON_TOO_LARGE);
 		return 0;
 	}
 
@@ -568,12 +445,6 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 			http_request_.uri_length = request_line_length - offset;
 		}
 		
-//		http_request_.uri = decode_uri(request_line + offset, request_line_length - offset, http_request_.uri_length);
-//		if (http_request_.uri == NULL) {
-//			LOG_WARNING2("try_read_command failed on decode_uri " << request_line + offset);
-//			write_error(XIXI_REASON_OUT_OF_MEMORY);
-//			return;
-//		}
 		if (!process_request_header_fields(request_header_fields, request_header_fields_length)) {
 			LOG_WARNING2("try_read_command failed on process request header fields " << request_header_fields);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -646,15 +517,7 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 			break;
 		}
 	}
-	// Content-Type
-	// get Content_Length
-/*	char* t = strstr(request_header_field, "Content-Length");
-	if (t != NULL) {
-		if (!safe_toui64(t + 15, t - request_header_field - 15, content_length_)) {
-			write_error(XIXI_REASON_INVALID_PARAMETER);
-			return;
-		}
-	}*/
+
 	return true;
 }
 
@@ -687,7 +550,6 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			}
 		}
 	}
-//	[2011-Oct-26 23:58:37.671875 00159E20]: Peer_Http id=1 Content-Type=multipart/form-data; boundary=---------------------------7db261252115f6
 	return true;
 }
 
@@ -736,6 +598,8 @@ void Peer_Http::process_command() {
 				process_flush();
 			} else if (memcmp(cmd, "touch", cmd_length) == 0) {
 				process_touch();
+			} else if (memcmp(cmd, "flags", cmd_length) == 0) {
+				process_update_flags();
 			} else if (memcmp(cmd, "stats", cmd_length) == 0) {
 				process_stats();
 			} else {
@@ -756,6 +620,24 @@ void Peer_Http::process_command() {
 				process_update(XIXI_UPDATE_SUB_OP_REPLACE);
 			} else if (memcmp(cmd, "prepend", cmd_length) == 0) {
 				process_update(XIXI_UPDATE_SUB_OP_PREPEND);
+			} else if (memcmp(cmd, "getbase", cmd_length) == 0) {
+				process_get_base();
+			} else {
+				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				write_error(XIXI_REASON_INVALID_PARAMETER);
+				return;
+			}
+		} else if (cmd_length == 10) {
+			if (memcmp(cmd, "checkwatch", cmd_length) == 0) {
+				this->process_check_watch();
+			} else {
+				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
+				write_error(XIXI_REASON_INVALID_PARAMETER);
+				return;
+			}
+		} else if (cmd_length == 11) {
+			if (memcmp(cmd, "createwatch", cmd_length) == 0) {
+				this->process_create_watch();
 			} else {
 				LOG_WARNING2("try_read_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -766,7 +648,7 @@ void Peer_Http::process_command() {
 			write_error(XIXI_REASON_INVALID_PARAMETER);
 		}
 	} else {
-		key_ = http_request_.uri;
+		key_ = (uint8_t*)http_request_.uri;
 		key_length_ = http_request_.uri_length;
 		process_get();
 	}
@@ -781,50 +663,71 @@ bool Peer_Http::process_request_arg(char* arg) {
 
 	for (size_t i = 0; i < tokens_.size(); i++) {
 		token_t& t = tokens_[i];
-		if (t.length >= 3) {
-			if (memcmp(t.value, "g=", 2) == 0) {
-				if (!safe_toui32(t.value + 2, t.length, group_id_)) {
+		if (t.length >= 2 && t.value[1] == '=') {
+			if (t.value[0] =='g') {
+				if (!safe_toui32(t.value + 2, t.length - 2, group_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (memcmp(t.value, "w=", 2) == 0) {
-				if (!safe_toui32(t.value + 2, t.length, watch_id_)) {
+			} else if (t.value[0] =='w') {
+				if (!safe_toui32(t.value + 2, t.length - 2, watch_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (memcmp(t.value, "k=", 2) == 0) {
-				key_ = decode_uri(t.value + 2, t.length - 2, key_length_);
+			} else if (t.value[0] =='k') {
+				key_ = (uint8_t*)decode_uri(t.value + 2, t.length - 2, key_length_);
 				if (key_ == NULL) {
 					write_error(XIXI_REASON_OUT_OF_MEMORY);
 					return false;
 				}
-//				key_length_ = t.length - 2;
-			} else if (memcmp(t.value, "v=", 2) == 0) {
-			//	value_ = t.value + 2;
-			//	value_length_ = t.length - 2;
-				value_ = decode_uri(t.value + 2, t.length - 2, value_length_);
+			} else if (t.value[0] =='v') {
+				value_ = (uint8_t*)decode_uri(t.value + 2, t.length - 2, value_length_);
 				if (value_ == NULL) {
 					write_error(XIXI_REASON_OUT_OF_MEMORY);
 					return false;
 				}
-			} else if (memcmp(t.value, "f=", 2) == 0) {
-				if (!safe_toui32(t.value + 2, t.length, flags_)) {
+			} else if (t.value[0] =='f') {
+				if (!safe_toui32(t.value + 2, t.length - 2, flags_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (memcmp(t.value, "c=", 2) == 0) {
-				if (!safe_toui64(t.value + 2, t.length, cache_id_)) {
+			} else if (t.value[0] =='c') {
+				if (!safe_toui64(t.value + 2, t.length - 2, cache_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (memcmp(t.value, "d=", 2) == 0) {
-				if (!safe_toi64(t.value + 2, t.length, delta_)) {
+			} else if (t.value[0] =='d') {
+				if (!safe_toi64(t.value + 2, t.length - 2, delta_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (memcmp(t.value, "e=", 2) == 0) {
+			} else if (t.value[0] =='e') {
 				touch_flag_ = true;
-				if (!safe_toui32(t.value + 2, t.length, expiration_)) {
+				if (!safe_toui32(t.value + 2, t.length - 2, expiration_)) {
+					write_error(XIXI_REASON_INVALID_PARAMETER);
+					return false;
+				}
+			} else if (t.value[0] =='a') {
+				touch_flag_ = true;
+				if (!safe_toui64(t.value + 2, t.length - 2, ack_cache_id_)) {
+					write_error(XIXI_REASON_INVALID_PARAMETER);
+					return false;
+				}
+			} else if (t.value[0] =='i') {
+				touch_flag_ = true;
+				if (!safe_toui32(t.value + 2, t.length - 2, interval_)) {
+					write_error(XIXI_REASON_INVALID_PARAMETER);
+					return false;
+				}
+			} else if (t.value[0] =='t') {
+				touch_flag_ = true;
+				if (!safe_toui32(t.value + 2, t.length - 2, timeout_)) {
+					write_error(XIXI_REASON_INVALID_PARAMETER);
+					return false;
+				}
+			} else if (t.value[0] =='s') {
+				touch_flag_ = true;
+				if (!safe_toui32(t.value + 2, t.length - 2, sub_op_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
@@ -844,7 +747,7 @@ void Peer_Http::process_post() {
 			return;
 		}
 		process_command();
-	} if (http_request_.content_type_length == 19
+	} else if (http_request_.content_type_length == 19
 			&& memcmp(http_request_.content_type, "multipart/form-data", http_request_.content_type_length) == 0) {
 		char* buf = (char*)memfind((char*)post_data_, content_length_, (char*)http_request_.boundary, http_request_.boundary_length);
 		while (buf != NULL) {
@@ -879,10 +782,10 @@ void Peer_Http::process_post() {
 							return;
 						}
 					} else if (name[0] == 'k') {
-						key_ = value;
+						key_ = (uint8_t*)value;
 						key_length_ = buf - value - 4;
 					} else if (name[0] == 'v') {
-						value_ = value;
+						value_ = (uint8_t*)value;
 						value_length_ = buf - value - 4;
 					} else if (name[0] == 'f') {
 						if (!safe_toui32(value, buf - value - 4, flags_)) {
@@ -905,6 +808,26 @@ void Peer_Http::process_post() {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
+					} else if (name[0] =='a') {
+						if (!safe_toui64(value, buf - value - 4, ack_cache_id_)) {
+							write_error(XIXI_REASON_INVALID_PARAMETER);
+							return;
+						}
+					} else if (name[0] =='i') {
+						if (!safe_toui32(value, buf - value - 4, interval_)) {
+							write_error(XIXI_REASON_INVALID_PARAMETER);
+							return;
+						}
+					} else if (name[0] =='t') {
+						if (!safe_toui32(value, buf - value - 4, timeout_)) {
+							write_error(XIXI_REASON_INVALID_PARAMETER);
+							return;
+						}
+					} else if (name[0] =='s') {
+						if (!safe_toui32(value, buf - value - 4, sub_op_)) {
+							write_error(XIXI_REASON_INVALID_PARAMETER);
+							return;
+						}
 					}
 				}
 			} else {
@@ -913,7 +836,7 @@ void Peer_Http::process_post() {
 		}
 		process_command();
 	} else {
-		LOG_WARNING2("process_cahce_arg unsupport content_type " << http_request_.content_type);
+		LOG_WARNING2("process_cahce_arg unsupport content_type " << http_request_.content_type_length);
 		write_error(XIXI_REASON_INVALID_PARAMETER);
 	}
 }
@@ -934,39 +857,15 @@ void Peer_Http::process_get() {
 
 		uint8_t* buf = request_buf_.prepare(20);
 		uint32_t data_size = _snprintf((char*)buf, 20, "%lu\r\n\r\n", it->data_size);
-//			char* res = "HTTP/1.1 200 OK\r\n\r\n""Connection: keep-alive\r\n""Via: 1.1 hkidc-dmz-wsa-2.cisco.com:80 (IronPort-WSA/7.1.3-013)\r\n""Vary: Accept-Encoding\r\n""Date: Tue, 25 Oct 2011 09:24:11 GMT\r\n";
-		char* res = "HTTP/1.1 200 OK\r\n"
-			"Server: xixibase/0.1\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: ";//21\r\n\r\n"
-		//	"<html>xixibase</html>";
-		add_write_buf((uint8_t*)res, strlen(res));
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf, data_size);
 		add_write_buf(it->get_data(), it->data_size);
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
 		if (watch_error) {
-		//	write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
-/*			char* res = "HTTP/1.1 200 OK\r\n"
-				"Server: xixibase/0.1\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 27\r\n\r\n"
-				"XIXI_REASON_WATCH_NOT_FOUND";
-			add_write_buf((uint8_t*)res, strlen(res));
-			set_state(PEER_STATUS_WRITE);
-			next_state_ = PEER_STATE_NEW_CMD;*/
 			write_error(XIXI_REASON_WATCH_NOT_FOUND);
 		} else {
-		//	write_error(XIXI_REASON_NOT_FOUND, 0, true);
-/*			char* res = "HTTP/1.1 200 OK\r\n"
-				"Server: xixibase/0.1\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 21\r\n\r\n"
-				"XIXI_REASON_NOT_FOUND";
-			add_write_buf((uint8_t*)res, strlen(res));
-			set_state(PEER_STATUS_WRITE);
-			next_state_ = PEER_STATE_NEW_CMD;*/
 			write_error(XIXI_REASON_NOT_FOUND);
 		}
 	}
@@ -990,10 +889,6 @@ void Peer_Http::process_update(uint8_t sub_op) {
 
 	memcpy(cache_item_->get_key(), key_, key_length_);
 	memcpy(cache_item_->get_data(), value_, value_length_);
-//	uint8_t* key = cache_item_->get_key();
-//	uint8_t* data = cache_item_->get_data();
-
-//	uint32_t data_len = key_length_ + value_length_;
 
 	cache_item_->calc_hash_value();
 
@@ -1028,11 +923,8 @@ void Peer_Http::process_update(uint8_t sub_op) {
 		uint32_t data_size = _snprintf((char*)buf, 24, "%llu", cache_id);
 		uint8_t* buf2 = request_buf_.prepare(50);
 		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n%s", data_size, buf);
-		char* res = "HTTP/1.1 200 OK\r\n"
-			"Server: "VERSION"\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: ";
-		add_write_buf((uint8_t*)res, strlen(res));
+
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1050,7 +942,10 @@ void Peer_Http::process_delete() {
 
 	xixi_reason reason = cache_mgr_.remove(group_id_, (uint8_t*)key_, key_length_, cache_id_);
 	if (reason == XIXI_REASON_SUCCESS) {
-		write_simple_res(XIXI_CHOICE_DELETE_RES);
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+
+		set_state(PEER_STATUS_WRITE);
+		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
 		write_error(reason);
 	}
@@ -1065,10 +960,15 @@ void Peer_Http::process_delta(bool incr) {
 //	uint64_t cache_id = pdu->cache_id;
 	xixi_reason reason = cache_mgr_.delta(group_id_, (uint8_t*)key_, key_length_, incr, delta_, cache_id_, value);
 	if (reason == XIXI_REASON_SUCCESS) {
-		uint8_t* cb = request_buf_.prepare(XIXI_Delta_Res_Pdu::calc_encode_size());
-		XIXI_Delta_Res_Pdu::encode(cb, value, cache_id_);
+		uint8_t* buf = request_buf_.prepare(50);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%lld %llu", value, cache_id_);
 
-		add_write_buf(cb, XIXI_Delta_Res_Pdu::calc_encode_size());
+		uint8_t* buf2 = request_buf_.prepare(50);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		add_write_buf(buf2, data_size2);
+		add_write_buf(buf, data_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1077,80 +977,50 @@ void Peer_Http::process_delta(bool incr) {
 	}
 }
 
-uint32_t Peer_Http::process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
-	LOG_TRACE2("process_get_base_req_pdu_extras");
-	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
-	if (data_length < key_length) {
-		return 0;
-	}
+void Peer_Http::process_get_base() {
+	LOG_TRACE2("process_get_base");
 
 	uint64_t cache_id;
 	uint32_t flags;
 	uint32_t expiration;
-	bool ret = cache_mgr_.get_base(pdu->group_id, key, key_length, cache_id, flags, expiration);
+	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration);
 	if (ret) {
-		uint8_t* cb = request_buf_.prepare(XIXI_Get_Base_Res_Pdu::calc_encode_size());
-		XIXI_Get_Base_Res_Pdu rs;
-		rs.cache_id = cache_id;
-		rs.flags = flags;
-		rs.expiration = expiration;
-		rs.encode(cb);
+		uint8_t* buf = request_buf_.prepare(50);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%llu %lu %lu", cache_id, flags, expiration);
 
-		add_write_buf(cb, XIXI_Get_Base_Res_Pdu::calc_encode_size());
+		uint8_t* buf2 = request_buf_.prepare(50);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		add_write_buf(buf2, data_size2);
+		add_write_buf(buf, data_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
-//		write_error(XIXI_REASON_NOT_FOUND, 0, true);
+		write_error(XIXI_REASON_NOT_FOUND);
 	}
-
-	return key_length;
 }
 
-uint32_t Peer_Http::process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
-	LOG_TRACE2("process_update_flags_req_pdu_extras");
-	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
-	if (data_length < key_length) {
-		return 0;
-	}
+void Peer_Http::process_update_flags() {
+	LOG_TRACE2("process_update_flags");
+
+	XIXI_Update_Flags_Req_Pdu pdu;
+	pdu.cache_id = cache_id_;
+	pdu.flags = flags_;
+
 	uint64_t cache_id = 0;
-	bool ret = cache_mgr_.update_flags(pdu->group_id, key, key_length, pdu, cache_id);
-	if (pdu->reply()) {
-		if (ret) {
-			uint8_t* cb = request_buf_.prepare(XIXI_Update_Flags_Res_Pdu::calc_encode_size());
-			XIXI_Update_Flags_Res_Pdu::encode(cb, cache_id);
-
-			add_write_buf(cb, XIXI_Update_Flags_Res_Pdu::calc_encode_size());
-
-			set_state(PEER_STATUS_WRITE);
-			next_state_ = PEER_STATE_NEW_CMD;
-		} else {
-			if (cache_id != 0) {
-//				write_error(XIXI_REASON_MISMATCH, 0, true);
-			} else {
-	//			write_error(XIXI_REASON_NOT_FOUND, 0, true);
-			}
-		}
-	} else {
-		set_state(PEER_STATE_NEW_CMD);
-		next_state_ = PEER_STATE_NEW_CMD;
-	}
-	return key_length;
-}
-
-void Peer_Http::process_touch() {
-	LOG_TRACE2("process_touch");
-
-	XIXI_Update_Expiration_Req_Pdu pdu;
-	uint64_t cache_id = 0;
-	bool ret = cache_mgr_.update_expiration(group_id_, (uint8_t*)key_, key_length_, &pdu, cache_id);
+	bool ret = cache_mgr_.update_flags(group_id_, key_, key_length_, &pdu, cache_id);
 	if (ret) {
-		uint8_t* cb = request_buf_.prepare(XIXI_Update_Expiration_Res_Pdu::calc_encode_size());
-		XIXI_Update_Expiration_Res_Pdu::encode(cb, cache_id);
+		uint8_t* buf = request_buf_.prepare(50);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%llu", cache_id);
 
-		add_write_buf(cb, XIXI_Update_Expiration_Res_Pdu::calc_encode_size());
+		uint8_t* buf2 = request_buf_.prepare(50);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		add_write_buf(buf2, data_size2);
+		add_write_buf(buf, data_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1163,10 +1033,34 @@ void Peer_Http::process_touch() {
 	}
 }
 
-void Peer_Http::process_auth_req_pdu_fixed(XIXI_Auth_Req_Pdu* pdu) {
-	LOG_TRACE2("process_auth_req_pdu_fixed");
-	next_data_len_ = pdu->base64_length;
-	set_state(PEER_STATE_READ_BODY_EXTRAS2);
+void Peer_Http::process_touch() {
+	LOG_TRACE2("process_touch");
+
+	XIXI_Update_Expiration_Req_Pdu pdu;
+	pdu.cache_id = cache_id_;
+	pdu.expiration = expiration_;
+	uint64_t cache_id = 0;
+	bool ret = cache_mgr_.update_expiration(group_id_, (uint8_t*)key_, key_length_, &pdu, cache_id);
+	if (ret) {
+		uint8_t* buf = request_buf_.prepare(50);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%llu", cache_id);
+
+		uint8_t* buf2 = request_buf_.prepare(50);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		add_write_buf(buf2, data_size2);
+		add_write_buf(buf, data_size);
+
+		set_state(PEER_STATUS_WRITE);
+		next_state_ = PEER_STATE_NEW_CMD;
+	} else {
+		if (cache_id != 0) {
+			write_error(XIXI_REASON_MISMATCH);
+		} else {
+			write_error(XIXI_REASON_NOT_FOUND);
+		}
+	}
 }
 
 uint32_t Peer_Http::process_auth_req_pdu_extras(XIXI_Auth_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
@@ -1184,54 +1078,93 @@ uint32_t Peer_Http::process_auth_req_pdu_extras(XIXI_Auth_Req_Pdu* pdu, uint8_t*
 	return base64_length;
 }
 
-void Peer_Http::process_hello_req_pdu_fixed() {
-	LOG_TRACE2("process_hello_req_pdu_fixed");
-	write_simple_res(XIXI_CHOICE_HELLO_RES);
-}
+void Peer_Http::process_create_watch() {
+	LOG_INFO2("process_create_watch");
+	uint32_t watch_id = cache_mgr_.create_watch(group_id_, interval_);
 
-void Peer_Http::process_create_watch_req_pdu_fixed(XIXI_Create_Watch_Req_Pdu* pdu) {
-	LOG_INFO2("process_create_watch_req_pdu_fixed");
-	uint32_t watchID = cache_mgr_.create_watch(pdu->group_id, pdu->max_next_check_interval);
+	uint8_t* buf = request_buf_.prepare(50);
+	uint32_t data_size = _snprintf((char*)buf, 50, "%lu", watch_id);
 
-	uint8_t* cb = request_buf_.prepare(XIXI_Create_Watch_Res_Pdu::get_body_size());
-	XIXI_Create_Watch_Res_Pdu::encode(cb, watchID);
+	uint8_t* buf2 = request_buf_.prepare(50);
+	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
 
-	add_write_buf(cb, XIXI_Create_Watch_Res_Pdu::get_body_size());
+	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+	add_write_buf(buf2, data_size2);
+	add_write_buf(buf, data_size);
 
 	set_state(PEER_STATUS_WRITE);
 	next_state_ = PEER_STATE_NEW_CMD;
 }
 
-void Peer_Http::process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu) {
+void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
+	uint8_t* buf = request_buf_.prepare(2000);
+	uint32_t offset = 0;
+	uint32_t total_size = 0;
+	bool is_begin = true;
+	if (buf != NULL) {
+		add_write_buf(NULL, 0); // will update next
+		add_write_buf(NULL, 0); // will update next
+
+		while (!updated_list.empty()) {
+			uint64_t cache_id = updated_list.front();
+			updated_list.pop_front();
+			uint32_t data_size = 0;
+			if (is_begin) {
+				is_begin = false;
+				data_size = _snprintf((char*)buf + offset, 30, "%llu", cache_id);
+			} else {
+				data_size = _snprintf((char*)buf + offset, 30, ",%llu", cache_id);
+			}
+			offset += data_size;
+			total_size += data_size;
+			if (offset + 30 < 2000) {
+				add_write_buf(buf, offset);
+				buf = request_buf_.prepare(2000);
+				offset = 0;
+				if (buf == NULL) {
+					break;
+				}
+			}
+		}
+		if (buf == NULL) {
+			write_error(XIXI_REASON_OUT_OF_MEMORY);
+		} else {
+			if (offset > 0) {
+				add_write_buf(buf, offset);
+			}
+
+			uint8_t* buf2 = request_buf_.prepare(50);
+			uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", total_size);
+
+			update_write_buf(0, (uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+			update_write_buf(1, buf2, data_size2);
+
+			set_state(PEER_STATUS_WRITE);
+			next_state_ = PEER_STATE_NEW_CMD;
+		}
+	} else {
+		write_error(XIXI_REASON_OUT_OF_MEMORY);
+	}
+}
+
+void Peer_Http::process_check_watch() {
 	std::list<uint64_t> updated_list;
 	uint32_t updated_count = 0;
 	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
-	bool ret = cache_mgr_.check_watch_and_set_callback(pdu->group_id, pdu->watch_id, updated_list, updated_count, pdu->ack_cache_id, sp, pdu->max_next_check_interval);
+	bool ret = cache_mgr_.check_watch_and_set_callback(group_id_, watch_id_, updated_list, updated_count, ack_cache_id_, sp, interval_);
 	//  LOG_INFO2("process_check_watch_req_pdu_fixed watch_id=" << pdu->watch_id << " ack=" << pdu->ack_cache_id << " updated_count=" << updated_count);
 
 	if (!ret) {
-//		write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
+		write_error(XIXI_REASON_WATCH_NOT_FOUND);
 	} else {
 		if (updated_count > 0) {
-			uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
-
-			uint8_t* buf = request_buf_.prepare(size);
-			if (buf != NULL) {
-				XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
-
-				add_write_buf(buf, size);
-
-				set_state(PEER_STATUS_WRITE);
-				next_state_ = PEER_STATE_NEW_CMD;
-			} else {
-//				write_error(XIXI_REASON_OUT_OF_MEMORY, 0, true);
-			}
+			encode_update_list(updated_list);
 		} else {
 			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
 			timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
-			timer_->expires_from_now(boost::posix_time::seconds(pdu->check_timeout));
+			timer_->expires_from_now(boost::posix_time::seconds(timeout_));
 			timer_->async_wait(boost::bind(&Peer_Http::handle_timer, this,
-				boost::asio::placeholders::error, pdu->watch_id));
+				boost::asio::placeholders::error, watch_id_));
 			set_state(PEER_STATUS_ASYNC_WAIT);
 		}
 	}
@@ -1242,11 +1175,15 @@ void Peer_Http::process_flush() {
 	uint64_t flush_size = 0;
 	cache_mgr_.flush(group_id_, flush_count, flush_size);
 
-	uint8_t* cb = request_buf_.prepare(XIXI_Flush_Res_Pdu::calc_encode_size());
+	uint8_t* buf = request_buf_.prepare(50);
+	uint32_t data_size = _snprintf((char*)buf, 50, "%lu %llu", flush_count, flush_size);
 
-//	res_pdu.encode(cb);
+	uint8_t* buf2 = request_buf_.prepare(50);
+	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
 
-	add_write_buf(cb, XIXI_Flush_Res_Pdu::calc_encode_size());
+	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+	add_write_buf(buf2, data_size2);
+	add_write_buf(buf, data_size);
 
 	set_state(PEER_STATUS_WRITE);
 	next_state_ = PEER_STATE_NEW_CMD;
@@ -1255,10 +1192,27 @@ void Peer_Http::process_flush() {
 void Peer_Http::process_stats() {
 	std::string result;
 	XIXI_Stats_Req_Pdu pdu;
+	pdu.group_id = group_id_;
+	pdu.op_flag = sub_op_;
 	cache_mgr_.stats(&pdu, result);
-	int size = result.size();
+	uint32_t size = result.size();
+
+	uint8_t* buf2 = request_buf_.prepare(50);
+	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", size);
+
+	uint8_t* buf = request_buf_.prepare(size);
+	memcpy(buf, result.c_str(), size);
+
+	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+	add_write_buf(buf2, data_size2);
+	add_write_buf(buf, size);
+
+	set_state(PEER_STATUS_WRITE);
+	next_state_ = PEER_STATE_NEW_CMD;
+/*
+	
 	int buf_size = XIXI_Stats_Res_Pdu::calc_encode_size(size);
-	uint8_t* buf = request_buf_.prepare(buf_size);
+	
 	if (buf != NULL) {
 		XIXI_Stats_Res_Pdu::encode(buf, (uint8_t*)result.c_str(), size);
 
@@ -1268,7 +1222,7 @@ void Peer_Http::process_stats() {
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
 		write_error(XIXI_REASON_OUT_OF_MEMORY);
-	}
+	}*/
 }
 
 void Peer_Http::reset_for_new_cmd() {
@@ -1291,6 +1245,10 @@ void Peer_Http::reset_for_new_cmd() {
 	expiration_ = 0;
 	touch_flag_ = false;
 	delta_ = 1;
+	ack_cache_id_ = 0;
+	interval_ = 30;
+	timeout_ = 10;
+	sub_op_ = 0;
 	http_request_.reset();
 
 	request_buf_.reset();
@@ -1433,21 +1391,9 @@ void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watc
 	if (!ret) {
 		write_error(XIXI_REASON_WATCH_NOT_FOUND);
 	} else {
-		uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
-
-		uint8_t* buf = request_buf_.prepare(size);
-		if (buf != NULL) {
-			XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
-
-			add_write_buf(buf, size);
-
-			set_state(PEER_STATE_NEW_CMD);
-			next_state_ = PEER_STATE_NEW_CMD;
-			try_write();
-		} else {
-			write_error(XIXI_REASON_OUT_OF_MEMORY);
-		}
+		encode_update_list(updated_list);
 	}
+	try_write();
 
 	delete timer_;
 	timer_ = NULL;

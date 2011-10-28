@@ -82,7 +82,7 @@ protected:
 		lock_.unlock();
 	}
 
-	uint32_t process();
+	void process();
 	inline bool is_closed() { return state_ == PEER_STATE_CLOSED; }
 
 	inline void set_state(peer_state state);
@@ -95,51 +95,37 @@ protected:
 	inline bool process_request_arg(char* agr);
 	inline char* decode_uri(char* uri, uint32_t length, uint32_t& out);
 	inline void process_post();
-	
-
-//	inline void process_pdu_fixed(XIXI_Pdu* pdu);
-//	inline void process_pdu_extras(XIXI_Pdu* pdu);
-//	inline uint32_t process_pdu_extras2(XIXI_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// get
 	inline void process_get();
 
 	// get base
-	inline uint32_t process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline void process_get_base();
 
 	// update
 	inline void process_update(uint8_t sub_op);
-//	inline void process_update_req_pdu_fixed(XIXI_Update_Req_Pdu* pdu);
-//	inline void process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu);
 
 	// update base
-	inline uint32_t process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
+	inline void process_update_flags();
 
 	// update expiration
 	inline void process_touch();
 
 	// delete
 	inline void process_delete();
-//	inline void process_delete_req_pdu_fixed(XIXI_Delete_Req_Pdu* pdu);
-//	inline uint32_t process_delete_req_pdu_extras(XIXI_Delete_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// auth
-	inline void process_auth_req_pdu_fixed(XIXI_Auth_Req_Pdu* pdu);
+	inline void process_auth(XIXI_Auth_Req_Pdu* pdu);
 	inline uint32_t process_auth_req_pdu_extras(XIXI_Auth_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
 
 	// delta
 	inline void process_delta(bool incr);
-//	inline void process_delta_req_pdu_fixed(XIXI_Delta_Req_Pdu* pdu);
-//	inline uint32_t process_delta_req_pdu_extras(XIXI_Delta_Req_Pdu* pdu, uint8_t* data, uint32_t data_length);
-
-	// hello
-	inline void process_hello_req_pdu_fixed();
 
 	// create watch
-	inline void process_create_watch_req_pdu_fixed(XIXI_Create_Watch_Req_Pdu* pdu);
+	inline void process_create_watch();
 
 	// check watch
-	inline void process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu);
+	inline void process_check_watch();
 
 	// flush
 	inline void process_flush();
@@ -148,8 +134,6 @@ protected:
 	inline void process_stats();
 
 	inline void reset_for_new_cmd();
-	inline void write_simple_res(xixi_choice choice, uint32_t request_id);
-	inline void write_simple_res(xixi_choice choice);
 	inline void write_error(xixi_reason error_code);
 
 	inline void cleanup();
@@ -165,8 +149,13 @@ protected:
 		write_buf_.push_back(boost::asio::const_buffer(buf, size));
 		write_buf_total_ += size;
 	}
-
-//	static void destroy(Peer_Http* peer);
+	inline void update_write_buf(uint32_t index, const uint8_t* buf, uint32_t size) {
+		if (write_buf_.size() > index) {
+			write_buf_[index] = boost::asio::const_buffer(buf, size);
+			write_buf_total_ += size;
+		}
+	}
+	inline void encode_update_list(std::list<uint64_t>& updated_list);
 
 	void handle_timer(const boost::system::error_code& err, uint32_t watch_id);
 
@@ -185,9 +174,9 @@ protected:
 	uint32_t group_id_;
 	uint32_t watch_id_;
 	uint64_t cache_id_;
-	char* key_;
+	uint8_t* key_;
 	uint32_t key_length_;
-	char* value_;
+	uint8_t* value_;
 	uint32_t value_length_;
 	uint8_t* post_data_;
 	uint32_t content_length_;
@@ -195,6 +184,10 @@ protected:
 	uint32_t expiration_;
 	bool touch_flag_;
 	int64_t delta_;
+	uint64_t ack_cache_id_;
+	uint32_t interval_;
+	uint32_t timeout_;
+	uint32_t sub_op_;
 
 	uint32_t write_buf_total_;
 

@@ -23,6 +23,10 @@
 #define VERSION "Xixibase 0.1"
 #endif
 
+#ifndef HTTP_SERVER
+#define HTTP_SERVER "Xixibase/0.1"
+#endif
+
 typedef uint16_t xixi_reason;
 const xixi_reason XIXI_REASON_SUCCESS = 0;
 const xixi_reason XIXI_REASON_NOT_FOUND = 1;
