@@ -74,8 +74,13 @@ void Cache_Watch::check_and_set_callback(std::list<uint64_t>& updated_list, uint
 
 void Cache_Watch::check_and_clear_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count) {
 	if (updated_count_ > 0) {
-		updated_list_.swap(updated_list);
-		updated_count = updated_count_;
+		std::list<uint64_t>::iterator it = updated_list_.begin();
+		while (it != updated_list_.end()) {
+			updated_list.push_back(*it);
+			++it;
+		}
+		wait_updated_count_ = updated_count = updated_count_;
+		updated_list_.swap(wait_updated_list_);
 		updated_count_ = 0;
 	}
 	wp_.reset();
