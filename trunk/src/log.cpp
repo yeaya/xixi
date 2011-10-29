@@ -16,22 +16,27 @@
 
 #include "log.h"
 
+//#define ENABLE_LINE_ID
+
 #ifdef USING_BOOST_LOG
 #include <boost/log/core.hpp>
 #include <boost/log/filters.hpp>
 #include <boost/log/formatters.hpp>
 #include <boost/log/utility/init/to_file.hpp>
 #include <boost/log/utility/init/to_console.hpp>
-#endif
+#include "boost/format.hpp"
+#include <boost/thread/thread.hpp>
+#include <boost/log/sources/logger.hpp>
 
-int log_level_;
-
-#ifndef USING_BOOST_LOG
-boost::mutex log_lock_;
-#endif
+namespace logging = boost::log;
+namespace fmt = boost::log::formatters;
+namespace flt = boost::log::filters;
+namespace sinks = boost::log::sinks;
+namespace attrs = boost::log::attributes;
+namespace src = boost::log::sources;
+namespace keywords = boost::log::keywords;
 
 void log_init(const char* file_name, int rotation_size) {
-#ifdef USING_BOOST_LOG
 	if (file_name == NULL || rotation_size <= 0) {
 		return;
 	}
@@ -40,7 +45,8 @@ void log_init(const char* file_name, int rotation_size) {
 	namespace flt = boost::log::filters;
 	namespace attrs = boost::log::attributes;
 	namespace keywords = boost::log::keywords;
-
+	namespace fmt = boost::log::formatters;
+/*
 	logging::init_log_to_file(
 		// file name pattern
 		keywords::file_name = file_name,
@@ -48,17 +54,72 @@ void log_init(const char* file_name, int rotation_size) {
 		keywords::rotation_size = rotation_size,
 		// ... or at midnight
 		keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
-		// log record format
-		keywords::format = "[%TimeStamp% %ThreadID%]: %_%",
-		keywords::auto_flush = true);
-
-	logging::init_log_to_console(
-		std::cerr,
-		// log record format
-		keywords::format = "[%TimeStamp% %ThreadID%]: %_%",
-		keywords::auto_flush = true);
+#ifdef ENABLE_LINE_ID
+		keywords::format = fmt::format("%1% [%2% %3% %4%] %5%")
+			% fmt::attr< unsigned int >("LineID")
+#else
+		keywords::format = fmt::format("[%1% %2% %3%] %4%")
 #endif
+			% fmt::date_time< boost::posix_time::ptime >("TimeStamp", keywords::format = "%Y-%m-%d %H:%M:%S.%f")
+			% fmt::attr< boost::thread::id >("ThreadID")
+			% fmt::attr< boost::log::trivial::severity_level >("Severity", std::nothrow)
+			% fmt::message(),
+		keywords::auto_flush = true);
+*/
+	logging::init_log_to_console(
+		std::cout,
+#ifdef ENABLE_LINE_ID
+		keywords::format = fmt::format("%1% [%2% %3% %4%] %5%")
+			% fmt::attr< unsigned int >("LineID")
+#else
+		keywords::format = fmt::format("[%1% %2% %3%] %4%")
+#endif
+			% fmt::date_time< boost::posix_time::ptime >("TimeStamp", keywords::format = "%Y-%m-%d %H:%M:%S.%f")
+			% fmt::attr< boost::thread::id >("ThreadID")
+			% fmt::attr< boost::log::trivial::severity_level >("Severity", std::nothrow)
+			% fmt::message(),
+		keywords::auto_flush = true);
 }
+#else
+boost::mutex log_lock_;
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/thread/thread.hpp>
+
+char* LOG_PREFIX(const char* severity) {
+	static char log_prefix[100];
+
+	std::string strTime = boost::posix_time::to_iso_string(boost::posix_time::microsec_clock::local_time());
+
+	// 20111029T233826.031250
+	if (strTime.size() < 22) {
+		return "";
+	}
+/*
+	std::string tmp = strTime.substr(0, 4)
+		+ "-"
+		+ strTime.substr(4, 2)
+		+ "-"
+		+ strTime.substr(6, 2)
+		+ " "
+		+ strTime.substr(9, 2)
+		+ ":"
+		+ strTime.substr(11, 2)
+		+ ":"
+		+ strTime.substr(13, 2)
+		+ "."
+		+ strTime.substr(16, 6);
+	_snprintf(log_prefix, sizeof(log_prefix), "[%s %08X %s] ", tmp.c_str(), boost::this_thread::get_id(), severity);
+*/
+	const char* p = strTime.c_str();
+	_snprintf(log_prefix, sizeof(log_prefix), "[%4.4s-%2.2s-%2.2s %2.2s:%2.2s:%s %08X %s] ",
+		p, p + 4, p + 6, p + 9, p + 11, p + 13, boost::this_thread::get_id(), severity);
+
+	return log_prefix;
+}
+#endif
+
+int log_level_;
 
 void set_log_level(int log_level) {
 	log_level_ = log_level;
