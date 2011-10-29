@@ -28,56 +28,55 @@ struct Cache_Buffer_Extend {
 template<int BASE_SIZE>
 class Cache_Buffer {
 public:
-	Cache_Buffer() : 
-	  offset_(0), total_size_(0), extend_(NULL) {
-	  }
+	Cache_Buffer() : total_size_(0), offset_(0), extend_(NULL) {
+	}
 
-	  ~Cache_Buffer()  {
-		  reset();
-	  }
+	~Cache_Buffer()  {
+		reset();
+	}
 
-	  uint8_t* prepare(uint32_t size) {
-		  if (size + total_size_ <= BASE_SIZE) {
-			  uint8_t* buf = base_buf_ + offset_;
-			  offset_ += size;
-			  total_size_ += size;
-			  return buf;
-		  } else {
-			  if (extend_ == NULL || size + offset_ > extend_->buf_size) {
-				  uint32_t buf_size = BASE_SIZE;
-				  if (buf_size < size) {
-					  buf_size = size;
-				  }
-				  Cache_Buffer_Extend* cbe = (Cache_Buffer_Extend*)malloc(sizeof(Cache_Buffer_Extend) + buf_size);
-				  if (cbe != NULL) {
-					  cbe->buf_size = buf_size;
-					  cbe->next = extend_;
-					  extend_ = cbe;
-					  offset_ = 0;
-				  } else {
-					  return NULL;
-				  }
-			  }
-			  uint8_t* buf = extend_->buf + offset_;
-			  offset_ += size;
-			  total_size_ += size;
-			  return buf;
-		  }
-	  }
+	uint8_t* prepare(uint32_t size) {
+		if (size + total_size_ <= BASE_SIZE) {
+			uint8_t* buf = base_buf_ + offset_;
+			offset_ += size;
+			total_size_ += size;
+			return buf;
+		} else {
+		if (extend_ == NULL || size + offset_ > extend_->buf_size) {
+			uint32_t buf_size = BASE_SIZE;
+			if (buf_size < size) {
+				buf_size = size;
+			}
+			Cache_Buffer_Extend* cbe = (Cache_Buffer_Extend*)malloc(sizeof(Cache_Buffer_Extend) + buf_size);
+			if (cbe != NULL) {
+				cbe->buf_size = buf_size;
+				cbe->next = extend_;
+				extend_ = cbe;
+				offset_ = 0;
+			} else {
+				return NULL;
+			}
+		}
+		uint8_t* buf = extend_->buf + offset_;
+		offset_ += size;
+		total_size_ += size;
+		return buf;
+		}
+	}
 
-	  void reset() {
-		  while (extend_ != NULL) {
-			  Cache_Buffer_Extend* next = extend_->next;
-			  free(extend_);
-			  extend_ = next;
-		  }
-		  total_size_ = 0;
-		  offset_ = 0;
-	  }
+	void reset() {
+		while (extend_ != NULL) {
+			Cache_Buffer_Extend* next = extend_->next;
+			free(extend_);
+			extend_ = next;
+		}
+		total_size_ = 0;
+		offset_ = 0;
+	}
 
-	  uint32_t totla_size() {
-		  return total_size_;
-	  }
+	uint32_t totla_size() {
+		return total_size_;
+	}
 
 private:
 	uint32_t total_size_;

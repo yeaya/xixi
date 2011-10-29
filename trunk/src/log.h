@@ -17,6 +17,8 @@ limitations under the License.
 #ifndef LOG_H
 #define LOG_H
 
+#include "defines.h"
+
 #define ENABLE_LOG
 //#define USING_BOOST_LOG
 
@@ -95,7 +97,7 @@ void set_log_level(int log_level);
 	#include <boost/thread/mutex.hpp>
 	extern boost::mutex log_lock_;
 
-	extern char* LOG_PREFIX(const char* severity);
+	extern const char* LOG_PREFIX(const char* severity);
 
 	#if LOG_LEVEL <= log_level_trace
 		#define LOG_TRACE(x)  if (log_level_ <= log_level_trace) { log_lock_.lock(); std::cout << LOG_PREFIX("trace") << x << endl; log_lock_.unlock(); }

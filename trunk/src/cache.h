@@ -64,7 +64,7 @@ public:
 };
 
 struct Cache_Key {
-	Cache_Key() : group_id(0), data(NULL), size(0) {}
+	Cache_Key() : group_id(0), size(0), data(NULL) {}
 	Cache_Key(uint32_t g, const void* d, uint32_t s) {
 		group_id = g;
 		data = d;

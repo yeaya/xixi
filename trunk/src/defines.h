@@ -31,4 +31,10 @@ using namespace boost;
 #include <set>
 using namespace std;
 
+#ifndef WIN32
+#define _snprintf snprintf
+#define _strtoui64 strtoull
+#define _strtoi64 strtoll
+#endif
+
 #endif // DEFINES_H

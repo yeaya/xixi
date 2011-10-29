@@ -24,12 +24,6 @@
 
 #define BUF_CMP(buf1, len1, buf2, len2) (len1 == len2 && memcmp(buf1, buf2, len1) == 0)
 
-#ifndef WIN32
-#define _snprintf snprintf
-#define _strtoui64 strtoull
-#define _strtoi64 strtoll
-#endif
-
 extern bool safe_toui64(const char* data, uint32_t data_len, uint64_t& out);
 extern bool safe_toi64(const char* data, uint32_t data_len, int64_t& out);
 extern bool safe_toui32(const char* data, uint32_t data_len, uint32_t& out);

@@ -587,10 +587,10 @@ void Peer_Cache::process_update_req_pdu_fixed(XIXI_Update_Req_Pdu* pdu) {
 
 void Peer_Cache::process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu) {
 	LOG_TRACE2("process_update_req_pdu_extras");
-	uint8_t* key = cache_item_->get_key();
-	uint8_t* data = cache_item_->get_data();
+//	uint8_t* key = cache_item_->get_key();
+//	uint8_t* data = cache_item_->get_data();
 
-	uint32_t data_len = pdu->key_length + pdu->data_length;
+//	uint32_t data_len = pdu->key_length + pdu->data_length;
 
 	cache_item_->calc_hash_value();
 
@@ -745,7 +745,7 @@ uint32_t Peer_Cache::process_auth_req_pdu_extras(XIXI_Auth_Req_Pdu* pdu, uint8_t
 	}
 
 	std::string out;
-	auth_.login(pdu->base64, pdu->base64_length, out);
+	auth_.login(base64, pdu->base64_length, out);
 
 	return base64_length;
 }

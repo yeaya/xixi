@@ -15,6 +15,7 @@
 */
 
 #include "log.h"
+#include <stdio.h>
 
 //#define ENABLE_LINE_ID
 
@@ -86,7 +87,7 @@ boost::mutex log_lock_;
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
 
-char* LOG_PREFIX(const char* severity) {
+const char* LOG_PREFIX(const char* severity) {
 	static char log_prefix[100];
 
 	std::string strTime = boost::posix_time::to_iso_string(boost::posix_time::microsec_clock::local_time());
@@ -113,7 +114,7 @@ char* LOG_PREFIX(const char* severity) {
 */
 	const char* p = strTime.c_str();
 	_snprintf(log_prefix, sizeof(log_prefix), "[%4.4s-%2.2s-%2.2s %2.2s:%2.2s:%s %08X %s] ",
-		p, p + 4, p + 6, p + 9, p + 11, p + 13, boost::this_thread::get_id(), severity);
+		p, p + 4, p + 6, p + 9, p + 11, p + 13, (uint32_t)&boost::this_thread::get_id(), severity);
 
 	return log_prefix;
 }

@@ -66,8 +66,7 @@
 // length: must > 0
 // sub: must not be NULL
 // sub_len: must > 0
-char* memfind(char* data, uint32_t length, char* sub, uint32_t sub_len) {
-	char* p = data;
+char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len) {
 	if (length < sub_len) {
 		return NULL;
 	}
@@ -235,7 +234,7 @@ void Peer_Http::write_error(xixi_reason error_code) {
 	write_buf_.clear();
 	write_buf_total_ = 0;
 
-	char* res = NULL;
+	const char* res = NULL;
 	uint32_t res_size = 0;
 	switch (error_code) {
 		case XIXI_REASON_NOT_FOUND:
@@ -785,7 +784,7 @@ void Peer_Http::process_post() {
 				if (buf == NULL) {
 					break;
 				}
-				if (name_length = 1) {
+				if (name_length == 1) {
 					if (name[0] == 'g') {
 						if (!safe_toui32(value, buf - value - 4, group_id_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -857,7 +856,6 @@ void Peer_Http::process_post() {
 }
 
 void Peer_Http::process_get() {
-
 	Cache_Item* it;
 	bool watch_error = false;
 	if (touch_flag_) {
@@ -887,9 +885,6 @@ void Peer_Http::process_get() {
 }
 
 void Peer_Http::process_update(uint8_t sub_op) {
-
-	uint32_t data_len = key_length_ + value_length_;
-
 	cache_item_ = cache_mgr_.alloc_item(group_id_, key_length_, flags_,
 		expiration_, value_length_);
 
@@ -1088,7 +1083,7 @@ uint32_t Peer_Http::process_auth_req_pdu_extras(XIXI_Auth_Req_Pdu* pdu, uint8_t*
 	}
 
 	std::string out;
-	auth_.login(pdu->base64, pdu->base64_length, out);
+	auth_.login(base64, pdu->base64_length, out);
 
 	return base64_length;
 }
