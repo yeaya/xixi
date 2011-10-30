@@ -100,7 +100,6 @@ void print_license() {
 void printf_system_info() {
 	LOG_INFO("BEGIN-----SYSTEM INFO-----BEGIN");
 	LOG_INFO("BOOST_LIB_VERSION="BOOST_LIB_VERSION);
-	LOG_INFO("sizeof(point)=" << sizeof(void*));
 
 #ifdef NDEBUG
 	LOG_INFO("RELEASE");
@@ -119,9 +118,11 @@ void printf_system_info() {
 #ifdef _WIN64
 	LOG_INFO("PLATFORM=WIN64");
 #endif
+
 #ifdef __WORDSIZE
 	LOG_INFO("WORDSIZE=" << __WORDSIZE);
 #endif
+
 	LOG_INFO("sizeof(point)=" << sizeof(void*));
 	LOG_INFO("sizeof(char)=" << sizeof(char));
 	LOG_INFO("sizeof(short)=" << sizeof(short));
@@ -139,19 +140,19 @@ void printf_system_info() {
 	char tmp[30];
 	int32_t id32 = 2147483647;
 	_snprintf(tmp, sizeof(tmp), "%"PRId32, id32);
-	LOG_INFO("i32=" << id32);
+	LOG_INFO("max_i32=" << id32);
 
 	int64_t id64 = 9223372036854775807L;
 	_snprintf(tmp, sizeof(tmp), "%"PRId64, id64);
-	LOG_INFO("i64=" << id64);
+	LOG_INFO("max_i64=" << id64);
 
 	uint32_t ui32 = 4294967295;
 	_snprintf(tmp, sizeof(tmp), "%"PRIu32, ui32);
-	LOG_INFO("ui32=" << ui32);
+	LOG_INFO("max_ui32=" << ui32);
 
 	uint64_t ui64 = 18446744073709551615;
 	_snprintf(tmp, sizeof(tmp), "%"PRIu64, ui64);
-	LOG_INFO("ui64=" << ui64);
+	LOG_INFO("max_ui64=" << ui64);
 
 #ifdef ENDIAN_LITTLE
 	LOG_INFO("LITTLE_ENDIAN=true");
