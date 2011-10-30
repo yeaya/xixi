@@ -96,10 +96,8 @@ const char* LOG_PREFIX(const char* severity) {
 
 	// 20111029T233826.031250
 	if (strTime.size() < 22) {
-		printf("LOG_PREFIX sizeof strTime < 22, %s", strTime.c_str());
-		strTime = boost::posix_time::to_iso_string(boost::posix_time::microsec_clock::local_time());
+		strTime += ".000000";
 		if (strTime.size() < 22) {
-			printf("LOG_PREFIX sizeof strTime < 22 again, %s", strTime.c_str());
 			return "";
 		}
 	}

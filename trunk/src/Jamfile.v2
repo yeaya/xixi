@@ -50,27 +50,10 @@ exe xixibase
     /boost/system//boost_system
     /boost/thread//boost_thread
   : <define>BOOST_ALL_NO_LIB=1
-    #<define>WIN32
-    #<define>NDEBUG
-    #<define>_CONSOLE
-    #<define>ENDIAN_LITTLE
     <define>_CRT_SECURE_NO_WARNINGS
-    #<define>USING_BOOST_LOG
-    #<library>/boost/log//boost_log
-    #<library>/boost/filesystem//boost_filesystem
-    #<library>/boost/date_time//boost_date_time
-        #<library>/boost/log//boost_log
-        #<library>/boost/date_time//boost_date_time
-        #<library>/boost/regex//boost_regex
-        #<library>/boost/filesystem//boost_filesystem
-        #<library-path>F:\svnwork\xixibase\3rd\google-perftools\Release
-        #<library>libtcmalloc_minimal.lib
     <os>SOLARIS:<library>socket
     <os>SOLARIS:<library>nsl
-    #<os>NT:<define>WIN32
-    <os>NT:<define>_WIN32_WINNT=0x0501
-    #<os>NT,<toolset>gcc:<library>ws2_32
-    #<os>NT,<toolset>gcc:<library>mswsock
+    #<os>NT:<define>_WIN32_WINNT=0x0501
     <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
     <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
     <os>HPUX:<library>ipv6
