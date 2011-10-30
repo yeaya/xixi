@@ -119,7 +119,9 @@ void printf_system_info() {
 #ifdef _WIN64
 	LOG_INFO("PLATFORM=WIN64");
 #endif
-
+#ifdef __WORDSIZE
+	LOG_INFO("WORDSIZE=" << __WORDSIZE);
+#endif
 	LOG_INFO("sizeof(point)=" << sizeof(void*));
 	LOG_INFO("sizeof(char)=" << sizeof(char));
 	LOG_INFO("sizeof(short)=" << sizeof(short));

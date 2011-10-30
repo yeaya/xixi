@@ -28,16 +28,6 @@
 	#endif
 #endif
 
-#include <boost/cstdint.hpp>
-using namespace boost;
-
-#include <string>
-#include <list>
-#include <vector>
-#include <map>
-#include <set>
-using namespace std;
-
 #if defined(_WIN32) || defined(_WIN64)
 
 #ifndef PRId32
@@ -74,31 +64,26 @@ using namespace std;
 
 #else
 
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
+
 #define _snprintf snprintf
 #define _strtoui64 strtoull
 #define _strtoi64 strtoll
 
-#ifndef PRId32 Typically equivalent to I32d (Win32/Win64) or d 
-#define PRId32
-#endif
-
-#ifndef PRId64 Typically equivalent to I64d (Win32/Win64), lld (32-bit platforms) or ld (64-bit platforms) 
-#define PRId64
-#endif
-
-#ifndef PRIu32 Typically equivalent to I32u (Win32/Win64) or u 
-#define PRIu32
-#endif
-
-#ifndef PRIu64 Typically equivalent to I64u (Win32/Win64), llu (32-bit platforms) or lu (64-bit platforms) 
-#define PRIu64
-#endif
-
-#ifndef PRIx64 Typically equivalent to I64x (Win32/Win64), llx (32-bit platforms) or lx (64-bit platforms)
-#define PRIx64
-#endif
-
-
 #endif // defined(_WIN32) || defined(_WIN64)
+
+#include <boost/cstdint.hpp>
+using namespace boost;
+
+#include <string>
+#include <list>
+#include <vector>
+#include <map>
+#include <set>
+using namespace std;
 
 #endif // DEFINES_H
