@@ -38,7 +38,7 @@ LINK_OPTIONS +=
 
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
-BINDIR = ..
+BINDIR = ../bin
 OBJDIR = $(BINDIR)/obj
 TARGET = $(BINDIR)/$(BIN)
 
