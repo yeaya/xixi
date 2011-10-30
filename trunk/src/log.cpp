@@ -104,26 +104,14 @@ const char* LOG_PREFIX(const char* severity) {
 
 	stringstream ss;
 	ss << boost::this_thread::get_id();
+	const char* tid = ss.str().c_str();
+	if (ss.str().size() >= 2 && *tid == '0' && *(tid + 1) == 'x') {
+		tid += 2;
+	}
 
-/*
-	std::string tmp = strTime.substr(0, 4)
-		+ "-"
-		+ strTime.substr(4, 2)
-		+ "-"
-		+ strTime.substr(6, 2)
-		+ " "
-		+ strTime.substr(9, 2)
-		+ ":"
-		+ strTime.substr(11, 2)
-		+ ":"
-		+ strTime.substr(13, 2)
-		+ "."
-		+ strTime.substr(16, 6);
-	_snprintf(log_prefix, sizeof(log_prefix), "[%s %s %s] ", tmp.c_str(), ss.str().c_str(), severity);
-*/
 	const char* p = strTime.c_str();
 	_snprintf(log_prefix, sizeof(log_prefix), "[%4.4s-%2.2s-%2.2s %2.2s:%2.2s:%s %s %s] ",
-		p, p + 4, p + 6, p + 9, p + 11, p + 13, ss.str().c_str(), severity);
+		p, p + 4, p + 6, p + 9, p + 11, p + 13, tid, severity);
 
 	return log_prefix;
 }
