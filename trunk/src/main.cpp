@@ -15,11 +15,11 @@
 */
 
 #include "server.h"
-#include <string>
 #include "settings.h"
 #include "log.h"
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
+
 void console_ctrl_function(DWORD ctrl_type) {
 	printf("console_ctrl_function %d\n", ctrl_type);
 	if (svr_ != NULL) {
@@ -29,31 +29,32 @@ void console_ctrl_function(DWORD ctrl_type) {
 
 BOOL WINAPI console_ctrl_handler(DWORD ctrl_type) {
 	switch (ctrl_type) {
-  case CTRL_C_EVENT:
-  case CTRL_BREAK_EVENT:
-  case CTRL_CLOSE_EVENT:
-  case CTRL_SHUTDOWN_EVENT:
-	  console_ctrl_function(ctrl_type);
-	  return TRUE;
-  default:
-	  return FALSE;
+	case CTRL_C_EVENT:
+	case CTRL_BREAK_EVENT:
+	case CTRL_CLOSE_EVENT:
+	case CTRL_SHUTDOWN_EVENT:
+		console_ctrl_function(ctrl_type);
+		return TRUE;
+	default:
+		return FALSE;
 	}
 }
+
 #else
+
 #include <signal.h>
-void sigproc(int sig)
-{
-	printf("sigproc %d\n", sig);
+void sigproc(int sig) {
+	LOG_INFO("sigproc " << sig);
 	if (svr_ != NULL) {
 		svr_->stop();
 	}
 }
 
-void sigpipeproc(int sig)
-{
+void sigpipeproc(int sig) {
 	// Do nothing
 }
-#endif // _WIN32
+
+#endif // defined(_WIN32) || defined(_WIN64)
 
 void print_usage() {
 	std::cout << "\n"
@@ -96,7 +97,6 @@ void print_license() {
 }
 
 #include <boost/version.hpp>
-#include <limits.h>
 void printf_system_info() {
 	LOG_INFO("BEGIN-----SYSTEM INFO-----BEGIN");
 	LOG_INFO("BOOST_LIB_VERSION="BOOST_LIB_VERSION);

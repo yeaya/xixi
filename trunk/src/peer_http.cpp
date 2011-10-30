@@ -869,7 +869,7 @@ void Peer_Http::process_get() {
 		cache_items_.push_back(it);
 
 		uint8_t* buf = request_buf_.prepare(20);
-		uint32_t data_size = _snprintf((char*)buf, 20, "%lu\r\n\r\n", it->data_size);
+		uint32_t data_size = _snprintf((char*)buf, 20, "%"PRIu32"\r\n\r\n", it->data_size);
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf, data_size);
 		add_write_buf(it->get_data(), it->data_size);
@@ -930,9 +930,9 @@ void Peer_Http::process_update(uint8_t sub_op) {
 
 	if (reason == XIXI_REASON_SUCCESS) {
 		uint8_t* buf = request_buf_.prepare(24);
-		uint32_t data_size = _snprintf((char*)buf, 24, "%llu", cache_id);
+		uint32_t data_size = _snprintf((char*)buf, 24, "%"PRIu64, cache_id);
 		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n%s", data_size, buf);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n%s", data_size, buf);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
@@ -971,10 +971,10 @@ void Peer_Http::process_delta(bool incr) {
 	xixi_reason reason = cache_mgr_.delta(group_id_, (uint8_t*)key_, key_length_, incr, delta_, cache_id_, value);
 	if (reason == XIXI_REASON_SUCCESS) {
 		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%lld %llu", value, cache_id_);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRId64" %"PRIu64, value, cache_id_);
 
 		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
@@ -996,10 +996,10 @@ void Peer_Http::process_get_base() {
 	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration);
 	if (ret) {
 		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%llu %lu %lu", cache_id, flags, expiration);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64" %"PRIu32" %"PRIu32, cache_id, flags, expiration);
 
 		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
@@ -1023,10 +1023,10 @@ void Peer_Http::process_update_flags() {
 	bool ret = cache_mgr_.update_flags(group_id_, key_, key_length_, &pdu, cache_id);
 	if (ret) {
 		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%llu", cache_id);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64, cache_id);
 
 		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
@@ -1053,10 +1053,10 @@ void Peer_Http::process_touch() {
 	bool ret = cache_mgr_.update_expiration(group_id_, (uint8_t*)key_, key_length_, &pdu, cache_id);
 	if (ret) {
 		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%llu", cache_id);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64, cache_id);
 
 		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
@@ -1093,10 +1093,10 @@ void Peer_Http::process_create_watch() {
 	uint32_t watch_id = cache_mgr_.create_watch(group_id_, interval_);
 
 	uint8_t* buf = request_buf_.prepare(50);
-	uint32_t data_size = _snprintf((char*)buf, 50, "%lu", watch_id);
+	uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu32, watch_id);
 
 	uint8_t* buf2 = request_buf_.prepare(50);
-	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
 
 	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 	add_write_buf(buf2, data_size2);
@@ -1121,9 +1121,9 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 			uint32_t data_size = 0;
 			if (is_begin) {
 				is_begin = false;
-				data_size = _snprintf((char*)buf + offset, 30, "%llu", cache_id);
+				data_size = _snprintf((char*)buf + offset, 30, "%"PRIu64, cache_id);
 			} else {
-				data_size = _snprintf((char*)buf + offset, 30, ",%llu", cache_id);
+				data_size = _snprintf((char*)buf + offset, 30, ",%"PRIu64, cache_id);
 			}
 			offset += data_size;
 			total_size += data_size;
@@ -1144,7 +1144,7 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 			}
 
 			uint8_t* buf2 = request_buf_.prepare(50);
-			uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", total_size);
+			uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", total_size);
 
 			update_write_buf(0, (uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 			update_write_buf(1, buf2, data_size2);
@@ -1186,10 +1186,10 @@ void Peer_Http::process_flush() {
 	cache_mgr_.flush(group_id_, flush_count, flush_size);
 
 	uint8_t* buf = request_buf_.prepare(50);
-	uint32_t data_size = _snprintf((char*)buf, 50, "%lu %llu", flush_count, flush_size);
+	uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu32" %"PRIu64, flush_count, flush_size);
 
 	uint8_t* buf2 = request_buf_.prepare(50);
-	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", data_size);
+	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
 
 	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 	add_write_buf(buf2, data_size2);
@@ -1208,7 +1208,7 @@ void Peer_Http::process_stats() {
 	uint32_t size = result.size();
 
 	uint8_t* buf2 = request_buf_.prepare(50);
-	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%lu\r\n\r\n", size);
+	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", size);
 
 	uint8_t* buf = request_buf_.prepare(size);
 	memcpy(buf, result.c_str(), size);

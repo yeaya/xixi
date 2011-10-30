@@ -30,6 +30,14 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
+#ifndef __WORDSIZE
+	#if defined(_WIN32)
+		#define __WORDSIZE 32
+	#elif defined(_WIN64)
+		#define __WORDSIZE 64
+	#endif
+#endif
+
 #ifndef PRId32
 #define PRId32 "I32d"
 #endif

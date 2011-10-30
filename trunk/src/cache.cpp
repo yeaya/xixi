@@ -908,7 +908,7 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 			}
 
 			char buf[INCR_MAX_STORAGE_LEN];
-			uint32_t data_size = _snprintf(buf, INCR_MAX_STORAGE_LEN, "%lld ", value);
+			uint32_t data_size = _snprintf(buf, INCR_MAX_STORAGE_LEN, "%"PRId64" ", value);
 			if (data_size > it->data_size) {
 				Cache_Item* new_it = do_alloc(it->group_id, it->key_length, it->flags, it->expire_time, data_size);
 				if (new_it == NULL) {

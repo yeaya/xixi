@@ -110,7 +110,7 @@ const char* LOG_PREFIX(const char* severity) {
 		+ strTime.substr(13, 2)
 		+ "."
 		+ strTime.substr(16, 6);
-	_snprintf(log_prefix, sizeof(log_prefix), "[%s %08X %s] ", tmp.c_str(), boost::this_thread::get_id(), severity);
+	_snprintf(log_prefix, sizeof(log_prefix), "[%s %08"PRIx32" %s] ", tmp.c_str(), (uint32_t)boost::this_thread::get_id(), severity);
 */
 	const char* p = strTime.c_str();
 	_snprintf(log_prefix, sizeof(log_prefix), "[%4.4s-%2.2s-%2.2s %2.2s:%2.2s:%s %08"PRIx32" %s] ",
