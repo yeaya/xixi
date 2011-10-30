@@ -170,14 +170,14 @@ public:
 	~Cache_Mgr();
 
 	void init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_min, double factor);
-	Cache_Item* alloc_item(uint32_t group_id, size_t key_length, uint32_t flags, uint32_t expiration, uint32_t data_size);
+	Cache_Item* alloc_item(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expiration, uint32_t data_size);
 	void flush(uint32_t group_id, uint32_t&/*out*/ flush_count, uint64_t&/*out*/ flush_size);
-	Cache_Item* get(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id, uint32_t&/*out*/ expiration, bool&/*out*/ watch_error);
-	Cache_Item* get_touch(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id, uint32_t expiration, bool&/*out*/ watch_error);
+	Cache_Item* get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t&/*out*/ expiration, bool&/*out*/ watch_error);
+	Cache_Item* get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, bool&/*out*/ watch_error);
 	void release_reference(Cache_Item* item);
-	bool get_base(uint32_t group_id, const uint8_t* key, size_t key_length, uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration);
-	bool update_flags(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
-	bool update_expiration(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
+	bool get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration);
+	bool update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
+	bool update_expiration(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 
 	xixi_reason add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);
 	xixi_reason set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);
@@ -187,7 +187,7 @@ public:
 
 	xixi_reason remove(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t cache_id);
 	xixi_reason delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*in and out*/ cache_id, int64_t&/*out*/ value);
-	bool item_size_ok(size_t key_length, uint32_t data_size);
+	bool item_size_ok(uint32_t key_length, uint32_t data_size);
 
 	uint32_t create_watch(uint32_t group_id, uint32_t max_next_check_interval);
 	bool check_watch_and_set_callback(uint32_t group_id, uint32_t watch_id, std::list<uint64_t>&/*out*/ updated_list, uint32_t&/*out*/ updated_count,
@@ -207,16 +207,16 @@ public:
 private:
 	inline void free_item(Cache_Item* it);
 	inline uint64_t get_cache_id();
-	inline Cache_Item* do_alloc(uint32_t group_id, size_t key_length, uint32_t flags, uint32_t expire_time, uint32_t data_size);
+	inline Cache_Item* do_alloc(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expire_time, uint32_t data_size);
 	inline void do_link(Cache_Item* it);
 	inline void do_unlink(Cache_Item* it);
 	inline void do_unlink_flush(Cache_Item* it);
 	inline void do_release_reference(Cache_Item* it);
 	inline void do_replace(Cache_Item* it, Cache_Item* new_it);
-	inline Cache_Item* do_get(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t hash_value);
-	inline Cache_Item* do_get(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t hash_value, uint32_t&/*out*/ expiration);
-	inline Cache_Item* do_get_touch(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t hash_value, uint32_t expiration);
-	inline uint32_t get_class_id(size_t size);
+	inline Cache_Item* do_get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t hash_value);
+	inline Cache_Item* do_get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t hash_value, uint32_t&/*out*/ expiration);
+	inline Cache_Item* do_get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t hash_value, uint32_t expiration);
+	inline uint32_t get_class_id(uint32_t size);
 	inline uint32_t get_watch_id();
 	inline bool is_valid_watch_id(uint32_t watch_id);
 	void notify_watch(Cache_Item* it);

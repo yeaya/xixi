@@ -107,7 +107,7 @@ protected:
 
 	inline void cleanup();
 
-	inline void handle_read(const boost::system::error_code& err, size_t length);
+	inline void handle_read(const boost::system::error_code& err, uint32_t length);
 
 	inline void handle_write(const boost::system::error_code& err);
 

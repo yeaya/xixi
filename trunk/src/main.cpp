@@ -95,6 +95,70 @@ void print_license() {
 		"   limitations under the License.";
 }
 
+#include <boost/version.hpp>
+#include <limits.h>
+void printf_system_info() {
+	LOG_INFO("BEGIN-----SYSTEM INFO-----BEGIN");
+	LOG_INFO("BOOST_LIB_VERSION="BOOST_LIB_VERSION);
+	LOG_INFO("sizeof(point)=" << sizeof(void*));
+
+#ifdef NDEBUG
+	LOG_INFO("RELEASE");
+#else
+	LOG_INFO("DEBUG");
+#endif
+
+#ifdef BOOST_WINDOWS
+	LOG_INFO("BOOST_WINDOWS");
+#endif
+
+#ifdef _WIN32
+	LOG_INFO("PLATFORM=WIN32");
+#endif
+
+#ifdef _WIN64
+	LOG_INFO("PLATFORM=WIN64");
+#endif
+
+	LOG_INFO("sizeof(point)=" << sizeof(void*));
+	LOG_INFO("sizeof(char)=" << sizeof(char));
+	LOG_INFO("sizeof(short)=" << sizeof(short));
+	LOG_INFO("sizeof(int)=" << sizeof(int));
+	LOG_INFO("sizeof(long)=" << sizeof(long));
+	LOG_INFO("sizeof(long long)=" << sizeof(long long));
+
+	LOG_INFO("PRId32=" << PRId32);
+	LOG_INFO("PRId64=" << PRId64);
+	LOG_INFO("PRIu32=" << PRIu32);
+	LOG_INFO("PRIu64=" << PRIu64);
+	LOG_INFO("PRIx32=" << PRIx32);
+	LOG_INFO("PRIx64=" << PRIx64);
+
+	char tmp[30];
+	int32_t id32 = _I32_MAX;
+	_snprintf(tmp, sizeof(tmp), "%"PRId32, id32);
+	LOG_INFO("i32=" << id32);
+
+	int64_t id64 = _I64_MAX;
+	_snprintf(tmp, sizeof(tmp), "%"PRId64, id64);
+	LOG_INFO("i64=" << id64);
+
+	uint32_t ui32 = _UI32_MAX;
+	_snprintf(tmp, sizeof(tmp), "%"PRIu32, ui32);
+	LOG_INFO("ui32=" << ui32);
+
+	uint64_t ui64 = _UI64_MAX;
+	_snprintf(tmp, sizeof(tmp), "%"PRIu64, ui64);
+	LOG_INFO("ui64=" << ui64);
+
+#ifdef ENDIAN_LITTLE
+	LOG_INFO("LITTLE_ENDIAN=true");
+#else
+	LOG_INFO("LITTLE_ENDIAN=false");
+#endif
+	LOG_INFO("END-----SYSTEM INFO-----END");
+}
+
 #define cmdcmp(x, const_str) strncmp(x, const_str, sizeof(const_str))
 
 int main(int argc, char* argv[]) {
@@ -176,6 +240,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	LOG_INFO(VERSION" start.");
+
+	printf_system_info();
 
 	try {
 #if defined(_WIN32)

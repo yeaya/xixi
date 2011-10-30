@@ -22,7 +22,8 @@ LINK_OPTIONS = -L../3rd/boost/stage/lib -lboost_system -lboost_thread -lpthread
 #-lboost_log
 #
 
-CPPFLAGS = -DENDIAN_LITTLE
+CPPFLAGS = 
+#-DENDIAN_LITTLE
 
 LINK_OBJS =
 

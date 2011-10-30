@@ -51,9 +51,9 @@ exe xixibase
     /boost/thread//boost_thread
   : <define>BOOST_ALL_NO_LIB=1
     #<define>WIN32
-    <define>NDEBUG
+    #<define>NDEBUG
     #<define>_CONSOLE
-    <define>ENDIAN_LITTLE
+    #<define>ENDIAN_LITTLE
     <define>_CRT_SECURE_NO_WARNINGS
     #<define>USING_BOOST_LOG
     #<library>/boost/log//boost_log
@@ -67,7 +67,7 @@ exe xixibase
         #<library>libtcmalloc_minimal.lib
     <os>SOLARIS:<library>socket
     <os>SOLARIS:<library>nsl
-    <os>NT:<define>WIN32
+    #<os>NT:<define>WIN32
     <os>NT:<define>_WIN32_WINNT=0x0501
     #<os>NT,<toolset>gcc:<library>ws2_32
     #<os>NT,<toolset>gcc:<library>mswsock

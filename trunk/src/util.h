@@ -234,7 +234,7 @@ public:
 	list<uint32_t> objects_id_;
 };
 
-template<int DEFAULT_SIZE, int HIGHWAT_SIZE>
+template<uint32_t DEFAULT_SIZE, uint32_t HIGHWAT_SIZE>
 class Receive_Buffer {
 public:
 	Receive_Buffer() {

@@ -455,7 +455,7 @@ uint32_t Peer_Cache::process_pdu_extras2(XIXI_Pdu* pdu, uint8_t* data, uint32_t 
 uint32_t Peer_Cache::process_get_req_pdu_extras(XIXI_Get_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
 	LOG_TRACE2("process_get_req_pdu_extras");
 	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
+	uint32_t key_length = pdu->key_length;
 	if (data_length < key_length) {
 		return 0;
 	}
@@ -494,7 +494,7 @@ uint32_t Peer_Cache::process_get_req_pdu_extras(XIXI_Get_Req_Pdu* pdu, uint8_t* 
 uint32_t Peer_Cache::process_get_touch_req_pdu_extras(XIXI_Get_Touch_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
 	LOG_TRACE2("process_get_touch_req_pdu_extras");
 	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
+	uint32_t key_length = pdu->key_length;
 	if (data_length < key_length) {
 		return 0;
 	}
@@ -532,7 +532,7 @@ uint32_t Peer_Cache::process_get_touch_req_pdu_extras(XIXI_Get_Touch_Req_Pdu* pd
 uint32_t Peer_Cache::process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
 	LOG_TRACE2("process_get_base_req_pdu_extras");
 	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
+	uint32_t key_length = pdu->key_length;
 	if (data_length < key_length) {
 		return 0;
 	}
@@ -643,7 +643,7 @@ void Peer_Cache::process_update_req_pdu_extras(XIXI_Update_Req_Pdu* pdu) {
 uint32_t Peer_Cache::process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
 	LOG_TRACE2("process_update_flags_req_pdu_extras");
 	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
+	uint32_t key_length = pdu->key_length;
 	if (data_length < key_length) {
 		return 0;
 	}
@@ -675,7 +675,7 @@ uint32_t Peer_Cache::process_update_flags_req_pdu_extras(XIXI_Update_Flags_Req_P
 uint32_t Peer_Cache::process_update_expiration_req_pdu_extras(XIXI_Update_Expiration_Req_Pdu* pdu, uint8_t* data, uint32_t data_length) {
 	LOG_TRACE2("process_update_expiration_req_pdu_extras");
 	uint8_t* key = data;
-	size_t key_length = pdu->key_length;
+	uint32_t key_length = pdu->key_length;
 	if (data_length < key_length) {
 		return 0;
 	}
@@ -917,7 +917,7 @@ void Peer_Cache::start(uint8_t* data, uint32_t data_length) {
 	}
 }
 
-void Peer_Cache::handle_read(const boost::system::error_code& err, size_t length) {
+void Peer_Cache::handle_read(const boost::system::error_code& err, uint32_t length) {
 	LOG_TRACE2("handle_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
 	lock_.lock();
 	--op_count_;

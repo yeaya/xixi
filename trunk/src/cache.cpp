@@ -147,7 +147,7 @@ void Cache_Mgr::init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_
 	LOG_INFO("Cache_Mgr::init, class_id_max=" << class_id_max_ << " max_size=" << max_size_[class_id_max_]);
 }
 
-uint32_t Cache_Mgr::get_class_id(size_t size) {
+uint32_t Cache_Mgr::get_class_id(uint32_t size) {
 	if (size < max_size_[last_class_id_]) {
 		if (size > max_size_[last_class_id_ - 1]) {
 			return last_class_id_;
@@ -267,7 +267,7 @@ void Cache_Mgr::expire_items(uint32_t curr_time) {
 	}
 }
 
-Cache_Item* Cache_Mgr::do_alloc(uint32_t group_id, size_t key_length, uint32_t flags, 
+Cache_Item* Cache_Mgr::do_alloc(uint32_t group_id, uint32_t key_length, uint32_t flags, 
 								uint32_t expire_time, uint32_t data_size) {
 	uint32_t item_size = CALC_ITEM_SIZE(key_length, data_size);
 
@@ -327,7 +327,7 @@ void Cache_Mgr::free_item(Cache_Item* it) {
 	}
 }
 
-bool Cache_Mgr::item_size_ok(size_t key_length, uint32_t data_size) {
+bool Cache_Mgr::item_size_ok(uint32_t key_length, uint32_t data_size) {
 	return get_class_id(CALC_ITEM_SIZE(key_length, data_size)) != 0;
 }
 
@@ -406,7 +406,7 @@ void Cache_Mgr::do_replace(Cache_Item* it, Cache_Item* new_it) {
 	do_link(new_it);
 }
 
-Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t hash_value) {
+Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t hash_value) {
 	Cache_Key ck(group_id, key, key_length);
 	Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
 
@@ -420,7 +420,7 @@ Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, size_t key_
 	return it;
 }
 
-Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, size_t key_length,
+Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, uint32_t key_length,
 							  uint32_t hash_value, uint32_t&/*out*/ expiration) {
 	Cache_Key ck(group_id, key, key_length);
 	Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
@@ -448,7 +448,7 @@ Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, size_t key_
 	return it;
 }
 
-Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, size_t key_length,
+Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length,
 		uint32_t hash_value, uint32_t expiration) {
 	Cache_Key ck(group_id, key, key_length);
 	Cache_Item* it = cache_hash_map_.find(&ck, hash_value);
@@ -465,7 +465,7 @@ Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, size_
 	return it;
 }
 
-Cache_Item* Cache_Mgr::alloc_item(uint32_t group_id, size_t key_length, uint32_t flags,
+Cache_Item* Cache_Mgr::alloc_item(uint32_t group_id, uint32_t key_length, uint32_t flags,
 								  uint32_t expiration, uint32_t data_size) {
 	Cache_Item* it;
 	cache_lock_.lock();
@@ -474,7 +474,7 @@ Cache_Item* Cache_Mgr::alloc_item(uint32_t group_id, size_t key_length, uint32_t
 	return it;
 }
 
-Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id,
+Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id,
 							uint32_t&/*out*/ expiration, bool&/*out*/ watch_error) {
 	Cache_Item* item;
 	uint32_t hash_value = hash32(key, key_length, group_id);
@@ -503,7 +503,7 @@ Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, size_t key_le
 	return item;
 }
 
-Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, size_t key_length, uint32_t watch_id,
+Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id,
 								uint32_t expiration, bool&/*out*/ watch_error) {
 	Cache_Item* item;
 	uint32_t hash_value = hash32(key, key_length, group_id);
@@ -532,7 +532,7 @@ Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, size_t 
 	return item;
 }
 
-bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, size_t key_length, uint64_t&/*out*/ cache_id,
+bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t&/*out*/ cache_id,
 						 uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration) {
 	 Cache_Item* it;
 	 bool ret;
@@ -553,7 +553,7 @@ bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, size_t key_lengt
 	 return ret;
 }
 
-bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
+bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
 	Cache_Item* it;
 	bool ret = true;
 	cache_id = 0;
@@ -583,7 +583,7 @@ bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, size_t key_l
 	return ret;
 }
 
-bool Cache_Mgr::update_expiration(uint32_t group_id, const uint8_t* key, size_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
+bool Cache_Mgr::update_expiration(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
 	Cache_Item* it;
 	bool ret = true;
 	cache_id = 0;
