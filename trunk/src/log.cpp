@@ -86,9 +86,11 @@ boost::mutex log_lock_;
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
-
+#include <boost/thread/tss.hpp>
 const char* LOG_PREFIX(const char* severity) {
 	static char log_prefix[100];
+	static uint32_t next_thread_id = 0;
+	static boost::thread_specific_ptr<uint32_t> thread_id;
 
 	std::string strTime = boost::posix_time::to_iso_string(boost::posix_time::microsec_clock::local_time());
 
@@ -102,16 +104,24 @@ const char* LOG_PREFIX(const char* severity) {
 		}
 	}
 
+	uint32_t* id = thread_id.get();
+	if (id == NULL) {
+		id = new uint32_t;
+		*id = next_thread_id++;
+		thread_id.reset(id);
+	}
+//	printf("%"PRIu32"\n", *id);
+/*
 	stringstream ss;
 	ss << boost::this_thread::get_id();
 	const char* tid = ss.str().c_str();
 	if (ss.str().size() >= 2 && *tid == '0' && *(tid + 1) == 'x') {
 		tid += 2;
 	}
-
+*/
 	const char* p = strTime.c_str();
-	_snprintf(log_prefix, sizeof(log_prefix), "[%4.4s-%2.2s-%2.2s %2.2s:%2.2s:%s %s %s] ",
-		p, p + 4, p + 6, p + 9, p + 11, p + 13, tid, severity);
+	_snprintf(log_prefix, sizeof(log_prefix), "[%4.4s-%2.2s-%2.2s %2.2s:%2.2s:%s %"PRIu32" %s] ",
+		p, p + 4, p + 6, p + 9, p + 11, p + 13, *id, severity);
 
 	return log_prefix;
 }
