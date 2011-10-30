@@ -14,22 +14,19 @@ Microsoft Visual Studio 2008
 2. create 3rd/boost folder
   xixibase--3rd--boost
           --client
-	  --src
+          --src
 3. upzip the boost to 3rd/boost
-4. bootstrap.bat
-5. bjam release threading=multi link=static
-6. build.bat or (Open xixibase.sln with "Microsoft Visual Studio 2008" and build it).
+4. run build.bat
 
 Linux/Mac:
 1. download boost from http://www.boost.org/
 2. create 3rd/boost folder
   xixibase--3rd--boost
           --client
-	  --src
+          --src
 3. upzip the boost to 3rd/boost
-4. bootstrap.sh
-5. bjam release threading=multi link=static
-6. go to src folder and make it.
+4. chmod +x build.sh
+5. run ./build.sh
 
 Copyright:
 --------------------------------------------------------------------------------
