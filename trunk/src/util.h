@@ -273,7 +273,7 @@ public:
 				//        LOG_WARNING("Couldn't realloc input buffer, size=" << new_size);
 				return;
 			}
-			int offset  = read_curr_ - read_buf_;
+			size_t offset  = read_curr_ - read_buf_;
 			read_buf_ = new_read_buf_;
 			read_curr_ = read_buf_ + offset;
 			read_buf_size_ = new_size;

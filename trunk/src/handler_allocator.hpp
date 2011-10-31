@@ -19,7 +19,7 @@
 
 #include <boost/asio.hpp>
 
-template <int DEFAULT_SIZE = 256>
+template <std::size_t DEFAULT_SIZE = 256>
 class Handler_Allocator : private boost::noncopyable {
 public:
 	inline Handler_Allocator()

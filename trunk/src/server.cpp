@@ -85,7 +85,7 @@ public:
 		LOG_TRACE("handle_first_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
 
 		if (!err) {
-			read_data_size_ += length;
+			read_data_size_ += (uint32_t)length;
 			if (read_data_size_ >= 4) {
 				boost::asio::io_service& io_service_ = socket_->get_io_service();
 				start_peer(read_buf_, read_data_size_);
