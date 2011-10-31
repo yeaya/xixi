@@ -94,7 +94,7 @@ void tokenize_command(char* command, vector<token_t>& tokens) {
 		if (*end == '&') {
 			if (start != end) {
 				t.value = start;
-				t.length = end - start;
+				t.length = (uint32_t)(end - start);
 				*end = '\0';
 				tokens.push_back(t);
 			}
@@ -102,7 +102,7 @@ void tokenize_command(char* command, vector<token_t>& tokens) {
 		} else if (/**end == ' ' || */*end == '\0') {
 			if (start != end) {
 				t.value = start;
-				t.length = end - start;
+				t.length = (uint32_t)(end - start);
 				*end = '\0';
 				tokens.push_back(t);
 			}
@@ -398,7 +398,7 @@ uint32_t Peer_Http::try_read_command(char* data, uint32_t data_len) {
 
 		process_request_header(data, (uint32_t)(p - data));
 
-		return (p - data + 4);
+		return (uint32_t)(p - data + 4);
 	}
 
 	if (data_len >= 4096) {
@@ -421,7 +421,7 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 		request_header_fields = p + 2;
 		request_header_fields_length = length - (request_header_fields - request_header);
 		*p = '\0';
-		request_line_length = p - request_line;
+		request_line_length = (uint32_t)(p - request_line);
 	}
 	if (request_line_length >= 6) {
 		if (memcmp(request_line + request_line_length - 3, "1.1", 3) == 0) {
@@ -447,9 +447,9 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 		p = (char*)memchr(http_request_.uri, ' ', request_line_length - offset);
 		if (p != NULL) {
 			*p = '\0';
-			http_request_.uri_length = p - http_request_.uri;
+			http_request_.uri_length = (uint32_t)(p - http_request_.uri);
 		} else {
-			http_request_.uri_length = request_line_length - offset;
+			http_request_.uri_length = (uint32_t)(request_line_length - offset);
 		}
 		
 		if (!process_request_header_fields(request_header_fields, request_header_fields_length)) {
@@ -497,7 +497,7 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 	char* p = (char*)memchr(name, ':', length);
 	while (p != NULL) {
 		*p = '\0';
-		name_length = p - name;
+		name_length = (uint32_t)(p - name);
 		p++;
 		while (*p == ' ') {
 			p++;
@@ -511,10 +511,10 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 		if (p2 != NULL) {
 			if (*(p2 - 1) == '\r') {
 				*(p2 - 1) = '\0';
-				value_length = (p2 - value) - 1;
+				value_length = (uint32_t)((p2 - value)) - 1;
 			} else {
 				*(p2) = '\0';
-				value_length = p2 - value;
+				value_length = (uint32_t)(p2 - value);
 			}
 	//		LOG_INFO2(name << "=" << value);
 			if (!handle_request_header_field(name, name_length, value, value_length)) {
@@ -571,7 +571,7 @@ void Peer_Http::process_command() {
 		uint32_t cmd_length = 0;
 		char* arg = strrchr(http_request_.uri, '?');
 		if (arg != NULL) {
-			cmd_length = arg - http_request_.uri - 10;
+			cmd_length = (uint32_t)(arg - http_request_.uri) - 10;
 			if (!process_request_arg(arg + 1)) {
 				LOG_WARNING2("process_command failed arg=" << (arg + 1));
 				write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -771,7 +771,7 @@ void Peer_Http::process_post() {
 				uint32_t name_length = 0;
 				char* end = strstr(name, "\"");
 				if (end != NULL) {
-					name_length = end - name;
+					name_length = (uint32_t)(end - name);
 				}
 				
 				char* value = strstr(name + 2, "\r\n\r\n");
@@ -785,59 +785,59 @@ void Peer_Http::process_post() {
 				}
 				if (name_length == 1) {
 					if (name[0] == 'g') {
-						if (!safe_toui32(value, buf - value - 4, group_id_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, group_id_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] == 'w') {
-						if (!safe_toui32(value, buf - value - 4, watch_id_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, watch_id_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] == 'k') {
 						key_ = (uint8_t*)value;
-						key_length_ = buf - value - 4;
+						key_length_ = (uint32_t)(buf - value) - 4;
 					} else if (name[0] == 'v') {
 						value_ = (uint8_t*)value;
-						value_length_ = buf - value - 4;
+						value_length_ = (uint32_t)(buf - value) - 4;
 					} else if (name[0] == 'f') {
-						if (!safe_toui32(value, buf - value - 4, flags_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, flags_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] == 'c') {
-						if (!safe_toui64(value, buf - value - 4, cache_id_)) {
+						if (!safe_toui64(value, (uint32_t)(buf - value) - 4, cache_id_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] == 'd') {
-						if (!safe_toi64(value, buf - value - 4, delta_)) {
+						if (!safe_toi64(value, (uint32_t)(buf - value) - 4, delta_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] == 'e') {
 						touch_flag_ = true;
-						if (!safe_toui32(value, buf - value - 4, expiration_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, expiration_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] =='a') {
-						if (!safe_toui64(value, buf - value - 4, ack_cache_id_)) {
+						if (!safe_toui64(value, (uint32_t)(buf - value) - 4, ack_cache_id_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] =='i') {
-						if (!safe_toui32(value, buf - value - 4, interval_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, interval_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] =='t') {
-						if (!safe_toui32(value, buf - value - 4, timeout_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value - 4), timeout_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
 					} else if (name[0] =='s') {
-						if (!safe_toui32(value, buf - value - 4, sub_op_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, sub_op_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
@@ -1204,7 +1204,7 @@ void Peer_Http::process_stats() {
 	pdu.group_id = group_id_;
 	pdu.op_flag = sub_op_;
 	cache_mgr_.stats(&pdu, result);
-	uint32_t size = result.size();
+	uint32_t size = (uint32_t)result.size();
 
 	uint8_t* buf2 = request_buf_.prepare(50);
 	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", size);
@@ -1295,12 +1295,12 @@ void Peer_Http::start(uint8_t* data, uint32_t data_length) {
 	}
 }
 
-void Peer_Http::handle_read(const boost::system::error_code& err, size_t length) {
+void Peer_Http::handle_read(const boost::system::error_code& err, std::size_t length) {
 	LOG_TRACE2("handle_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
 	lock_.lock();
 	--op_count_;
 	if (!err) {
-		read_buffer_.read_data_size_ += length;
+		read_buffer_.read_data_size_ += (uint32_t)length;
 
 		process();
 
@@ -1357,7 +1357,7 @@ void Peer_Http::try_read() {
 //	if (op_count_ == 0) {
 		++op_count_;
 		read_buffer_.handle_processed();
-		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size()),
+		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (std::size_t)read_buffer_.get_read_buf_size()),
 			make_custom_alloc_handler(handler_allocator_,
 			boost::bind(&Peer_Http::handle_read, this,
 			boost::asio::placeholders::error,
@@ -1386,7 +1386,7 @@ uint32_t Peer_Http::read_some(uint8_t* buf, uint32_t length) {
 	if (socket_->available(ec) == 0) {
 		return 0;
 	}
-	return socket_->read_some(boost::asio::buffer(buf, length), ec);
+	return (uint32_t)socket_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
 }
 
 void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {

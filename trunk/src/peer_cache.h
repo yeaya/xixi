@@ -18,13 +18,14 @@
 #define PEER_CACHE_H
 
 #include "defines.h"
-#include <boost/asio/buffer.hpp>
 #include "cache_buffer.hpp"
 #include "util.h"
 #include "cache.h"
 #include "peer.h"
 #include "peer_cache_pdu.h"
 #include "handler_allocator.hpp"
+#include <boost/asio/buffer.hpp>
+#include <boost/asio.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Peer_Cache
@@ -107,7 +108,7 @@ protected:
 
 	inline void cleanup();
 
-	inline void handle_read(const boost::system::error_code& err, uint32_t length);
+	inline void handle_read(const boost::system::error_code& err, size_t length);
 
 	inline void handle_write(const boost::system::error_code& err);
 

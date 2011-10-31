@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <string.h>
 #include "peer_cache.h"
 #include "settings.h"
 #include "currtime.h"
@@ -858,8 +857,8 @@ void Peer_Cache::process_flush_req_pdu_fixed(XIXI_Flush_Req_Pdu* pdu) {
 void Peer_Cache::process_stats_req_pdu_fixed(XIXI_Stats_Req_Pdu* pdu) {
 	std::string result;
 	cache_mgr_.stats(pdu, result);
-	int size = result.size();
-	int buf_size = XIXI_Stats_Res_Pdu::calc_encode_size(size);
+	uint32_t size = (uint32_t)result.size();
+	uint32_t buf_size = XIXI_Stats_Res_Pdu::calc_encode_size(size);
 	uint8_t* buf = cache_buf_.prepare(buf_size);
 	if (buf != NULL) {
 		XIXI_Stats_Res_Pdu::encode(buf, (uint8_t*)result.c_str(), size);
@@ -917,12 +916,12 @@ void Peer_Cache::start(uint8_t* data, uint32_t data_length) {
 	}
 }
 
-void Peer_Cache::handle_read(const boost::system::error_code& err, uint32_t length) {
+void Peer_Cache::handle_read(const boost::system::error_code& err, size_t length) {
 	LOG_TRACE2("handle_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
 	lock_.lock();
 	--op_count_;
 	if (!err) {
-		read_buffer_.read_data_size_ += length;
+		read_buffer_.read_data_size_ += (uint32_t)length;
 
 		process();
 
@@ -981,7 +980,7 @@ void Peer_Cache::try_read() {
 //	if (op_count_ == 0) {
 		++op_count_;
 		read_buffer_.handle_processed();
-		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), read_buffer_.get_read_buf_size()),
+		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (size_t)read_buffer_.get_read_buf_size()),
 			make_custom_alloc_handler(handler_allocator_,
 			boost::bind(&Peer_Cache::handle_read, this,
 			boost::asio::placeholders::error,
@@ -1010,7 +1009,7 @@ uint32_t Peer_Cache::read_some(uint8_t* buf, uint32_t length) {
 	if (socket_->available(ec) == 0) {
 		return 0;
 	}
-	return socket_->read_some(boost::asio::buffer(buf, length), ec);
+	return (uint32_t)socket_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
 }
 
 void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {

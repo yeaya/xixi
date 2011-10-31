@@ -19,6 +19,7 @@
 
 #include "defines.h"
 #include <boost/asio/buffer.hpp>
+#include <boost/asio.hpp>
 #include "cache_buffer.hpp"
 #include "util.h"
 #include "cache.h"
@@ -31,7 +32,7 @@ const uint32_t POST_METHOD = 0x54534F50; // "POST"
 
 typedef struct token_s {
     char* value;
-    size_t length;
+    uint32_t length;
 } token_t;
 
 class Http_Request {
@@ -57,10 +58,6 @@ public:
 	uint32_t content_type_length;
 	char* boundary;
 	uint32_t boundary_length;
-//	std::vector<string> arg_names;
-//	std::vector<string> arg_values;
-//	std::vector<string> header_names;
-//	std::vector<string> header_values;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +135,7 @@ protected:
 
 	inline void cleanup();
 
-	inline void handle_read(const boost::system::error_code& err, size_t length);
+	inline void handle_read(const boost::system::error_code& err, std::size_t length);
 
 	inline void handle_write(const boost::system::error_code& err);
 
