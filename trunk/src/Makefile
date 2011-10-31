@@ -38,13 +38,17 @@ LINK_OPTIONS +=
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
 BINDIR = ../bin
-OBJDIR = $(BINDIR)/obj
+OBJDIR = ../obj
 TARGET = $(BINDIR)/$(BIN)
 
 all: $(TARGET)
 
 $(TARGET) : $(OBJS)
 	echo "Linking $@"; \
+	@if [ ! -d $(BINDIR) ]; \
+	then \
+		mkdir -p $(BINDIR); \
+	fi
 	$(CC) $(OBJS) $(LINK_OPTIONS) $(GCOV_LINK_OPTION) $(LINK_OBJS) -o $@; \
 
 $(OBJDIR)/%.o : %.cpp
