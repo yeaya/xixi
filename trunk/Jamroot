@@ -12,7 +12,7 @@ project
 
 : requirements 
  : default-build release
- : build-dir build_dir
+ : build-dir obj/jam
 ;
 
 build-project src ;

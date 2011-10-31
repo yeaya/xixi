@@ -50,7 +50,7 @@ exe xixibase
     /boost/system//boost_system
     /boost/thread//boost_thread
   : <define>BOOST_ALL_NO_LIB=1
-    <define>_CRT_SECURE_NO_WARNINGS
+    #<define>_CRT_SECURE_NO_WARNINGS
     <os>SOLARIS:<library>socket
     <os>SOLARIS:<library>nsl
     #<os>NT:<define>_WIN32_WINNT=0x0501
@@ -60,5 +60,9 @@ exe xixibase
     <threading>multi
     <optimization>speed
     <link>static
-    <location>../bin
+    <location>../obj/jam
   ;
+
+install dist
+  : xixibase
+  : <variant>release:<location>../bin <variant>debug:<location>../bin ;

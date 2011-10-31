@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\bin\debug"
-			IntermediateDirectory="..\bin\obj\debug"
+			IntermediateDirectory="..\obj\debug"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -96,7 +96,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\bin\release"
-			IntermediateDirectory="..\bin\obj\release"
+			IntermediateDirectory="..\obj\release"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -123,7 +123,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\3rd\boost"
-				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -177,7 +177,7 @@
 		<Configuration
 			Name="tcmalloc_release|Win32"
 			OutputDirectory="..\bin\tcrelease"
-			IntermediateDirectory="..\bin\obj\tcrelease"
+			IntermediateDirectory="..\obj\tcrelease"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -204,7 +204,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\3rd\boost"
-				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
