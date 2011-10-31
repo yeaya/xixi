@@ -20,7 +20,7 @@
 #include "defines.h"
 
 #ifndef VERSION
-#define VERSION "Xixibase 0.2"
+#define VERSION "Xixibase/0.2"
 #endif
 
 #ifndef HTTP_SERVER
