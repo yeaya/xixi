@@ -10,23 +10,19 @@ Dependencies:
 Building Xixibase server
 Windows:
 Microsoft Visual Studio 2008
-1. download boost from http://www.boost.org/
-2. create 3rd/boost folder
-  xixibase--3rd--boost
-          --client
-          --src
-3. upzip the boost to 3rd/boost
-4. run build.bat
+1. Please check the directory.
+       xixibase--3rd--boost
+               --client
+               --src
+2. run build.bat
 
 Linux/Mac:
-1. download boost from http://www.boost.org/
-2. create 3rd/boost folder
-  xixibase--3rd--boost
-          --client
-          --src
-3. upzip the boost to 3rd/boost
-4. chmod +x build.sh
-5. run ./build.sh
+1. Please check the directory.
+       xixibase--3rd--boost
+               --client
+               --src
+2. chmod +x build.sh
+3. run ./build.sh
 
 Copyright:
 --------------------------------------------------------------------------------
