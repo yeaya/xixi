@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <string.h>
 #include "peer_http.h"
 #include "settings.h"
 #include "currtime.h"

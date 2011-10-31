@@ -16,8 +16,13 @@
 
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import com.xixibase.cache.multi.MultiDeleteItem;
 import com.xixibase.cache.multi.MultiUpdateItem;
@@ -26,7 +31,7 @@ public class CacheClientBench  {
 	int start = 1;
 	int runs = 50000;
 	int groupID = 0;
-	String keyBase = "keypublic CacheClientBench(String servers, int start, int runs, int groupID,";
+	String keyBase = "key";
 	String object = "value";
 	CacheClient cc;
 	
@@ -40,8 +45,8 @@ public class CacheClientBench  {
 		XixiWeightMap<Integer> weightMap = new XixiWeightMap<Integer>(consistentFlag, hashingAlg);
 		
 		CacheClientManager manager = CacheClientManager.getInstance("CacheClientBench");
-		manager.setInitConn(1);
-		manager.setNoDelay(false);
+		manager.setInitConn(2);
+		manager.setNoDelay(true);
 		manager.initialize(serverlist, weights, weightMap);
 		manager.enableLocalCache();
 		manager.getLocalCache().setMaxCacheSize(128 * 1024 * 1024);
@@ -233,13 +238,21 @@ public class CacheClientBench  {
 		return count == runs;
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		String servers = System.getProperty("hosts");
 		if (args.length >= 1) {
 			servers = args[0];
 		}
+		if (servers == null) {
+			InputStream in = new BufferedInputStream(new FileInputStream("test.properties")); 
+			Properties p = new Properties(); 
+			p.load(in);
+			in.close();
+			servers = p.getProperty("hosts");
+		}
+
 	//	XixiWeightMap.MD5_HASH
-		CacheClientBench bench = new CacheClientBench(servers, 1, 50000);
+		CacheClientBench bench = new CacheClientBench(servers, 1, 30000);
 	//	CacheClientBench bench = new CacheClientBench(servers, 1, 50000, 315,
 //				true, XixiWeightMap.NATIVE_HASH, null);
 		bench.runIt();

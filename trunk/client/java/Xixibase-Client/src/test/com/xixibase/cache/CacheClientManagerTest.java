@@ -16,6 +16,12 @@
 
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import junit.framework.TestCase;
 
 public class CacheClientManagerTest extends TestCase {
@@ -24,7 +30,15 @@ public class CacheClientManagerTest extends TestCase {
 	static {
 		servers = System.getProperty("hosts");
 		if (servers == null) {
-			servers = "localhost:7788";
+			try {
+				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
+				Properties p = new Properties(); 
+				p.load(in);
+				in.close();
+				servers = p.getProperty("hosts");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
 		}
 		serverlist = servers.split(",");
 	}

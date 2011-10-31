@@ -23,8 +23,6 @@
 #include "log.h"
 #include "peer_cache_pdu.h"
 
-// #define USING_BOOST_POOL
-
 Cache_Mgr cache_mgr_;
 
 #define CALC_ITEM_SIZE(k, d) (sizeof(Cache_Item) + k + d)
@@ -102,7 +100,9 @@ Cache_Mgr::Cache_Mgr() {
 	mem_limit_ = 0;
 	mem_used_ = 0;
 	memset(max_size_, 0, sizeof(max_size_));
+#ifdef USING_BOOST_POOL
 	memset(&pools_, 0, sizeof(pools_));
+#endif
 	last_class_id_ = CLASSID_MIN;
 
 	last_print_stats_time_ = 0;
@@ -139,7 +139,9 @@ void Cache_Mgr::init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_
 		}
 
 		max_size_[class_id_max_] = size;
+#ifdef USING_BOOST_POOL
 		pools_[class_id_max_] = new boost::pool<>(size);
+#endif
 		size = (uint32_t)(size * factor);
 	}
 	max_size_[class_id_max_] = sizeof(Cache_Item) + item_size_max;

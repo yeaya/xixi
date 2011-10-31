@@ -16,7 +16,13 @@
 
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Properties;
+
 import org.apache.log4j.BasicConfigurator;
 
 interface Runable {
@@ -181,7 +187,7 @@ public class StressTest {
 
 		mgr.setInitConn(10);
 
-		mgr.setNoDelay(false);
+		mgr.setNoDelay(true);
 		mgr.initialize(serverlist);
 		
 		CacheClient cc = mgr.createClient();
@@ -215,13 +221,21 @@ public class StressTest {
 	public static void main(String[] args) {
 		
 		BasicConfigurator.configure();
-		String myservers;
-		if (args.length < 1) {
-			System.out.println("parameter: server_address(localhost:7788)");
-			myservers = "localhost:7788";
-		} else {
+		String myservers = null;
+		if (args.length >= 1) {
 			myservers = args[0];
+		} else {
+			try {
+				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
+				Properties p = new Properties(); 
+				p.load(in);
+				in.close();
+				myservers = p.getProperty("hosts");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		
 		StressTest st = new StressTest();
 		int threadCount = 2;
 		int keyCount = 1000;

@@ -40,7 +40,7 @@ public class CacheClientManager {
 	private int maintainInterval = 1000 * 3;
 	private int inactiveSocketTimeout = 1000 * 30;
 
-	private boolean noDelay = false;
+	private boolean noDelay = true;
 
 	private String[] servers;
 	private WeightMap<Integer> weightMap = new XixiWeightMap<Integer>();

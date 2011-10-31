@@ -16,9 +16,14 @@
 
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 import com.xixibase.cache.multi.MultiDeleteItem;
 import com.xixibase.cache.multi.MultiUpdateItem;
@@ -35,7 +40,15 @@ public class MultiOperationTest extends TestCase {
 	static {
 		servers = System.getProperty("hosts");
 		if (servers == null) {
-			servers = "localhost:7788";
+			try {
+				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
+				Properties p = new Properties(); 
+				p.load(in);
+				in.close();
+				servers = p.getProperty("hosts");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
 		}
 		String[] serverlist = servers.split(",");
 

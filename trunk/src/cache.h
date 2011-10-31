@@ -17,13 +17,17 @@
 #ifndef CACHE_H
 #define CACHE_H
 
+// #define USING_BOOST_POOL
+
 #include "defines.h"
 #include "util.h"
 #include "peer_pdu.h"
 #include "xixi_list.hpp"
 #include "xixi_hash_map.hpp"
 #include "hash.h"
+#ifdef USING_BOOST_POOL
 #include <boost/pool/pool.hpp>
+#endif
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/tss.hpp>
@@ -240,9 +244,9 @@ private:
 	uint32_t max_size_[CLASSID_MAX];
 	uint32_t class_id_max_;
 	uint32_t last_class_id_;
-
+#ifdef USING_BOOST_POOL
 	boost::pool<>* pools_[CLASSID_MAX];
-
+#endif
 	xixi::list<Cache_Item> free_cache_list_[CLASSID_MAX];
 	xixi::list<Cache_Item> flush_cache_list_;
 

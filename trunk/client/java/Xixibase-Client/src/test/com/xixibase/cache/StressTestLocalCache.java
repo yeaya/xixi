@@ -16,7 +16,12 @@
 
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 interface RunableLocalCache {
@@ -332,12 +337,20 @@ public class StressTestLocalCache {
 	long tearDownTime = System.currentTimeMillis();
 	
 	public static void main(String[] args) throws InterruptedException {
-		String myservers;
-		if (args.length < 1) {
-			System.out.println("parameter: server_address(localhost:7788)");
-			myservers = "localhost:7788";
-		} else {
+		String myservers = null;
+		if (args.length >= 1) {
+		//	System.out.println("parameter: server_address(localhost:7788)");
 			myservers = args[0];
+		} else {
+			try {
+				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
+				Properties p = new Properties(); 
+				p.load(in);
+				in.close();
+				myservers = p.getProperty("hosts");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		String servers = myservers;
 		serverlist = servers.split(",");
@@ -347,7 +360,7 @@ public class StressTestLocalCache {
 		mgr.setSocketWriteBufferSize(64 * 1024);//(1 * 1024 * 1024);
 		mgr.setInitConn(10);
 
-		mgr.setNoDelay(false);
+		mgr.setNoDelay(true);
 		mgr.initialize(serverlist);
 		mgr.enableLocalCache();
 		LocalCache localCache = mgr.getLocalCache();

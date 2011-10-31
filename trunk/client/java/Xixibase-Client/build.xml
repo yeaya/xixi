@@ -40,6 +40,9 @@
 			<fileset dir="${test.build.dir}">
 				<include name="com/xixibase/cache/*" />
 			</fileset>
+			<fileset dir=".">
+				<include name="test.properties" />
+			</fileset>
 		</jar>
 	</target>
 
@@ -87,6 +90,7 @@
 				<include name=".classpath" />
 				<include name=".project" />
 				<include name="build.properties" />
+				<include name="test.properties" />
 				<include name="build.xml" />
 			</fileset>
 		</copy>

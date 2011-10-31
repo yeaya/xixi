@@ -16,6 +16,12 @@
 
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import com.xixibase.util.CurrentTick;
 
 import junit.framework.TestCase;
@@ -26,7 +32,15 @@ public class LocalCacheTest extends TestCase {
 	static {
 		servers = System.getProperty("hosts");
 		if (servers == null) {
-			servers = "localhost:7788";
+			try {
+				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
+				Properties p = new Properties(); 
+				p.load(in);
+				in.close();
+				servers = p.getProperty("hosts");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
 		}
 	}
 
@@ -506,7 +520,7 @@ public class LocalCacheTest extends TestCase {
 		item = cc.gets("xixi");
 		assertNotNull(item);
 		d = item.getExpiration();
-		assertTrue(d <= 100 && d >= 99);
+		assertTrue(d <= 100 && d >= 98);
 		
 		mgr.shutdown();
 	}

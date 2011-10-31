@@ -1,6 +1,9 @@
 package com.xixibase.cache;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
 import java.lang.Integer;
 
@@ -25,7 +29,15 @@ public class CacheClientTest extends TestCase {
 	static {
 		servers = System.getProperty("hosts");
 		if (servers == null) {
-			servers = "localhost:7788";
+			try {
+				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
+				Properties p = new Properties(); 
+				p.load(in);
+				in.close();
+				servers = p.getProperty("hosts");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
 		}
 		serverlist = servers.split(",");
 
@@ -253,7 +265,7 @@ public class CacheClientTest extends TestCase {
 		assertEquals(s, value);
 		mgr.shutdown();
 		mgr = CacheClientManager.getInstance("test2");
-		mgr.setNoDelay(false);
+		mgr.setNoDelay(true);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.MD5_HASH));
 		cc = mgr.createClient();
