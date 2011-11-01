@@ -795,7 +795,7 @@ void Peer_Cache::process_hello_req_pdu_fixed() {
 }
 
 void Peer_Cache::process_create_watch_req_pdu_fixed(XIXI_Create_Watch_Req_Pdu* pdu) {
-	LOG_INFO2("process_create_watch_req_pdu_fixed");
+	LOG_TRACE2("process_create_watch_req_pdu_fixed");
 	uint32_t watchID = cache_mgr_.create_watch(pdu->group_id, pdu->max_next_check_interval);
 
 	uint8_t* cb = cache_buf_.prepare(XIXI_Create_Watch_Res_Pdu::get_body_size());
