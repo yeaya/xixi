@@ -113,7 +113,7 @@ public final class MultiUpdateExpiration extends Defines {
 				conn.add(item, keyBuf, keyIndex);
 			}
 
-			selector = Selector.open();
+			selector = manager.selectorOpen();
 
 			Iterator<Entry<String, Connection>> itc = conns.entrySet().iterator();
 			while (itc.hasNext()) {
@@ -134,7 +134,7 @@ public final class MultiUpdateExpiration extends Defines {
 			long timeRemaining = timeout;
 
 			while (numConns > 0 && timeRemaining > 0) {
-				int n = selector.select(Math.min(timeout, 5000));
+				int n = selector.select(timeRemaining);
 				if (n > 0) {
 					Iterator<SelectionKey> its = selector.selectedKeys().iterator();
 					while (its.hasNext()) {
@@ -153,13 +153,14 @@ public final class MultiUpdateExpiration extends Defines {
 		} catch (IOException e) {
 			lastError = "multiUpdateExpiration, exception on " + e;
 			log.error(lastError);
-			return 0;
+			e.printStackTrace();
 		} finally {
 			try {
-				if (selector != null) {
-					selector.close();
-				}
-			} catch (IOException ignoreMe) {
+				manager.selectorClose(selector);
+			} catch (IOException e) {
+				lastError = "multiUpdateExpiration, close selector exception :" + e;
+				log.error(lastError);
+				e.printStackTrace();
 			}
 			Iterator<Connection> itc = conns.values().iterator();
 			while (itc.hasNext()) {
@@ -172,10 +173,12 @@ public final class MultiUpdateExpiration extends Defines {
 	}
 
 	private void handleKey(SelectionKey key) throws IOException {
-		if (key.isReadable()) {
-			readResponse(key);
-		} else if (key.isWritable()) {
-			writeRequest(key);
+		if (key.isValid()) {
+			if (key.isReadable()) {
+				readResponse(key);
+			} else if (key.isWritable()) {
+				writeRequest(key);
+			}
 		}
 	}
 
@@ -364,7 +367,7 @@ public final class MultiUpdateExpiration extends Defines {
 						decode_count++;
 
 						lastError = "processResponse, resonpse error reason=" + reason;
-						log.error(lastError);
+						log.warn(lastError);
 						if (items.size() == decode_count) {
 							isDone = true;
 							run = false;

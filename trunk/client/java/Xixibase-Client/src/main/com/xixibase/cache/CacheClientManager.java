@@ -16,6 +16,8 @@
 
 package com.xixibase.cache;
 
+import java.io.IOException;
+import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.HashMap;
@@ -48,6 +50,9 @@ public class CacheClientManager {
 	private ArrayList<ConcurrentLinkedQueue<XixiSocket>> activeSocketPool = new ArrayList<ConcurrentLinkedQueue<XixiSocket>>();
 	private ArrayList<LinkedList<XixiSocket>> inactiveSocketPool = new ArrayList<LinkedList<XixiSocket>>();
 	private HashMap<String, Integer> hostIndexMap = new HashMap<String, Integer>();
+	
+	private ConcurrentLinkedQueue<Selector> selectorPool = new ConcurrentLinkedQueue<Selector>();
+	private long lastSelectorOpenTime = 0;
 
 	private int socketWriteBufferSize = 32768; // 32K, 65536; //64K
 	private LocalCache localCache = null;
@@ -171,6 +176,7 @@ public class CacheClientManager {
 
 		disableLocalCache();
 		closeSocketPool();
+		closeSelectorPool();
 
 	//	activeSocketPool.clear();
 	//	inactiveSocketPool.clear();
@@ -392,6 +398,62 @@ public class CacheClientManager {
 		return false;
 	}
 	
+	protected final void closeSocketPool() {
+		for (int i = 0; i < activeSocketPool.size(); i++) {
+			ConcurrentLinkedQueue<XixiSocket> sockets = activeSocketPool.get(i);
+			XixiSocket socket = sockets.poll();
+			while (socket != null) {
+				socket.trueClose();
+				socket = sockets.poll();
+			}
+		}
+		
+		synchronized (inactiveSocketPool) {
+			for (int i = 0; i < inactiveSocketPool.size(); i++) {
+				LinkedList<XixiSocket> list = inactiveSocketPool.get(i);
+				XixiSocket socket = list.pollFirst();
+				while (socket != null) {
+					socket.trueClose();
+					socket = list.pollFirst();
+				}
+			}
+		}
+	}
+	
+	public Selector selectorOpen() throws IOException {
+		Selector selector = selectorPool.poll();
+		if (selector == null) {
+			lastSelectorOpenTime = System.currentTimeMillis();
+			return Selector.open();
+		}
+		return selector;
+	}
+	
+	public void selectorClose(Selector selector) throws IOException {
+		int size = selector.keys().size();
+		if (size > 0) {
+			selector.selectNow();
+			size = selector.keys().size();
+			if (size == 0 && selectorPool.size() < 16) {
+				selectorPool.add(selector);
+				return;
+			}
+		}
+		selector.close();
+	}
+
+	protected void closeSelectorPool() {
+		Selector selector = selectorPool.poll();
+		while (selector != null) {
+			try {
+				selector.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			selector = selectorPool.poll();
+		}
+	}
+
 	protected final void maintainInactiveSocket() {
 		long currTime = System.currentTimeMillis();
 		synchronized (inactiveSocketPool) {
@@ -416,30 +478,19 @@ public class CacheClientManager {
 				}
 			}
 		}
-	}
-
-	protected final void closeSocketPool() {
-		for (int i = 0; i < activeSocketPool.size(); i++) {
-			ConcurrentLinkedQueue<XixiSocket> sockets = activeSocketPool.get(i);
-			XixiSocket socket = sockets.poll();
-			while (socket != null) {
-				socket.trueClose();
-				socket = sockets.poll();
-			}
-		}
-		
-		synchronized (inactiveSocketPool) {
-			for (int i = 0; i < inactiveSocketPool.size(); i++) {
-				LinkedList<XixiSocket> list = inactiveSocketPool.get(i);
-				XixiSocket socket = list.pollFirst();
-				while (socket != null) {
-					socket.trueClose();
-					socket = list.pollFirst();
+		if (currTime > lastSelectorOpenTime + 5000) {
+			lastSelectorOpenTime = currTime;
+			Selector selector = selectorPool.poll();
+			if (selector != null) {
+				try {
+					selector.close();
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			}
 		}
 	}
-	
+
 	class MaintainThread extends Thread {
 		public void run() {
 			while (initialized) {

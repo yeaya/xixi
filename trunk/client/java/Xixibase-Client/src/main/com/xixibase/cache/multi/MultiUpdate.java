@@ -118,8 +118,8 @@ public final class MultiUpdate extends Defines {
 				}
 				conn.add(item, keyBuf, keyIndex);
 			}
-
-			selector = Selector.open();
+			
+			selector = manager.selectorOpen();
 
 			Iterator<Entry<String, Connection>> itc = conns.entrySet().iterator();
 			while (itc.hasNext()) {
@@ -140,7 +140,7 @@ public final class MultiUpdate extends Defines {
 			long timeRemaining = timeout;
 
 			while (numConns > 0 && timeRemaining > 0) {
-				int n = selector.select(Math.min(timeout, 5000));
+				int n = selector.select(timeRemaining);
 				if (n > 0) {
 					Iterator<SelectionKey> its = selector.selectedKeys().iterator();
 					while (its.hasNext()) {
@@ -157,15 +157,16 @@ public final class MultiUpdate extends Defines {
 				timeRemaining = timeout - (System.currentTimeMillis() - startTime);
 			}
 		} catch (IOException e) {
-			lastError = "multiUpdate, exception on " + e;
+			lastError = "multiUpdate, exception" + e;
 			log.error(lastError);
-			return 0;
+			e.printStackTrace();
 		} finally {
 			try {
-				if (selector != null) {
-					selector.close();
-				}
-			} catch (IOException ignoreMe) {
+				manager.selectorClose(selector);
+			} catch (IOException e) {
+				lastError = "multiUpdate, close selector exception :" + e;
+				log.error(lastError);
+				e.printStackTrace();
 			}
 			Iterator<Connection> itc = conns.values().iterator();
 			while (itc.hasNext()) {
@@ -178,10 +179,12 @@ public final class MultiUpdate extends Defines {
 	}
 
 	private void handleKey(SelectionKey key) throws IOException {
-		if (key.isReadable()) {
-			readResponse(key);
-		} else if (key.isWritable()) {
-			writeRequest(key);
+		if (key.isValid()) {
+			if (key.isReadable()) {
+				readResponse(key);
+			} else if (key.isWritable()) {
+				writeRequest(key);
+			}
 		}
 	}
 
@@ -396,7 +399,7 @@ public final class MultiUpdate extends Defines {
 						decode_count++;
 
 						lastError = "processResponse, response error reason=" + reason;
-						log.error(lastError);
+						log.warn(lastError);
 						if (items.size() == decode_count) {
 							isDone = true;
 							run = false;
