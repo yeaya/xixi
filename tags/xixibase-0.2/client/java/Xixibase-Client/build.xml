@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="Xixibase_Client" default="jar" basedir=".">
+	<property file="build.properties" />
+	<path id="test.classpath">
+		<pathelement location="${junit.jar}" />
+		<pathelement location="${log4j.jar}" />
+	</path>
+	<path id="vendor.classpath">
+		<pathelement location="${log4j.jar}" />
+	</path>
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${test.build.dir}" />
+	</target>
+
+	<target name="compile" depends="clean">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${test.build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" optimize="yes" deprecation="true" target="1.5" source="1.5" nowarn="true">
+			<compilerarg value="-Xlint:unchecked" />
+			<classpath refid="vendor.classpath" />
+		</javac>
+		
+		<javac srcdir="${test.dir}" destdir="${test.build.dir}" optimize="yes" deprecation="true" target="1.5" source="1.5" nowarn="true">
+			<compilerarg value="-Xlint:unchecked "/>
+			<classpath refid="test.classpath" />
+			<classpath path="${build.dir}" />
+		</javac>
+	</target>
+
+	<target name="jar" depends="compile">
+		<jar jarfile="${project}_${ver}.jar">
+			<fileset dir="${build.dir}">
+				<include name="com/xixibase/cache/*" />
+				<include name="com/xixibase/cache/multi/*" />
+				<include name="com/xixibase/util/*" />
+			</fileset>
+		</jar>
+		<jar jarfile="${project}_test_${ver}.jar">
+			<fileset dir="${test.build.dir}">
+				<include name="com/xixibase/cache/*" />
+			</fileset>
+			<fileset dir=".">
+				<include name="test.properties" />
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="runTest" depends="compile">
+		<delete dir="${report.dir}" />
+		<mkdir dir="${report.dir}" />
+		<junit printsummary="yes" showoutput="true" fork="true">
+			<classpath>
+				<pathelement location="${build.dir}" />
+				<pathelement location="${test.build.dir}" />
+				<path refid="test.classpath" />
+			</classpath>
+			<jvmarg value="-Dhosts=${hosts}" />
+			<formatter type="xml" />
+			<test name="com.xixibase.cache.CacheClientTest" todir="${report.dir}" />
+		</junit>
+		<junitreport todir="${report.dir}">
+			<fileset dir="${report.dir}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="frames" todir="${report.dir}" />
+		</junitreport>
+	</target>
+
+	<target name="all">
+		<delete>
+			<fileset dir=".">
+				<include name="*.jar" />
+				<include name="*.zip" />
+			</fileset>
+		</delete>
+		<antcall target="runTest" />
+		<antcall target="jar" />
+		<antcall target="sourceDist" />
+	</target>
+	
+	<target name="sourceDist">
+		<mkdir dir="${project}_${ver}" />
+		<copy todir="${project}_${ver}">
+			<fileset dir=".">
+				<include name="src/**/*" />
+				<include name="doc/**/*" />
+				<include name="lib/**/*" />
+				<include name="report/**/*" />
+				<include name=".classpath" />
+				<include name=".project" />
+				<include name="build.properties" />
+				<include name="test.properties" />
+				<include name="build.xml" />
+			</fileset>
+		</copy>
+		<zip destfile="${project}_src_${ver}.zip" basedir=".">
+			<include name="${project}_${ver}/**/*" />
+		</zip>
+		<delete dir="${project}_${ver}" />
+	</target>
+</project>
