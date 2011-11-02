@@ -1,6 +1,5 @@
-#summary One-sentence summary of this page.
+#summary Release Notes
 #labels Phase-Implementation
-
 = Introduction =
 ==Xixibase is a high performance, cross platform, distributed cache system.==
 Xixibase server write in C++, based on Boost Asio.
