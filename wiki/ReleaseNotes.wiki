@@ -4,9 +4,21 @@
 ==Xixibase is a high performance, cross platform, distributed cache system.==
 Xixibase server write in C++, based on Boost Asio.
 
-
 ===Xixibase 0.2===
-
+*Xixibase Server*
+ # Bug fix
+  * CheckWatch issue
+  * delete Peer_Cache async may cause crash
+  * update_expiration stats init issue
+ # Cross platform enhance, like change "%lu" to PRIu32 ...
+ # Build enhancement
+ # Log enhancement
+ # Support HTTP(part)
+ # Other little change
+*Xixibase Java Client*
+ # Enhance the algorithm of itemSize
+ # Default socket noDelay=true
+ # Add selector pool for TIME_WAIT issue in windows Multi API
 
 ===Xixibase 0.1===
 First release, Xixibase Server and Xixibase Java Client
