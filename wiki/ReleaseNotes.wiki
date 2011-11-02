@@ -12,7 +12,7 @@ Xixibase server write in C++, based on Boost Asio.
 ===Xixibase 0.1===
 First release, Xixibase Server and Xixibase Java Client
  # Support 'Local Cache', when client enable 'Local Cache', Client can store the data both Server-side and local, and to ensure local data and Server-side data is consistent. This can greatly increase performance and reduce the pressure on Server and network overhead.
- #Support 'virtualization', 'virtualization' can ensure that different service access the same cache erver, it will not conflict.
- #Support 'MultiAPI', like multiGet, multeUpdate, multiDelete. 'MultiAPI' is a batch processing mode, can provide significant performance.
- #High performance.
- #Cross platform, Xixibase is based on the Boost Asio, in principle, as long as Boost Asio supported platforms, Xixibase can be supported. Like Windows, Linux, Mac.
+ # Support 'virtualization', 'virtualization' can ensure that different service access the same cache erver, it will not conflict.
+ # Support 'MultiAPI', like multiGet, multeUpdate, multiDelete. 'MultiAPI' is a batch processing mode, can provide significant performance.
+ # High performance.
+ # Cross platform, Xixibase is based on the Boost Asio, in principle, as long as Boost Asio supported platforms, Xixibase can be supported. Like Windows, Linux, Mac.
