@@ -19,7 +19,6 @@ public class Xixibase extends BaseTest {
 		String[] serverlist = servers.split(",");
 		String poolName = "Xixibase";
 		CacheClientManager manager = CacheClientManager.getInstance(poolName);
-		manager.setNoDelay(false);
 		manager.initialize(serverlist);
 		
 		CacheClient cc = manager.createClient();

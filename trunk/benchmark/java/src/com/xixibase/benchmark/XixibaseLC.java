@@ -19,7 +19,6 @@ public class XixibaseLC extends BaseTest {
 		String[] serverlist = servers.split(",");
 		String poolName = "XixibaseLC";
 		CacheClientManager manager = CacheClientManager.getInstance(poolName);
-		manager.setNoDelay(false);
 		manager.initialize(serverlist);
 		manager.enableLocalCache();
 		manager.getLocalCache().setMaxCacheSize(1024 * 1024 * 1024);
