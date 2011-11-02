@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>Performance Comparison</title>
+</head>
+<body>
+
+<h1>Performance Comparison</h1>
+<p>
+    
+    This original benchmark is writed by dennis zhuang(killme2008@gmail.com). 
+    Details please refer</p>
+URL:
+<a
+	href="http://xmemcached.googlecode.com/svn/trunk/benchmark/benchmark.html">
+    http://xmemcached.googlecode.com/svn/trunk/benchmark/benchmark.html</a><br />
+    <br />
+    I add Xixibase case in it. Xixibase URL:
+    <a href="http://code.google.com/p/xixibase/">http://code.google.com/p/xixibase/</a><br />
+<h2>Source code</h2>
+    <pre>You need get follow source and merge it in one project.</pre>
+<pre>svn co <a href="http://xmemcached.googlecode.com/svn/trunk/benchmark/">http://xmemcached.googlecode.com/svn/trunk/benchmark/</a></pre>
+    <pre>svn co <a href="http://xixibase.googlecode.com/svn/trunk/benchmark/">http://xixibase.googlecode.com/svn/trunk/benchmark/</a></pre>
+<h2>Server and client</h2>
+    <ul>
+        <li>
+            <p>
+                Memcached</p>
+            <ul>
+                <li>
+                    <p>
+                        <a href="http://code.google.com/p/spymemcached">spymemcached</a></p>
+                </li>
+                <li>
+                    <p>
+                        <a href="http://github.com/gwhalin/Memcached-Java-Client">Memcached-Java-Client</a></p>
+                </li>
+                <li>
+                    <p>
+                        <a	href="http://code.google.com/p/xmemcached/">Xmemcached</a></p>
+                </li>
+               
+            </ul>
+        </li>
+         <li>
+            <p>
+                <a href="http://code.google.com/p/xixibase/">Xixibase</a></p>
+            <ul>
+                <li>
+                    <p>
+                        <a href="http://code.google.com/p/xixibase/">Xixibase-Java-Client</a></p>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+<p>The server and client all run on same linux 
+    machine.</p>
+
+<p>A client connect to one server, then start numbers of threads which use only one client instance to repeat themself to
+store and retrive data from the server
+concurrently,write 10% and read 90%, BASE_REPEATS = 2000.<br />
+</p>
+
+<h2>Test Environment</h2>
+	<li>Software
+	<ul>
+		<li>Memcached Server
+		<ul>
+			<li>Version is 1.4.5,default install configuration.</li>
+			<li>Start with option "-m 16000"</li>
+		</ul>
+		</li>
+		<li>Xixibase Server
+		<ul>
+			<li>Version is 0.2,default install configuration.</li>
+			<li>Start with option "-m 16000"</li>
+		</ul>
+		</li>
+		<li>Java Client
+		<ul>
+			<li>JVM Version: Sun JDK 1.6.0_06</li>
+			<li>All clients use memcached text protocol.
+			<li>xmemcached 1.2.6.1,default configuration</li>
+			<li>Spymemcached 2.5,default configuration</li>
+			<li>Memcached-Java-Client 2.5.1,SockIOPool set minConn  to 10 and maxConn to 500,Max idle time set to one hour,also set compress threshold to 16K.
+			</li>
+			<li>Xixibase-Java-Client 0.2 normal and multi case, default configuration</li>
+			<li>Xixibase-Java-Client 0.2 enable LocalCache, setMaxCacheSize(1024 * 1024 * 1024)</li>
+			<li>JVM args: -server -Xms1024m -Xmx2048m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=64m -XX:MaxPermSize=64m</li>
+			<li>Xmemcached and Spymemcached is nio based.So they have to set
+			operation timeout,both are set to five seconds.</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+	<li>Hardware
+	<ul>
+		<li>Server and client all run in one machine
+		<ul>
+			<li>CPU: 4 x Intel(R) Xeon(R) CPU E5530 @ 2.40GHz</li>
+			<li>OS: CentOS 5.3 64bit</li>
+			<li>RAM: 16 GiB</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+
+<h2>Part1 Compared by threads number</h2>
+<img src="result/images/bytes64.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/bytes512.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/bytes1024.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/bytes4096.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/bytes16384.jpg" />
+<br>
+<br>
+<br>
+<br>
+<h2>Part2 Compared by value size</h2>
+<img src="result/images/threads1.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/threads10.jpg">
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/threads50.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/threads100.jpg" />
+<br>
+<br>
+<br>
+<br>
+<img src="result/images/threads300.jpg" />
+<br>
+<br>
+<br>
+<br>
+<h2>Raw log</h2>
+<ul>
+	<li><a href="result/JavaMemCached.log">Memcached-Java-Client</a></li>
+	<li><a href="result/spymemcached.log">Spymemcached</a></li>
+	<li><a href="result/xmemcached.log">xmemcached</a></li>
+	<li><a href="result/xixibase.log">Xixibase</a></li>
+	<li><a href="result/xixilc.log">Xixibase(enable local cache)</a></li>
+	<li><a href="result/xiximulti.log">Xixibase(Multi API)</a></li>
+</ul>
+</body>
+</html>
