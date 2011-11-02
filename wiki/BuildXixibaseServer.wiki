@@ -1,14 +1,20 @@
-#summary One-sentence summary of this page.
 #labels Phase-Implementation
+==Building Xixibase server==
+===Windows:===
+ # Please check the directory.
+{{{
+xixibase/3rd/boost
+        /client
+        /src
+}}}
+ # run build.bat
 
-= Introduction =
-
-Add your content here.
-
-
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+===Linux/Mac:===
+ # Please check the directory.
+{{{
+xixibase/3rd/boost
+        /client
+        /src
+}}}
+ # chmod +x build.sh
+ # run ./build.sh
