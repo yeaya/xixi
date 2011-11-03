@@ -38,7 +38,6 @@ public class LocalCache {
 	protected LocalCache(CacheClientManager manager, long maxCacheSize) {
 		this.manager = manager;
 		this.maxCacheSize = maxCacheSize;
-		this.maxCacheSize = maxCacheSize;
 		this.warningCacheSize = (long)(maxCacheSize * warningCacheRate);
 	}
 

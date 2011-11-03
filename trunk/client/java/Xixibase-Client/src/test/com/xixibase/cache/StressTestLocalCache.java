@@ -58,7 +58,6 @@ class TestCaseLocalCache1 implements RunableLocalCache {
 	long getcount = 0;
 	long misscount = 0;
 	long notFoundCount = 0;
-	long lastreporttime = 0;
 		
 	static AtomicLong totalset2 = new AtomicLong(0);
 	static AtomicLong totalget2 = new AtomicLong(0);
@@ -333,9 +332,6 @@ public class StressTestLocalCache {
 	protected static CacheClient cc = null;
 	private static String[] serverlist;
 
-	long setUpTime = System.currentTimeMillis();
-	long tearDownTime = System.currentTimeMillis();
-	
 	public static void main(String[] args) throws InterruptedException {
 		String myservers = null;
 		if (args.length >= 1) {

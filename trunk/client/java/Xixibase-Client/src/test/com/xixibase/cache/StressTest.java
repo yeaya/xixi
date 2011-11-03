@@ -233,6 +233,7 @@ public class StressTest {
 				myservers = p.getProperty("hosts");
 			} catch (IOException e) {
 				e.printStackTrace();
+				return;
 			}
 		}
 		

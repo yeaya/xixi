@@ -72,7 +72,7 @@ public class CacheClientManager {
 		CacheClientManager manager = managers.get(name);
 
 		if (manager == null) {
-			synchronized (managers) {
+			synchronized (CacheClientManager.class) {
 				manager = managers.get(name);
 				if (manager == null) {
 					manager = new CacheClientManager(name);
@@ -148,7 +148,7 @@ public class CacheClientManager {
 		hostIndexMap.clear();// = new HashMap<String, Integer>();
 		Integer[] values = new Integer[servers.length];
 		for (int i = 0; i < servers.length; i++) {
-			values[i] = new Integer(i);
+			values[i] = Integer.valueOf(i);
 		}
 		this.weightMap.set(values, weights);
 
@@ -156,7 +156,7 @@ public class CacheClientManager {
 		for (int i = 0; i < servers.length; i++) {
 			activeSocketPool.add(new ConcurrentLinkedQueue<XixiSocket>());
 			inactiveSocketPool.add(new LinkedList<XixiSocket>());
-			hostIndexMap.put(servers[i], new Integer(i));
+			hostIndexMap.put(servers[i], Integer.valueOf(i));
 			for (int j = 0; j < initConn; j++) {
 				XixiSocket socket = createSocket(servers[i]);
 				if (socket == null) {

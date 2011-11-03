@@ -225,7 +225,7 @@ class LocalCacheWatch extends Thread {
 	}
 
 	public CacheItem get(int groupID, String key) {
-		GroupItem gitem = groupMap.get(new Integer(groupID));
+		GroupItem gitem = groupMap.get(Integer.valueOf(groupID));
 		if (gitem != null) {
 			return gitem.get(groupID, key);
 		}
@@ -241,18 +241,18 @@ class LocalCacheWatch extends Thread {
 	}
 
 	public synchronized void put(String key, CacheItem value) {
-		GroupItem gitem = groupMap.get(new Integer(value.groupID));
+		GroupItem gitem = groupMap.get(Integer.valueOf(value.groupID));
 		if (gitem != null) {
 			gitem.put(key, value);
 		} else {
 			gitem = new GroupItem(cacheSize, cacheCount, cacheIDMap);
-			groupMap.putIfAbsent(new Integer(value.groupID), gitem);
+			groupMap.put(Integer.valueOf(value.groupID), gitem);
 			gitem.put(key, value);
 		}
 	}
 
 	public synchronized CacheItem remove(int groupID, String key) {
-		GroupItem gitem = groupMap.get(new Integer(groupID));
+		GroupItem gitem = groupMap.get(Integer.valueOf(groupID));
 		if (gitem != null) {
 			return gitem.remove(key);
 		}

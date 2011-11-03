@@ -160,6 +160,7 @@ public class CacheClientManagerTest extends TestCase {
 		String[] s = new String[1];
 		s[0] = "errorHost";
 		ret = mgr.initialize(s);
+		assertTrue(ret);
 		XixiSocket socket = mgr.getSocketByHost(serverlist[0]);
 		assertNull(mgr.getSocketByHost(null));
 		assertNull(mgr.getSocketByHost("unknownhost"));

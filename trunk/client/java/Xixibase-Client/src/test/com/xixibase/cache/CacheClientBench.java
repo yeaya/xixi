@@ -30,7 +30,6 @@ import com.xixibase.cache.multi.MultiUpdateItem;
 public class CacheClientBench  {
 	int start = 1;
 	int runs = 50000;
-	int groupID = 0;
 	String keyBase = "key";
 	String object = "value";
 	CacheClient cc;
@@ -39,7 +38,6 @@ public class CacheClientBench  {
 			boolean consistentFlag, int hashingAlg, Integer[] weights) {
 		this.start = start;
 		this.runs = runs;
-		this.groupID = groupID;
 		String[] serverlist = servers.split(",");
 
 		XixiWeightMap<Integer> weightMap = new XixiWeightMap<Integer>(consistentFlag, hashingAlg);

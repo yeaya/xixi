@@ -47,6 +47,7 @@ public class TCPSocket implements XixiSocket {
 		}
 
 		readBuffer = ByteBuffer.allocateDirect(8 * 1024);
+		readBuffer.flip();
 		writeBuffer = ByteBuffer.allocateDirect(writeBufferSize);
 
 		if (timeout >= 0) {
@@ -59,15 +60,16 @@ public class TCPSocket implements XixiSocket {
 			try {
 				socket.close();
 			} catch (IOException e) {
+				e.printStackTrace();
 			}
 			socket = null;
 			throw new IOException("Can not getChannel for host:" + host);
 		}
 	}
 
-	public ByteBuffer getReadBuffer() {
-		return readBuffer;
-	}
+//	public ByteBuffer getReadBuffer() {
+//		return readBuffer;
+//	}
 
 	public ByteBuffer getWriteBuffer() {
 		return writeBuffer;
@@ -108,6 +110,7 @@ public class TCPSocket implements XixiSocket {
 
 	public final void close() {
 		readBuffer.clear();
+		readBuffer.flip();
 		writeBuffer.clear();
 		if (!manager.addSocket(host, this)) {
 			trueClose();
@@ -159,6 +162,36 @@ public class TCPSocket implements XixiSocket {
 	public void flush() throws IOException {
 		writeBuffer.flip();
 		socketChannel.write(writeBuffer);
+	}
+
+	public byte readByte() throws IOException {
+		byte[] b = new byte[1];
+		read(b, 0, 1);
+		return b[0];
+	}
+
+	public short readShort() throws IOException {
+		byte[] b = new byte[2];
+		read(b, 0, 2);
+		return ObjectTransCoder.decodeShort(b);
+	}
+
+	public int readInt() throws IOException {
+		byte[] b = new byte[4];
+		read(b, 0, 4);
+		return ObjectTransCoder.decodeInt(b);
+	}
+
+	public long readLong() throws IOException {
+		byte[] b = new byte[8];
+		read(b, 0, 8);
+		return ObjectTransCoder.decodeLong(b);
+	}
+
+	public byte[] read(int len) throws IOException {
+		byte[] b = new byte[len];
+		read(b, 0, len);
+		return b;
 	}
 
 	public int read(byte[] b, int off, int len) throws IOException {

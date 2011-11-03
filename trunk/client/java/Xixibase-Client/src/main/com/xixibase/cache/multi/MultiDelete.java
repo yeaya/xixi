@@ -75,7 +75,7 @@ public final class MultiDelete extends Defines {
 			Iterator<MultiDeleteItem> it = list.iterator();
 			int index = 0;
 			while (it.hasNext()) {
-				Integer keyIndex = new Integer(index);
+				Integer keyIndex = Integer.valueOf(index);
 				index++;
 				MultiDeleteItem item = it.next();
 				if (item == null) {

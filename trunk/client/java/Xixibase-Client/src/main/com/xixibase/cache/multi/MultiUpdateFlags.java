@@ -33,9 +33,9 @@ import com.xixibase.cache.Defines;
 import com.xixibase.cache.TransCoder;
 import com.xixibase.cache.XixiSocket;
 import com.xixibase.util.Log;
-*/
-import java.util.concurrent.atomic.AtomicInteger;
 
+import java.util.concurrent.atomic.AtomicInteger;
+*/
 import com.xixibase.cache.Defines;
 
 public final class MultiUpdateFlags extends Defines {

@@ -76,7 +76,7 @@ public final class MultiUpdateExpiration extends Defines {
 			Iterator<MultiUpdateExpirationItem> it = list.iterator();
 			int index = 0;
 			while (it.hasNext()) {
-				Integer keyIndex = new Integer(index);
+				Integer keyIndex = Integer.valueOf(index);
 				index++;
 				MultiUpdateExpirationItem item = it.next();
 				if (item == null) {

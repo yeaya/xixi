@@ -16,7 +16,6 @@
 
 package com.xixibase.cache;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -135,18 +134,15 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.put(keyBuf);
 			socket.flush();
 
-			SocketInputStream input = new SocketInputStream(socket);
-			DataInputStream dis = new DataInputStream(input);
-
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_GET_RES) {
-				long cacheID = dis.readLong();//uint64_t cacheID;
-				int flags = dis.readInt();
-				expiration = dis.readInt();
-				int dataSize = dis.readInt();//uint32_t data_length;
+				long cacheID = socket.readLong();//uint64_t cacheID;
+				int flags = socket.readInt();
+				expiration = socket.readInt();
+				int dataSize = socket.readInt();//uint32_t data_length;
 				if (dataSize >= 0) {
-					byte[] data = input.read(dataSize);
+					byte[] data = socket.read(dataSize);
 					int[] objectSize = new int[1];
 					Object obj = transCoder.decode(data, flags, objectSize);
 					item = new CacheItem(
@@ -163,7 +159,7 @@ public class CacheClientImpl extends Defines {
 					return item;
 				}
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "get, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -217,14 +213,12 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.put(keyBuf);
 			socket.flush();
 
-			SocketInputStream input = new SocketInputStream(socket);
-			DataInputStream dis = new DataInputStream(input);
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_GET_BASE_RES) {
-				long cacheID = dis.readLong();
-				int flags = dis.readInt();
-				int expiration = dis.readInt();
+				long cacheID = socket.readLong();
+				int flags = socket.readInt();
+				int expiration = socket.readInt();
 				CacheBaseItem item = new CacheBaseItem(
 						key,
 						cacheID,
@@ -233,7 +227,7 @@ public class CacheClientImpl extends Defines {
 						flags);
 				return item;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "getBase, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -299,16 +293,14 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.put(keyBuf);
 			socket.flush();
 
-			SocketInputStream input = new SocketInputStream(socket);
-			DataInputStream dis = new DataInputStream(input);
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_FLAGS_RES) {
-				dis.readLong(); // rescacheID
+				socket.readLong(); // rescacheID
 
 				return true;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "updateFlags, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -366,16 +358,14 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.put(keyBuf);
 			socket.flush();
 
-			SocketInputStream input = new SocketInputStream(socket);
-			DataInputStream dis = new DataInputStream(input);
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_EXPIRATION_RES) {
-				dis.readLong(); // cacheID
+				socket.readLong(); // cacheID
 
 				return true;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "updateExpiration, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -475,11 +465,10 @@ public class CacheClientImpl extends Defines {
 			socket.write(data, 0, dataSize);
 			socket.flush();
 
-			DataInputStream dis = new DataInputStream(new SocketInputStream(socket));
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_RES) {
-				long newCacheID = dis.readLong();
+				long newCacheID = socket.readLong();
 				if (watchID != 0) {
 					CacheItem item = new CacheItem(
 							key,
@@ -493,7 +482,7 @@ public class CacheClientImpl extends Defines {
 				}
 				return newCacheID;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "update, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -551,13 +540,12 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.put(keyBuf);
 			socket.flush();
 			
-			DataInputStream dis = new DataInputStream(new SocketInputStream(socket));
-			byte category = dis.readByte();//dis.readInt();
-			byte type = dis.readByte();//dis.readShort();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DELETE_RES) {
 				return true;
 			} else {
-				short reason = dis.readShort();
+				short reason = ObjectTransCoder.decodeShort(socket.read(2));
 				lastError = "delete, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -623,20 +611,18 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.putShort((short) keyBuf.length);// key size
 			writeBuffer.put(keyBuf);
 			socket.flush();
-			
-			DataInputStream dis = new DataInputStream(new SocketInputStream(socket));
-			
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DETLA_RES) {
-				cacheID = dis.readLong();//uint64_t ;
-				long value = dis.readLong();
+				cacheID = socket.readLong();//uint64_t ;
+				long value = socket.readLong();
 				DeltaItem item = new DeltaItem();
 				item.cacheID = cacheID;
 				item.value = value;
 				return item;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "delta, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -751,17 +737,15 @@ public class CacheClientImpl extends Defines {
 				writeBuffer.putInt(groupID);
 			
 				socket.flush();
-				
-				DataInputStream dis = new DataInputStream(new SocketInputStream(socket));
-				
-				byte category = dis.readByte();
-				byte type = dis.readByte(); // type
+
+				byte category = socket.readByte();
+				byte type = socket.readByte(); // type
 				if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_FLUSH_RES) {
-					int flushCount = dis.readInt(); // int flush_count = 
-					dis.readLong(); // long flush_size =
+					int flushCount = socket.readInt(); // int flush_count = 
+					socket.readLong(); // long flush_size =
 					count += flushCount;
 				} else {
-					short reason = dis.readShort();
+					short reason = socket.readShort();
 					lastError = "flush, response error, reason=" + reason;
 					log.debug(lastError);
 					if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -844,15 +828,12 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.putInt(groupID);
 			try {
 				socket.flush();
-				SocketInputStream input = new SocketInputStream(socket);
-				DataInputStream dis = new DataInputStream(input);
-				
-				byte category = dis.readByte();
-				byte type = dis.readByte(); // type
+
+				byte category = socket.readByte();
+				byte type = socket.readByte(); // type
 				if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_STATS_RES) {
-					int size = dis.readInt();
-					byte[] buf = new byte[size];
-					dis.read(buf);
+					int size = socket.readInt();
+					byte[] buf = socket.read(size);
 					String str = new String(buf);
 					if (op_flag == XIXI_STATS_SUB_OP_GET_STATS_GROUP_ONLY
 						//	|| op_flag == XIXI_STATS_SUB_OP_GET_AND_CLEAR_STATS_GROUP_ONLY
@@ -869,7 +850,7 @@ public class CacheClientImpl extends Defines {
 						}
 					}
 				} else {
-					short reason = dis.readShort();
+					short reason = socket.readShort();
 					lastError = "stats, response error, reason=" + reason;
 					log.debug(lastError);
 					ret = false;
@@ -914,16 +895,14 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.putInt(maxNextCheckInterval);
 			socket.flush();
 		//	log.debug("localCache createWatch " + host + " watchID2=" + watchID);
-			SocketInputStream input = new SocketInputStream(socket);
-			DataInputStream dis = new DataInputStream(input);
-			
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_CREATE_WATCH_RES) {
-				int watchID = dis.readInt();
+				int watchID = socket.readInt();
 				return watchID;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "createWatch, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {
@@ -965,20 +944,17 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.putLong(ackCacheID);
 			socket.flush();
 
-			SocketInputStream input = new SocketInputStream(socket);
-			DataInputStream dis = new DataInputStream(input);
-
-			byte category = dis.readByte();
-			byte type = dis.readByte();
+			byte category = socket.readByte();
+			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_CHECK_WATCH_RES) {
-				int updateCount = dis.readInt();
+				int updateCount = socket.readInt();
 				long[] updates = new long[updateCount];
 				for (int i = 0; i < updateCount; i++) {
-					updates[i] = dis.readLong();
+					updates[i] = socket.readLong();
 				}
 				return updates;
 			} else {
-				short reason = dis.readShort();
+				short reason = socket.readShort();
 				lastError = "checkWatch, response error, reason=" + reason;
 				log.debug(lastError);
 				if (reason == XIXI_REASON_UNKNOWN_COMMAND) {

@@ -122,10 +122,10 @@ public class ObjectTransCoder implements TransCoder {
 			b[0] = ((Byte) obj).byteValue();
 		} else if (obj instanceof Short) {
 			flags = FLAGS_TYPE_SHORT;
-			b = encodeInt((int) ((Short) obj).shortValue());
+			b = encodeShort(((Short) obj).shortValue());
 		} else if (obj instanceof Character) {
 			flags = FLAGS_TYPE_CHARACTER;
-			b = encodeInt(((Character) obj).charValue());
+			b = encodeShort((short)((Character) obj).charValue());
 		} else if (obj instanceof Integer) {
 			flags = FLAGS_TYPE_INTEGER;
 			b = encodeInt(((Integer) obj).intValue());
@@ -204,27 +204,27 @@ public class ObjectTransCoder implements TransCoder {
 				throw new IOException("failed on Boolean decode");
 			case FLAGS_TYPE_BYTE:
 				if (b.length >= 1) {
-					return new Byte(b[0]);
+					return Byte.valueOf(b[0]);
 				}
 				throw new IOException("failed on Byte decode");
 			case FLAGS_TYPE_SHORT:
 				if (b.length >= 2) {
-					return new Short((short) (new Integer(decodeInt(b))).intValue());
+					return Short.valueOf(decodeShort(b));
 				}
 				throw new IOException("failed on Short decode");
 			case FLAGS_TYPE_CHARACTER:
 				if (b.length >= 2) {
-					return new Character((char) (new Integer(decodeInt(b))).intValue());
+					return Character.valueOf((char)decodeShort(b));
 				}
 				throw new IOException("failed on Character decode");
 			case FLAGS_TYPE_INTEGER:
 				if (b.length >= 4) {
-					return new Integer(decodeInt(b));
+					return Integer.valueOf(decodeInt(b));
 				}
 				throw new IOException("failed on Integer decode");
 			case FLAGS_TYPE_FLOAT:
 				if (b.length >= 4) {
-					return new Float(Float.intBitsToFloat((new Integer(decodeInt(b))).intValue()));
+					return new Float(Float.intBitsToFloat((Integer.valueOf(decodeInt(b))).intValue()));
 				}
 				throw new IOException("failed on Float decode");
 			case FLAGS_TYPE_LONG:
@@ -234,7 +234,7 @@ public class ObjectTransCoder implements TransCoder {
 				throw new IOException("failed on Long decode");
 			case FLAGS_TYPE_DOUBLE:
 				if (b.length >= 8) {
-					return new Double(Double.longBitsToDouble((new Long(decodeLong(b))).longValue()));
+					return new Double(Double.longBitsToDouble((decodeLong(b))));
 				}
 				throw new IOException("failed on Double decode");
 			case FLAGS_TYPE_DATE:
@@ -276,12 +276,23 @@ public class ObjectTransCoder implements TransCoder {
 		return t.getBytes();
 	}
 
+	public static byte[] encodeShort(short value) {
+		byte[] b = new byte[2];
+		b[0] = (byte) ((value >> 8) & 0xFF);
+		b[1] = (byte) ((value) & 0xFF);
+		return b;
+	}
+
+	public static short decodeShort(byte[] b) {
+		return (short)(((((short) b[1]) & 0xFF)) + ((((short) b[0]) & 0xFF) << 8));
+	}
+
 	public static byte[] encodeInt(int value) {
 		byte[] b = new byte[4];
 		b[0] = (byte) ((value >> 24) & 0xFF);
 		b[1] = (byte) ((value >> 16) & 0xFF);
 		b[2] = (byte) ((value >> 8) & 0xFF);
-		b[3] = (byte) ((value >> 0) & 0xFF);
+		b[3] = (byte) ((value) & 0xFF);
 		return b;
 	}
 
@@ -299,7 +310,7 @@ public class ObjectTransCoder implements TransCoder {
 		b[4] = (byte) ((value >> 24) & 0xFF);
 		b[5] = (byte) ((value >> 16) & 0xFF);
 		b[6] = (byte) ((value >> 8) & 0xFF);
-		b[7] = (byte) ((value >> 0) & 0xFF);
+		b[7] = (byte) ((value) & 0xFF);
 		return b;
 	}
 

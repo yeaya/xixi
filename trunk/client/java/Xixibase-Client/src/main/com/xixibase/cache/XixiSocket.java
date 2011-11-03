@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public interface XixiSocket {
-	public ByteBuffer getReadBuffer();
+//	public ByteBuffer getReadBuffer();
 	
 	public ByteBuffer getWriteBuffer();
 
@@ -32,6 +32,13 @@ public interface XixiSocket {
 	public boolean trueClose();
 
 	public void close();
+
+	public byte readByte() throws IOException ;
+	public short readShort() throws IOException ;
+	public int readInt() throws IOException ;
+	public long readLong() throws IOException ;
+
+	public byte[] read(int len) throws IOException ;
 
 	public int read(byte[] b, int off, int len) throws IOException ;
 

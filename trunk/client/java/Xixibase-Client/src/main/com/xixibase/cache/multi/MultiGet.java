@@ -78,7 +78,7 @@ public final class MultiGet extends Defines {
 			Iterator<String> it = keys.iterator();
 			int index = 0;
 			while (it.hasNext()) {
-				Integer keyIndex = new Integer(index);
+				Integer keyIndex = Integer.valueOf(index);
 				index++;
 				String key = it.next();
 				if (key == null) {

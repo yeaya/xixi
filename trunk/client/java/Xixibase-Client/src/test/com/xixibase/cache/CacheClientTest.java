@@ -345,16 +345,17 @@ public class CacheClientTest extends TestCase {
 		mgr.setNoDelay(false);
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
-		cc1 = mgr.createClient();
+		CacheClient cc = mgr.createClient();
 		assertFalse(mgr.getWeightMaper().isConsistent());
 		assertEquals(XixiWeightMap.CRC32_HASH, mgr.getWeightMaper().getHashingAlg());
 		
-		cc1.set("xixi", input);
-		String s = (String) cc1.get("xixi");
+		cc.set("xixi", input);
+		String s = (String) cc.get("xixi");
 		assertEquals(s, input);
-		cc1.set("xixi1", input);
-		s = (String) cc1.get("xixi1");
+		cc.set("xixi1", input);
+		s = (String) cc.get("xixi1");
 		assertEquals(s, input);
+		cc.flush();
 		mgr.shutdown();
 	}
 	
@@ -363,44 +364,45 @@ public class CacheClientTest extends TestCase {
 		CacheClientManager mgr = CacheClientManager.getInstance("testWeightMap2");
 		mgr.setNoDelay(false);
 		Integer[] weights = new Integer[2];
-		weights[0] = new Integer(0);
-		weights[1] = new Integer(118);
+		weights[0] = Integer.valueOf(0);
+		weights[1] = Integer.valueOf(118);
 		mgr.initialize(serverlist, weights,
 				new XixiWeightMap<Integer>(true, XixiWeightMap.NATIVE_HASH));
-		cc1 = mgr.createClient();
-		cc1.set("xixi", input);
-		String s = (String) cc1.get("xixi");
+		CacheClient cc = mgr.createClient();
+		cc.set("xixi", input);
+		String s = (String) cc.get("xixi");
 		assertEquals(s, input);
-		cc1.set("xixi2", input, 10);
-		s = (String) cc1.get("xixi2");
+		cc.set("xixi2", input, 10);
+		s = (String) cc.get("xixi2");
 		assertEquals(s, input);
 		mgr.shutdown();
 		
 		mgr = CacheClientManager.getInstance("test3");
 		mgr.setNoDelay(false);
 		weights = new Integer[2];
-		weights[0] = new Integer(1);
-		weights[1] = new Integer(8);
+		weights[0] = Integer.valueOf(1);
+		weights[1] = Integer.valueOf(8);
 		mgr.initialize(serverlist, weights,
 				new XixiWeightMap<Integer>(true, XixiWeightMap.MD5_HASH));
-		cc1 = mgr.createClient();
-		cc1.set("xixi", input);
-		s = (String) cc1.get("xixi");
+		cc = mgr.createClient();
+		cc.set("xixi", input);
+		s = (String) cc.get("xixi");
 		assertEquals(s, input);
-		cc1.set("xixi2", input, 10);
-		s = (String) cc1.get("xixi2");
+		cc.set("xixi2", input, 10);
+		s = (String) cc.get("xixi2");
 		assertEquals(s, input);
+		cc.flush();
 		mgr.shutdown();
 	}
 
 	public void testSetChar() {
-		cc1.set("xixi", new Character('Y'));
+		cc1.set("xixi", Character.valueOf('Y'));
 		Character c = (Character) cc1.get("xixi");
 		assertEquals(c.charValue(), 'Y');
 	}
 
 	public void testSetByte() {
-		cc1.set("xixi", new Byte((byte) 127));
+		cc1.set("xixi", Byte.valueOf((byte) 127));
 		Byte b = (Byte) cc1.get("xixi");
 		assertEquals(b.byteValue(), (byte) 127);
 	}
@@ -426,13 +428,13 @@ public class CacheClientTest extends TestCase {
 	}
 
 	public void testSetShort() {
-		cc1.set("xixi", new Short((short) 100));
+		cc1.set("xixi", Short.valueOf((short) 100));
 		Short o = (Short) cc1.get("xixi");
 		assertEquals(o.shortValue(), (short) 100);
 	}
 
 	public void testSetLong() {
-		cc1.set("xixi", new Long(Long.MAX_VALUE));
+		cc1.set("xixi", Long.valueOf(Long.MAX_VALUE));
 		Long o = (Long) cc1.get("xixi");
 		assertEquals(o.longValue(), Long.MAX_VALUE);
 	}
@@ -517,7 +519,7 @@ public class CacheClientTest extends TestCase {
 		assertNull(cc1.incr(null));
 		long ret = cc1.createDelta("xixi", 0);
 		assertTrue(ret != 0);
-		assertEquals(cc1.get("xixi"), new Long(0).toString());
+		assertEquals(cc1.get("xixi"), Long.valueOf(0).toString());
 		DeltaItem ditem = cc1.incr("xixi");
 		ditem = cc1.incr("xixi", 5L);
 		ditem = cc1.decr("xixi", 2L);
@@ -532,7 +534,7 @@ public class CacheClientTest extends TestCase {
 	public void testDelta2() throws InterruptedException {
 		long ret = cc1.createDelta("xixi", 0, 1);
 		assertTrue(ret != 0);
-		assertEquals(cc1.get("xixi"), new Long(0).toString());
+		assertEquals(cc1.get("xixi"), Long.valueOf(0).toString());
 		DeltaItem ditem = cc1.incr("xixi");
 		ditem = cc1.incr("xixi", 5L);
 		ditem = cc1.decr("xixi", 2L);
@@ -556,7 +558,7 @@ public class CacheClientTest extends TestCase {
 	public void testDelta3() throws InterruptedException {
 		long ret = cc1.createDelta("xixi", 0, 1);
 		assertTrue(ret != 0);
-		assertEquals(cc1.get("xixi"), new Long(0).toString());
+		assertEquals(cc1.get("xixi"), Long.valueOf(0).toString());
 		DeltaItem ditem = cc1.incr("xixi");
 		ditem = cc1.incr("xixi", 5L);
 		ditem = cc1.decr("xixi", 2L);
@@ -784,7 +786,7 @@ public class CacheClientTest extends TestCase {
 				buffer[i] = (byte)(i & 0xFF);
 			}
 			for (int i = 0; i < 10; i++) {
-				map.put(name + i, new Integer(i));
+				map.put(name + i, Integer.valueOf(i));
 			}
 		}
 
@@ -823,6 +825,13 @@ public class CacheClientTest extends TestCase {
 				}
 			}
 			return true;
+		}
+		
+		public int hashCode() {
+			if (name == null) {
+				return 0;
+			}
+			return name.hashCode(); 
 		}
 	}
 	
@@ -968,11 +977,11 @@ public class CacheClientTest extends TestCase {
 	
 	public void testBench2() {
 		Integer[] weights = new Integer[5];
-		weights[0] = new Integer(5);
-		weights[1] = new Integer(110);
-		weights[2] = new Integer(1);
-		weights[3] = new Integer(0);
-		weights[4] = new Integer(90);
+		weights[0] = Integer.valueOf(5);
+		weights[1] = Integer.valueOf(110);
+		weights[2] = Integer.valueOf(1);
+		weights[3] = Integer.valueOf(0);
+		weights[4] = Integer.valueOf(90);
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
 				true, XixiWeightMap.CRC32_HASH, weights);
 		assertTrue(ccb.runIt());
