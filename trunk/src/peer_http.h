@@ -27,9 +27,11 @@
 #include "peer_cache_pdu.h"
 #include "handler_allocator.hpp"
 
-const uint32_t HEAD_METHOD = 0x44414548; // "HEAD"
-const uint32_t GET_METHOD = 0x20544547; // "GET "
-const uint32_t POST_METHOD = 0x54534F50; // "POST"
+#define IS_METHOD(data, b0, b1, b2, b3) (data[0] == b0 && data[1] == b1 &&data[2] == b2 && data[3] == b3)
+
+const uint32_t HEAD_METHOD = 'H'; // "HEAD"
+const uint32_t GET_METHOD = 'G'; // "GET "
+const uint32_t POST_METHOD = 'P'; // "POST"
 
 typedef struct token_s {
     char* value;

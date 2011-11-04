@@ -9,7 +9,6 @@ Dependencies:
 --------------------------------------------------------------------------------
 Building Xixibase server
 Windows:
-Microsoft Visual Studio 2008
 1. Please check the directory.
        xixibase--3rd--boost
                --client

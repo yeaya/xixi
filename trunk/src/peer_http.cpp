@@ -421,15 +421,18 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 		}
 
 		uint32_t offset = 0;
-		uint32_t method = *((uint32_t*)request_header);
-		if (method == GET_METHOD) {
+		uint32_t method;
+		if (IS_METHOD(request_header, 'G', 'E', 'T', ' ')) {
 			offset = 4;
-		} else if (method == POST_METHOD) {
+			method = GET_METHOD;
+		} else if (IS_METHOD(request_header, 'P', 'O', 'S', 'T')) {
 			offset = 5;
-		} else if (method == HEAD_METHOD) {
+			method = POST_METHOD;
+		} else if (IS_METHOD(request_header, 'H', 'E', 'A', 'D')) {
 			offset = 5;
+			method = HEAD_METHOD;
 		} else {
-			LOG_WARNING2("process_request_header error method=" << method);
+//			LOG_WARNING2("process_request_header error method=" << method);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
 			return;
 		}
