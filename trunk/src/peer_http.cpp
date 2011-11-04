@@ -131,7 +131,9 @@ char* Peer_Http::decode_uri(char* uri, uint32_t length, uint32_t& out) {
 		if (c == '\0') { // c == ' ' ||  // c == '\r' || c == '\n' || 
 			break;
 		}
-		if (c == '%' && i + 2 < length) {
+		if (c == '+') {
+			c = ' ';
+		} else if (c == '%' && i + 2 < length) {
 			char c1 = *uri;
 			if (c1 >= '0' && c1 <= '9') {
 				c1 = c1 - '0';
@@ -156,9 +158,6 @@ char* Peer_Http::decode_uri(char* uri, uint32_t length, uint32_t& out) {
 			uri++;
 			c = (c1 << 4) + (c2& 0xF);
 			i += 2;
-		}
-		if (c == '+') {
-			c = ' ';
 		}
 		*p = c;
 		p++;
