@@ -110,7 +110,7 @@ Cache_Mgr::Cache_Mgr() {
 	last_check_expired_time_ = 0;
 	last_watch_id_ = 0;
 
-	memset(&expire_check_time_, 0, sizeof(expire_check_time_));
+	memset(expire_check_time_, 0, sizeof(expire_check_time_));
 	for (int i = 0; i < 32; i++) {
 		expiration_time_[i] = 1 << i;
 	}
@@ -118,6 +118,7 @@ Cache_Mgr::Cache_Mgr() {
 	//  for (int i = 0; i < 33; i++) {
 	//    LOG_INFO("expiration_time_" << i << " =" << expiration_time_[i]);
 	//  }
+	memset(free_cache_max_count, 0, sizeof(free_cache_max_count));
 }
 
 Cache_Mgr::~Cache_Mgr() {
@@ -139,6 +140,10 @@ void Cache_Mgr::init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_
 		}
 
 		max_size_[class_id_max_] = size;
+		free_cache_max_count[class_id_max_] = 1024 * 1024 / size;
+		if (free_cache_max_count[class_id_max_] > 1000) {
+			free_cache_max_count[class_id_max_] = 1000;
+		}
 #ifdef USING_BOOST_POOL
 		pools_[class_id_max_] = new boost::pool<>(size);
 #endif
@@ -316,7 +321,7 @@ void Cache_Mgr::free_item(Cache_Item* it) {
 
 	uint32_t id = it->class_id;
 	it->reset();
-	if (free_cache_list_[id].size() < 1000) {
+	if (free_cache_list_[id].size() < free_cache_max_count[id]) {
 		free_cache_list_[id].push_front(it);
 	} else {
 		uint32_t item_size = max_size_[id];
@@ -356,6 +361,7 @@ void Cache_Mgr::do_link(Cache_Item* it) {
 	stats_.item_link(it->group_id, it->class_id, it->total_size());
 
 	it->cache_id = get_cache_id();
+	it->last_update_time = curr_time_.get_current_time();
 
 	it->ref_count++;
 	expire_list_[it->expiration_id].push_back(it);
@@ -569,6 +575,8 @@ bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, uint32_t key
 				notify_watch(it);
 			}
 			it->cache_id = get_cache_id();
+			it->last_update_time = curr_time_.get_current_time();
+
 			cache_id = it->cache_id;
 			stats_.update_flags_success(it->group_id, it->class_id);
 			do_release_reference(it);
@@ -930,6 +938,7 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 				}
 			} else {
 				it->cache_id = get_cache_id();
+				it->last_update_time = curr_time_.get_current_time();
 
 				memcpy(it->get_data(), buf, data_size);
 				memset(it->get_data() + data_size, ' ', it->data_size - data_size);

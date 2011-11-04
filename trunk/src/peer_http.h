@@ -27,6 +27,7 @@
 #include "peer_cache_pdu.h"
 #include "handler_allocator.hpp"
 
+const uint32_t HEAD_METHOD = 0x44414548; // "HEAD"
 const uint32_t GET_METHOD = 0x20544547; // "GET "
 const uint32_t POST_METHOD = 0x54534F50; // "POST"
 
@@ -47,6 +48,8 @@ public:
 		uri_length = 0;
 		content_type = NULL;
 		content_type_length = 0;
+		entity_tag = NULL;
+		entity_tag_length = 0;
 		boundary = NULL;
 		boundary_length = 0;
 	}
@@ -56,6 +59,8 @@ public:
 	uint32_t uri_length;
 	char* content_type;
 	uint32_t content_type_length;
+	char* entity_tag;
+	uint32_t entity_tag_length;
 	char* boundary;
 	uint32_t boundary_length;
 };
@@ -192,8 +197,6 @@ protected:
 
 	Cache_Item* cache_item_;
 	vector<Cache_Item*> cache_items_;
-
-	uint32_t    swallow_size_;
 
 	Cache_Buffer<2048> request_buf_;
 

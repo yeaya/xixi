@@ -129,6 +129,7 @@ void printf_system_info() {
 	LOG_INFO("sizeof(int)=" << sizeof(int));
 	LOG_INFO("sizeof(long)=" << sizeof(long));
 	LOG_INFO("sizeof(long long)=" << sizeof(long long));
+	LOG_INFO("sizeof(time_t)=" << sizeof(time_t));
 
 	LOG_INFO("PRId32=" << PRId32);
 	LOG_INFO("PRId64=" << PRId64);

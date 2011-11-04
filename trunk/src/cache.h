@@ -89,12 +89,13 @@ class Cache_Item : public xixi::list_node_base<Cache_Item>, public xixi::hash_no
 	friend class Cache_Mgr;
 public:
 	Cache_Item() {
-		watch_item = NULL;
 		expire_time = 0;
+		watch_item = NULL;
 		cache_id = 0;
 		flags = 0;
 		group_id = 0;
 		data_size = 0;
+		last_update_time = 0;
 		ref_count = 0;
 		class_id = 0;
 		expiration_id = 0;
@@ -113,6 +114,7 @@ public:
 		flags = 0;
 		group_id = 0;
 		data_size = 0;
+		last_update_time = 0;
 		ref_count = 0;
 		class_id = 0;
 		expiration_id = 0;
@@ -144,21 +146,23 @@ protected:
 	}
 
 protected:
-	Cache_Watch_Item* watch_item;
 	uint32_t expire_time;
+	Cache_Watch_Item* watch_item;
 public:
 	uint64_t cache_id;
 	uint32_t group_id;
 	uint32_t flags;
 	uint32_t data_size;
+	uint32_t last_update_time;
 protected:
 	uint16_t ref_count;
 public:
 	uint16_t key_length;
 protected:
+	uint16_t item_flag;
 	uint8_t class_id;
 	uint8_t expiration_id;
-	void*    body[1];
+	void* body[1];
 };
 
 #define CLASSID_MIN 1
@@ -208,6 +212,7 @@ public:
 	uint64_t get_mem_used() {
 		return mem_used_;
 	}
+
 private:
 	inline void free_item(Cache_Item* it);
 	inline uint64_t get_cache_id();
@@ -247,6 +252,7 @@ private:
 #ifdef USING_BOOST_POOL
 	boost::pool<>* pools_[CLASSID_MAX];
 #endif
+	uint32_t free_cache_max_count[CLASSID_MAX];
 	xixi::list<Cache_Item> free_cache_list_[CLASSID_MAX];
 	xixi::list<Cache_Item> flush_cache_list_;
 

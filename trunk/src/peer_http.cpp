@@ -22,9 +22,6 @@
 #include "auth.h"
 #include "server.h"
 
-#define READ_BUFFER_HIGHWAT 8192
-#define DATA_BUFFER_SIZE 2048
-
 #define DEFAULT_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
 
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Http id=" << get_peer_id() << " " << x)
@@ -180,7 +177,6 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this) {
 	cache_item_ = NULL;
 	write_buf_total_ = 0;
 	read_item_buf_ = NULL;
-	swallow_size_ = 0;
 	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
 	timer_ = NULL;
 
@@ -230,9 +226,6 @@ void Peer_Http::cleanup() {
 }
 
 void Peer_Http::write_error(xixi_reason error_code) {
-	write_buf_.clear();
-	write_buf_total_ = 0;
-
 	const char* res = NULL;
 	uint32_t res_size = 0;
 	switch (error_code) {
@@ -430,12 +423,12 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 
 		uint32_t offset = 0;
 		uint32_t method = *((uint32_t*)request_header);
-		bool is_get = true;
 		if (method == GET_METHOD) {
 			offset = 4;
 		} else if (method == POST_METHOD) {
 			offset = 5;
-			is_get = false;
+		} else if (method == HEAD_METHOD) {
+			offset = 5;
 		} else {
 			LOG_WARNING2("process_request_header error method=" << method);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -451,7 +444,7 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 		} else {
 			http_request_.uri_length = (uint32_t)(request_line_length - offset);
 		}
-		
+
 		if (!process_request_header_fields(request_header_fields, request_header_fields_length)) {
 			LOG_WARNING2("process_request_header failed on process request header fields " << request_header_fields);
 			write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -555,6 +548,19 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 				http_request_.content_type_length = 19;
 			}
 		}
+	} else if (name_length == 13) {
+		to_lower(name, name_length);
+		if (memcmp(name, "if-none-match", name_length) == 0) {
+			char* buf = (char*)request_buf_.prepare(value_length + 1);
+			if (buf == NULL) {
+				return false;
+			}
+			memcpy(buf, value, value_length);
+			buf[value_length] = '\0';
+			to_lower(buf, value_length);
+			http_request_.entity_tag = buf;
+			http_request_.entity_tag_length = value_length;
+		}
 	} else if (name_length == 14) {
 		to_lower(name, name_length);
 		if (memcmp(name, "content-length", name_length) == 0) {
@@ -562,19 +568,18 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 				return false;
 			}
 		}
-	}
+	} 
 	return true;
 }
 
 void Peer_Http::process_command() {
-	if (http_request_.uri_length >= 10 && memcmp(http_request_.uri, "/xixibase/", 10) == 0) {
+	if (http_request_.method != HEAD_METHOD && http_request_.uri_length >= 10 && memcmp(http_request_.uri, "/xixibase/", 10) == 0) {
 		uint32_t cmd_length = 0;
 		char* arg = strrchr(http_request_.uri, '?');
 		if (arg != NULL) {
 			cmd_length = (uint32_t)(arg - http_request_.uri) - 10;
 			if (!process_request_arg(arg + 1)) {
 				LOG_WARNING2("process_command failed arg=" << (arg + 1));
-				write_error(XIXI_REASON_INVALID_PARAMETER);
 				return;
 			}
 		} else {
@@ -756,7 +761,6 @@ void Peer_Http::process_post() {
 
 		if (!process_request_arg((char*)post_data_)) {
 			LOG_WARNING2("process_cahce_arg failed");
-			write_error(XIXI_REASON_INVALID_PARAMETER);
 			return;
 		}
 		process_command();
@@ -854,6 +858,8 @@ void Peer_Http::process_post() {
 	}
 }
 
+#define GET_RES_304 "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nEtag: "
+
 void Peer_Http::process_get() {
 	Cache_Item* it;
 	bool watch_error = false;
@@ -867,11 +873,20 @@ void Peer_Http::process_get() {
 		cache_item_ = it;
 		cache_items_.push_back(it);
 
-		uint8_t* buf = request_buf_.prepare(20);
-		uint32_t data_size = _snprintf((char*)buf, 20, "%"PRIu32"\r\n\r\n", it->data_size);
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-		add_write_buf(buf, data_size);
-		add_write_buf(it->get_data(), it->data_size);
+		uint8_t* buf = request_buf_.prepare(60);
+		uint32_t data_size = _snprintf((char*)buf, 60, "\"c%"PRIu64"\"", it->cache_id);
+		if (data_size == http_request_.entity_tag_length && memcmp(buf, http_request_.entity_tag, data_size) == 0) {
+			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
+			add_write_buf(buf, data_size);
+			add_write_buf((uint8_t*)"\r\n\r\n", 4);
+		} else {
+			data_size = _snprintf((char*)buf, 60, "%"PRIu32"\r\nETag: \"c%"PRIu64"\"\r\n\r\n", it->data_size, it->cache_id);
+			add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+			add_write_buf(buf, data_size);
+			if (http_request_.method != HEAD_METHOD) {
+				add_write_buf(it->get_data(), it->data_size);
+			}
+		}
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
@@ -1218,20 +1233,6 @@ void Peer_Http::process_stats() {
 
 	set_state(PEER_STATUS_WRITE);
 	next_state_ = PEER_STATE_NEW_CMD;
-/*
-	
-	int buf_size = XIXI_Stats_Res_Pdu::calc_encode_size(size);
-	
-	if (buf != NULL) {
-		XIXI_Stats_Res_Pdu::encode(buf, (uint8_t*)result.c_str(), size);
-
-		add_write_buf(buf, buf_size);
-
-		set_state(PEER_STATUS_WRITE);
-		next_state_ = PEER_STATE_NEW_CMD;
-	} else {
-		write_error(XIXI_REASON_OUT_OF_MEMORY);
-	}*/
 }
 
 void Peer_Http::reset_for_new_cmd() {

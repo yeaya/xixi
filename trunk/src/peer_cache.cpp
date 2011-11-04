@@ -22,9 +22,6 @@
 #include "auth.h"
 #include "server.h"
 
-#define READ_BUFFER_HIGHWAT 8192
-#define DATA_BUFFER_SIZE 2048
-
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Cache id=" << get_peer_id() << " " << x)
 #define LOG_DEBUG2(x)  LOG_DEBUG("Peer_Cache id=" << get_peer_id() << " " << x)
 #define LOG_INFO2(x)  LOG_INFO("Peer_Cache id=" << get_peer_id() << " " << x)

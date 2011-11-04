@@ -44,7 +44,7 @@ TARGET = $(BINDIR)/$(BIN)
 all: $(TARGET)
 
 $(TARGET) : $(OBJS)
-	echo "Linking $@"; \
+	echo "Linking $@";
 	@if [ ! -d $(BINDIR) ]; \
 	then \
 		mkdir -p $(BINDIR); \

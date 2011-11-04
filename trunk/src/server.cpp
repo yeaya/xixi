@@ -115,7 +115,7 @@ public:
 				return;
 			}
 			uint32_t method = *((uint32_t*)data);
-			if (method == GET_METHOD || method == POST_METHOD) {
+			if (method == GET_METHOD || method == POST_METHOD || method == HEAD_METHOD) {
 				Peer_Http* peer = new Peer_Http(socket_);
 				data[data_len] = '\0';
 				peer->start(read_buf_, read_data_size_);
