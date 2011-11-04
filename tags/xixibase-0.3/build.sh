@@ -1,0 +1,8 @@
+xixibaseDIR=$(pwd)
+cd 3rd/boost 
+chmod +x bootstrap.sh
+chmod +x tools/build/v2/engine/build.sh
+./bootstrap.sh
+./bjam --with-date_time --with-system --with-thread variant=release link=static threading=multi runtime-link=static stage
+./bjam $xixibaseDIR -d2 variant=release link=static threading=multi runtime-link=static    
+cd $xixibaseDIR
