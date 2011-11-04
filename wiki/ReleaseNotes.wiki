@@ -4,6 +4,16 @@
 ==Xixibase is a high performance, cross platform, distributed cache system.==
 Xixibase server write in C++, based on Boost Asio.
 
+===Xixibase 0.3===
+*Xixibase Server*
+ # Bug fix
+  * URI decode error for '+'
+ # Support HTTP 'HEAD' method
+ # Support ETag
+ # Other little change
+*Xixibase Java Client*
+ # Other little change
+
 ===Xixibase 0.2===
 *Xixibase Server*
  # Bug fix
