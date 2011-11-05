@@ -27,6 +27,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import com.xixibase.util.Log;
 import com.xixibase.util.WeightMap;
 
+
+/**
+ * Xixibase cache client manager.
+ *
+ * @author Yao Yuan
+ *
+ */
 public class CacheClientManager {
 	private static Log log = Log.getLog(CacheClientManager.class.getName());
 	private static ConcurrentHashMap<String, CacheClientManager> managers = new ConcurrentHashMap<String, CacheClientManager>();
@@ -59,15 +66,28 @@ public class CacheClientManager {
 	private String name;
 	private MaintainThread maintainThread;
 
+	/**
+	 * Creates a <tt>CacheClientManager</tt>.
+	 * @param name the name of CacheClientManager.
+	 */
 	protected CacheClientManager(String name) {
 		this.name = name;
 		localCache = new LocalCache(this, 64 * 1024 * 1024);
 	}
-
+	
+	/**
+	 * Get the name of CacheClientManager.
+	 * @return the name of CacheClientManager
+	 */
 	public String getName() {
 		return name;
 	}
 
+	/**
+	 * Get the instance of the name. If the instance does not exist, then create an instance.
+	 * @param name the name of CacheClientManager instance.
+	 * @return the instance of the name
+	 */
 	public static CacheClientManager getInstance(String name) {
 		CacheClientManager manager = managers.get(name);
 
@@ -84,47 +104,125 @@ public class CacheClientManager {
 		return manager;
 	}
 
+	/**
+	 * Get the instance of the default name "default". If the instance does not exist, then create an instance.
+	 * @return the instance of the name "default"
+	 */
 	public static CacheClientManager getInstance() {
 		return getInstance("default");
 	}
 	
+	/**
+	 * Get default groupID.
+	 * @return default groupID
+	 */
 	public int getDefaultGroupID() {
 		return defaultGroupID;
 	}
 
+	/**
+	 * Set default groupID.
+	 * @param defaultGroupID
+	 */
 	public void setDefaultGroupID(int defaultGroupID) {
 		this.defaultGroupID = defaultGroupID;
 	}
 
+	/**
+	 * Get default port.
+	 * @return default port
+	 */
 	public int getDefaultPort() {
 		return 7788;
 	}
 
+	/**
+	 * Set maintain thread check interval.
+	 * @param maintainInterval
+	 */
 	public void setMaintainInterval(int maintainInterval) {
 		this.maintainInterval = maintainInterval;
 	}
-	
+
+	/**
+	 * Get maintain thread check interval.
+	 * @return maintain thread check interval
+	 */
 	public int getMaintainInterval() {
 		return maintainInterval;
 	}
 	
+	/**
+	 * Set inactive socket timeout.
+	 * @param inactiveSocketTimeout
+	 */
 	public void setInactiveSocketTimeout(int inactiveSocketTimeout) {
 		this.inactiveSocketTimeout = inactiveSocketTimeout;
 	}
 	
+	/**
+	 * Get inactive socket timeout.
+	 * @return inactive socket timeout
+	 */
 	public int getInactiveSocketTimeout() {
 		return inactiveSocketTimeout;
 	}
-	
+
+	/**
+	 * Initialize this instance.
+	 * 
+     * <pre>
+     *     String servers = new String[1];
+     *     servers[0] = "localhost:7788";
+     *     mgr.initialize(servers);</pre>
+     *     
+	 * @param servers
+     * @return <tt>true</tt> if initialize success
+	 */
 	public boolean initialize(String[] servers) {
 		return initialize(servers, null, null);
 	}
 	
+	/**
+	 * Initialize this instance.
+	 * 
+     * <pre>
+     *     String[] servers = new String[2];
+     *     Integer[] weights = new Integer[2];
+     *     servers[0] = "localhost:7788";
+     *     servers[1] = "localhost:8877";
+     *     weights[0] = new Integer(70);
+     *     weights[1] = new Integer(50);
+     *     mgr.initialize(servers, weights);</pre>
+     *     
+	 * @param servers server list
+	 * @param weights server weight list
+     * @return <tt>true</tt> if initialize success
+	 */
 	public boolean initialize(String[] servers, Integer[] weights) {
 		return initialize(servers, weights, null);
 	}
 
-	public synchronized boolean initialize(String[] servers, Integer[] weights, WeightMap<Integer> weightMap) {
+	/**
+	 * Initialize this instance.
+	 * 
+     * <pre>
+     *     String[] servers = new String[2];
+     *     Integer[] weights = new Integer[2];
+     *     servers[0] = "localhost:7788";
+     *     servers[1] = "localhost:8877";
+     *     weights[0] = new Integer(70);
+     *     weights[1] = new Integer(50);
+     *     WeightMap<Integer> weightMap = XixiWeightMap<Integer>();
+     *     mgr.initialize(servers, weights, weightMap);</pre>
+     *     
+	 * @param servers server list
+	 * @param weights server weight list
+	 * @param weightMap customizable weightMap
+     * @return <tt>true</tt> if initialize success
+	 */
+	public synchronized boolean initialize(String[] servers, Integer[] weights,
+			WeightMap<Integer> weightMap) {
 		if (servers == null) {
 			log.error("initialize, servers == null");
 			return false;
@@ -162,7 +260,7 @@ public class CacheClientManager {
 				if (socket == null) {
 					break;
 				}
-				addSocket(servers[i], socket);
+				addSocket(socket);
 			}
 		}
 		maintainThread = new MaintainThread();
@@ -170,6 +268,9 @@ public class CacheClientManager {
 		return true;
 	}
 	
+	/**
+	 * Shutdown this instance.
+	 */
 	public void shutdown() {
 		initialized = false;
 		managers.remove(name);
@@ -186,6 +287,11 @@ public class CacheClientManager {
 		maintainThread = null;
 	}
 	
+	/**
+	 * Get active socket count.
+	 * 
+     * @return active socket count
+	 */
 	public int getActiveSocketCount() {
 		int count = 0;
 		for (int i = 0; i < activeSocketPool.size(); i++) {
@@ -196,6 +302,11 @@ public class CacheClientManager {
 		return count;
 	}
 	
+	/**
+	 * Get inactive socket count.
+	 * 
+     * @return inactive socket count
+	 */
 	public int getInactiveSocketCount() {
 		int count = 0;
 		synchronized (inactiveSocketPool) {
@@ -208,94 +319,207 @@ public class CacheClientManager {
 		return count;
 	}
 	
+	/**
+	 * Enable local cache feature.
+	 */
 	public void enableLocalCache() {
 		localCache.start();
 	}
-	
+
+	/**
+	 * Disable local cache feature.
+	 */
 	public void disableLocalCache() {
 		localCache.stop();
 	}
 	
+	/**
+	 * Get local cache object.
+	 * 
+     * @return local cache object
+	 */
 	public LocalCache getLocalCache() {
 		return localCache;
 	}
 
+	/**
+	 * Is this instance initialized?
+	 * 
+	 * @return <tt>true</tt> if this instance is initialized
+	 */
 	public final boolean isInitialized() {
 		return initialized;
 	}
 
+	/**
+	 * Get server list.
+	 * 
+	 * @return server list
+	 */
 	public final String[] getServers() {
 		return this.servers;
 	}
 
+	/**
+	 * Set the initial number of connections.
+	 * 
+	 * @param initConn the initial number of connections
+	 */
 	public final void setInitConn(int initConn) {
 		this.initConn = initConn;
 	}
 
+	/**
+	 * Get the initial number of connections.
+	 * 
+     * @return the initial number of connections
+	 */
 	public final int getInitConn() {
 		return this.initConn;
 	}
 
+	/**
+	 * Set max busy time(millisecond).
+	 * 
+	 * @param maxBusyTime max busy time(millisecond)
+	 */
 	public final void setMaxBusyTime(long maxBusyTime) {
 		this.maxBusyTime = maxBusyTime;
 	}
 
+	/**
+	 * Get max busy time(millisecond).
+	 * 
+     * @return max busy time(millisecond)
+	 */
 	public final long getMaxBusyTime() {
 		return this.maxBusyTime;
 	}
 
+	/**
+	 * Set socket timeout(millisecond).
+	 * 
+	 * @param socketTimeout socket timeout(millisecond)
+	 */
 	public final void setSocketTimeout(int socketTimeout) {
 		this.socketTimeout = socketTimeout;
 	}
 
+	/**
+	 * Get socket timeout(millisecond).
+	 * 
+     * @return socket timeout(millisecond).
+	 */
 	public final int getSocketTimeout() {
 		return this.socketTimeout;
 	}
 
+	/**
+	 * Set socket connect timeout(millisecond).
+	 * 
+	 * @param socketConnectTimeout socket connect timeout(millisecond)
+	 */
 	public final void setSocketConnectTimeout(int socketConnectTimeout) {
 		this.socketConnectTimeout = socketConnectTimeout;
 	}
 
+	/**
+	 * Get socket connect timeout(millisecond).
+	 * 
+     * @return socket connect timeout(millisecond).
+	 */
 	public final int getSocketConnectTimeout() {
 		return this.socketConnectTimeout;
 	}
 
+	/**
+	 * Set Enable/Disable socket NoDelay
+	 * 
+	 * @param noDelay <tt>true</tt> Enable socket NoDelay
+	 */
 	public final void setNoDelay(boolean noDelay) {
 		this.noDelay = noDelay;
 	}
 
+	/**
+	 * Is enable socket NoDelay?
+	 * 
+     * @return <tt>true</tt> If enable socket NoDelay.
+	 */
 	public final boolean isNoDelay() {
 		return this.noDelay;
 	}
 
-	public final WeightMap<Integer> getWeightMaper() {
+	/**
+	 * Get weight mapper.
+	 * 
+     * @return weight mapper
+	 */
+	public final WeightMap<Integer> getWeightMapper() {
 		return weightMap;
 	}
 
+	/**
+	 * Set the number of max active connections.
+	 * 
+	 * @param maxActiveConn the number of max active connections
+	 */
 	public void setMaxActiveConn(int maxActiveConn) {
 		this.maxActiveConn = maxActiveConn;
 	}
 
+	/**
+	 * Get the number of max active connections.
+	 * 
+     * @return the number of max active connections
+	 */
 	public int getMaxActiveConn() {
 		return maxActiveConn;
 	}
 
+	/**
+	 * Set socket write buffer size.
+	 * 
+	 * @param bufferSize socket write buffer size
+	 */
 	public void setSocketWriteBufferSize(int bufferSize) {
 		this.socketWriteBufferSize = bufferSize;
 	}
 
+	/**
+	 * Get socket write buffer size.
+	 * 
+     * @return socket write buffer size
+	 */
 	public int getSocketWriteBufferSize() {
 		return socketWriteBufferSize;
 	}
-	
+
+	/**
+	 * Create one client with default groupID.
+	 * 
+     * @return created client
+	 */
 	public CacheClient createClient() {
 		return new CacheClient(this, defaultGroupID);
 	}
 	
+	/**
+	 * Create one client with specified groupID.
+	 * 
+	 * @param groupID specified groupID
+     * @return created client
+	 */
 	public CacheClient createClient(int groupID) {
 		return new CacheClient(this, groupID);
 	}
 
+	/**
+	 * Create one socket with specified host.
+	 * 
+	 * @param host specified host
+     * @return created socket
+	 */
 	protected final XixiSocket createSocket(String host) {
 		if (initialized) {
 			try {
@@ -309,6 +533,12 @@ public class CacheClientManager {
 		return null;
 	}
 
+	/**
+	 * Get host with specified key.
+	 * 
+	 * @param key specified key
+     * @return host
+	 */
 	public final String getHost(String key) {
 //		if (!this.initialized) {
 //			log.error("getHost, manager is not initialized.");
@@ -323,6 +553,12 @@ public class CacheClientManager {
 //		return null;
 	}
 
+	/**
+	 * Get socket with specified key.
+	 * 
+	 * @param key specified key
+     * @return socket
+	 */
 	public final XixiSocket getSocket(String key) {
 //		if (!this.initialized) {
 //			log.error("getSocket, manager is not initialized");
@@ -347,6 +583,12 @@ public class CacheClientManager {
 		return socket;
 	}
 
+	/**
+	 * Get socket with specified host.
+	 * 
+	 * @param host specified host
+     * @return socket
+	 */
 	public final XixiSocket getSocketByHost(String host) {
 //		if (!this.initialized) {
 //			log.error("getSocketByHost, manager is not initialized");
@@ -375,11 +617,17 @@ public class CacheClientManager {
 		return socket;
 	}
 
-	protected final boolean addSocket(String host, XixiSocket socket) {
+	/**
+	 * Add one socket into socket pool.
+	 *
+	 * @param socket
+     * @return <tt>true</tt> if the socket added
+	 */
+	protected final boolean addSocket(XixiSocket socket) {
 		if (initialized) {
 			ArrayList<ConcurrentLinkedQueue<XixiSocket>> activePool = activeSocketPool;
 			if (activePool != null) {
-				Integer index = hostIndexMap.get(host);
+				Integer index = hostIndexMap.get(socket.getHost());
 				if (index != null) {
 					ConcurrentLinkedQueue<XixiSocket> sockets = activePool.get(index.intValue());
 					if (sockets.size() < maxActiveConn) {
@@ -397,7 +645,10 @@ public class CacheClientManager {
 		}
 		return false;
 	}
-	
+
+	/**
+	 * Close socket pool.
+	 */
 	protected final void closeSocketPool() {
 		for (int i = 0; i < activeSocketPool.size(); i++) {
 			ConcurrentLinkedQueue<XixiSocket> sockets = activeSocketPool.get(i);
@@ -420,6 +671,12 @@ public class CacheClientManager {
 		}
 	}
 	
+	/**
+	 * Open one selector, ...
+	 *
+     * @return Selector
+     * @throws IOException if Selector.open failed
+	 */
 	public Selector selectorOpen() throws IOException {
 		Selector selector = selectorPool.poll();
 		if (selector == null) {
@@ -429,6 +686,12 @@ public class CacheClientManager {
 		return selector;
 	}
 	
+	/**
+	 * Close one selector, ...
+	 *
+     * @param selector
+     * @throws IOException if Selector.open failed
+	 */
 	public void selectorClose(Selector selector) throws IOException {
 		int size = selector.keys().size();
 		if (size > 0) {
@@ -442,6 +705,9 @@ public class CacheClientManager {
 		selector.close();
 	}
 
+	/**
+	 * Close selector pool
+	 */
 	protected void closeSelectorPool() {
 		Selector selector = selectorPool.poll();
 		while (selector != null) {
@@ -454,8 +720,10 @@ public class CacheClientManager {
 		}
 	}
 
-	protected final void maintainInactiveSocket() {
-		long currTime = System.currentTimeMillis();
+	/**
+	 * Maintain inactive socket
+	 */
+	protected final void maintainInactiveSocket(long currTime) {
 		synchronized (inactiveSocketPool) {
 			for (int i = 0; i < inactiveSocketPool.size(); i++) {
 				LinkedList<XixiSocket> list = inactiveSocketPool.get(i);
@@ -478,6 +746,12 @@ public class CacheClientManager {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Maintain selector pool
+	 */
+	protected final void maintainSelectorPool(long currTime) {
 		if (currTime > lastSelectorOpenTime + 5000) {
 			lastSelectorOpenTime = currTime;
 			Selector selector = selectorPool.poll();
@@ -490,11 +764,16 @@ public class CacheClientManager {
 			}
 		}
 	}
-
+	
+	/**
+	 * Maintain thread
+	 */
 	class MaintainThread extends Thread {
 		public void run() {
 			while (initialized) {
-				maintainInactiveSocket();
+				long currTime = System.currentTimeMillis();
+				maintainInactiveSocket(currTime);
+				maintainSelectorPool(currTime);
 		//		long activeSize = localCache.getActiveCacheSize();
 		//		long size = localCache.getCacheSize();
 		//		System.out.println("CacheSize=" + size + " activeSize=" + activeSize);

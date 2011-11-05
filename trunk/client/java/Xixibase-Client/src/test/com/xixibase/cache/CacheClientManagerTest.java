@@ -74,7 +74,7 @@ public class CacheClientManagerTest extends TestCase {
 		assertEquals(mgr.getSocketTimeout(), 16000);
 		mgr.setNoDelay(false);
 		assertEquals(mgr.isNoDelay(), false);
-		assertNotNull(mgr.getWeightMaper());
+		assertNotNull(mgr.getWeightMapper());
 		mgr.setSocketWriteBufferSize(32 * 1024);
 		assertEquals(mgr.getSocketWriteBufferSize(), 32 * 1024);
 		assertEquals(mgr.getDefaultGroupID(), 315);
@@ -84,7 +84,7 @@ public class CacheClientManagerTest extends TestCase {
 		ret = mgr.initialize(serverlist);
 		assertFalse(ret);
 		assertTrue(mgr.isInitialized());
-		assertNotNull(mgr.getWeightMaper());
+		assertNotNull(mgr.getWeightMapper());
 		mgr.shutdown();
 		assertFalse(mgr.isInitialized());
 		assertNotNull(mgr.getServers());

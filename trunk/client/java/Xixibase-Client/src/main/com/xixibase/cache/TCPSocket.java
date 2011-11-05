@@ -112,7 +112,7 @@ public class TCPSocket implements XixiSocket {
 		readBuffer.clear();
 		readBuffer.flip();
 		writeBuffer.clear();
-		if (!manager.addSocket(host, this)) {
+		if (!manager.addSocket(this)) {
 			trueClose();
 		}
 	}

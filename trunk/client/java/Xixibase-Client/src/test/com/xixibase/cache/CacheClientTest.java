@@ -346,8 +346,8 @@ public class CacheClientTest extends TestCase {
 		mgr.initialize(serverlist, null,
 				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
 		CacheClient cc = mgr.createClient();
-		assertFalse(mgr.getWeightMaper().isConsistent());
-		assertEquals(XixiWeightMap.CRC32_HASH, mgr.getWeightMaper().getHashingAlg());
+		assertFalse(mgr.getWeightMapper().isConsistent());
+		assertEquals(XixiWeightMap.CRC32_HASH, mgr.getWeightMapper().getHashingAlg());
 		
 		cc.set("xixi", input);
 		String s = (String) cc.get("xixi");
