@@ -61,13 +61,28 @@ void print_usage() {
 		"   -p <num>      TCP port number to listen on (default: 7788)\n"
 		"   -l <ip_addr>  interface to listen on (default: INADDR_ANY, all addresses)\n"
 		"   -m <num>      max memory to use for items in megabytes (default: 768 MB)\n"
-		"   -loglevel     0 trace\n"
+		"   -log          log level\n"
+#if LOG_LEVEL <= log_level_trace
+		"                 0 trace\n"
+#endif
+#if LOG_LEVEL <= log_level_debug
 		"                 1 debug\n"
+#endif
+#if LOG_LEVEL <= log_level_info
 		"                 2 info\n"
+#endif
+#if LOG_LEVEL <= log_level_warning
 		"                 3 warning\n"
+#endif
+#if LOG_LEVEL <= log_level_error
 		"                 4 error\n"
+#endif
+#if LOG_LEVEL <= log_level_fatal
 		"                 5 fatal\n"
+#endif
+#if LOG_LEVEL <= log_level_no_log
 		"                 6 no_log\n"
+#endif
 		"   -h            print help\n"
 		"   -i            print license\n"
 		"   -f <factor>   chunk size growth factor (default: 1.25)\n"
@@ -216,7 +231,7 @@ int main(int argc, char* argv[]) {
 			if (num > 0) {
 				settings_.num_threads = num;
 			}
-		} else if (cmdcmp(argv[i], "-loglevel") == 0 && i + 1 < argc) {
+		} else if (cmdcmp(argv[i], "-log") == 0 && i + 1 < argc) {
 			i++;
 			int level = atoi(argv[i]);
 			if (level >= log_level_trace && level <= log_level_no_log) {
