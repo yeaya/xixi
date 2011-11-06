@@ -96,13 +96,13 @@ public class CacheClient extends Defines {
 	/**
 	 * Delete one object from remote Xixibase server if the cacheID of the object
 	 * is equals with the specified cacheID.
-	 * 
+	 * <pre>
 	 * 	delete from xixibase
 	 * 					where
 	 * 						xixibase.key = key
 	 * 					and
 	 * 						xixibase.cacheID = cacheID
-	 * 
+	 * <pre>
 	 * @param key
 	 * @param cacheID
 	 * @return <tt>true</tt> if operation success
@@ -113,7 +113,7 @@ public class CacheClient extends Defines {
 
 	/**
 	 * Set one object to remote Xixibase server and with no expiration.
-	 * 
+	 * <pre>
 	 * 	if the object is exist in Xixibase server
 	 * 		update xixibase set xixibase.value = value
 	 * 							xixibase.expiration = NO_EXPIRATION
@@ -121,7 +121,7 @@ public class CacheClient extends Defines {
 	 * 							xixibase.key = key
 	 * 	else
 	 * 		insert xixibase(key, value, expiration) values(key, value, NO_EXPIRATION);
-	 *
+	 * </pre>
 	 * @param key
 	 * @param value
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
@@ -132,7 +132,7 @@ public class CacheClient extends Defines {
 
 	/**
 	 * Set one object to remote Xixibase server and with specified expiration.
-	 *
+	 * <pre>
 	 * 	if the object is exist in Xixibase server
 	 * 		update xixibase set xixibase.value = value
 	 * 							xixibase.expiration = expiration
@@ -140,7 +140,7 @@ public class CacheClient extends Defines {
 	 * 							xixibase.key = key
 	 * 	else
 	 * 		insert xixibase(key, value, expiration) values(key, value, expiration);
-	 *
+	 * </pre>
 	 * @param key
 	 * @param value
 	 * @param expiration second
@@ -152,7 +152,7 @@ public class CacheClient extends Defines {
 
 	/**
 	 * Set one object to remote Xixibase server and with specified expiration.
-	 *
+	 * <pre>
 	 * 	if the object is exist in Xixibase server
 	 * 		update xixibase set xixibase.value = value
 	 * 							xixibase.expiration = expiration
@@ -162,7 +162,7 @@ public class CacheClient extends Defines {
 	 * 							xixibase.cacheID = cacheID
 	 * 	else
 	 * 		insert xixibase(key, value, expiration) values(key, value, expiration);
-	 *
+	 * </pre>
 	 * @param key
 	 * @param value
 	 * @param expiration second
@@ -175,7 +175,7 @@ public class CacheClient extends Defines {
 	/**
 	 * Set one object to remote Xixibase server and watch its change. If this operation
 	 * is success, stone the object into local cache.
-	 * 
+	 * <pre>
 	 * 	if the object is exist in Xixibase server
 	 * 		update xixibase set xixibase.value = value
 	 * 							xixibase.expiration = NO_EXPIRATION
@@ -183,7 +183,7 @@ public class CacheClient extends Defines {
 	 * 							xixibase.key = key
 	 * 	else
 	 * 		insert xixibase(key, value, expiration) values(key, value, NO_EXPIRATION);
-	 *
+	 * </pre>
 	 * @param key
 	 * @param value
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
@@ -195,7 +195,7 @@ public class CacheClient extends Defines {
 	/**
 	 * Set one object to remote Xixibase server and watch its change. If this operation
 	 * is success, stone the object into local cache.
-	 * 
+	 * <pre>
 	 * 	if the object is exist in Xixibase server
 	 * 		update xixibase set xixibase.value = value
 	 * 							xixibase.expiration = expiration
@@ -203,7 +203,7 @@ public class CacheClient extends Defines {
 	 * 							xixibase.key = key
 	 * 	else
 	 * 		insert xixibase(key, value, expiration) values(key, value, expiration);
-	 *
+	 * </pre>
 	 * @param key
 	 * @param value
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
@@ -215,7 +215,7 @@ public class CacheClient extends Defines {
 	/**
 	 * Set one object to remote Xixibase server and watch its change. If this operation
 	 * is success, stone the object into local cache.
-	 * 
+	 * <pre>
 	 * 	if the object is exist in Xixibase server
 	 * 		update xixibase set xixibase.value = value
 	 * 							xixibase.expiration = expiration
@@ -225,7 +225,7 @@ public class CacheClient extends Defines {
 	 * 							xixibase.cacheID = cacheID
 	 * 	else
 	 * 		insert xixibase(key, value, expiration) values(key, value, expiration);
-	 *
+	 * </pre>
 	 * @param key
 	 * @param value
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
