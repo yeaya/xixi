@@ -268,3 +268,62 @@ value2
 value2
 value4
 }}}
+==Group==
+{{{
+import com.xixibase.cache.CacheClient;
+import com.xixibase.cache.CacheClientManager;
+
+public class Group  {
+
+	public static void main(String[] args) {
+		String servers = "localhost:7788";
+		if (args.length >= 1) {
+			servers = args[0];
+		}
+
+		String[] serverlist = servers.split(",");
+
+		CacheClientManager manager = CacheClientManager.getInstance("example");
+		manager.initialize(serverlist);
+		
+		int groupID1 = 1;
+		int groupID2 = 2;
+		
+		CacheClient cc1 = manager.createClient(groupID1);
+		CacheClient cc2 = manager.createClient(groupID2);
+		
+		cc1.set("key", "value1");
+		cc2.set("key", "value2");
+		
+		System.out.println(cc1.get("key"));
+		System.out.println(cc2.get("key"));
+		
+		cc1.delete("key");
+		
+		System.out.println(cc1.get("key"));
+		System.out.println(cc2.get("key"));
+		
+		cc1.set("key", "value1B");
+		cc2.set("key", "value2B");
+		
+		cc2.flush();
+		
+		System.out.println(cc1.get("key"));
+		System.out.println(cc2.get("key"));
+		
+		cc1.flush();
+		cc2.flush();
+		
+		manager.shutdown();
+	}
+}
+}}}
+{{{
+// result
+value1
+value2
+null
+value2
+value1B
+null
+}}}
