@@ -126,3 +126,97 @@ value2
 value2
 null
 }}}
+==Set==
+{{{
+import com.xixibase.cache.CacheClient;
+import com.xixibase.cache.CacheClientManager;
+
+public class Set  {
+
+	public static void main(String[] args) {
+		String servers = "localhost:7788";
+		if (args.length >= 1) {
+			servers = args[0];
+		}
+
+		String[] serverlist = servers.split(",");
+
+		CacheClientManager manager = CacheClientManager.getInstance("example");
+		manager.initialize(serverlist);
+		
+		CacheClient cc = manager.createClient();
+		
+		long cacheID1 = cc.set("key", "value1");
+		System.out.println(cc.get("key"));
+		
+		long cacheID2 = cc.set("key", "value2");
+		System.out.println(cc.get("key"));
+
+		cc.set("key", "value3", 0, cacheID1);
+		System.out.println(cc.get("key"));
+		
+		cc.set("key", "value4", 0, cacheID2);
+		System.out.println(cc.get("key"));
+
+		cc.flush();
+		
+		manager.shutdown();
+	}
+}
+}}}
+{{{
+// result
+value1
+value2
+value2
+value4
+}}}
+==Replace==
+{{{
+import com.xixibase.cache.CacheClient;
+import com.xixibase.cache.CacheClientManager;
+
+public class Replace  {
+
+	public static void main(String[] args) {
+		String servers = "localhost:7788";
+		if (args.length >= 1) {
+			servers = args[0];
+		}
+
+		String[] serverlist = servers.split(",");
+
+		CacheClientManager manager = CacheClientManager.getInstance("example");
+		manager.initialize(serverlist);
+		
+		CacheClient cc = manager.createClient();
+		
+		cc.replace("key", "value1");
+		System.out.println(cc.get("key"));
+		
+		long cacheID1 = cc.add("key", "value2");
+		System.out.println(cc.get("key"));
+		
+		long cacheID2 = cc.replace("key", "value3");
+		System.out.println(cc.get("key"));
+
+		cc.replace("key", "value4", 0, cacheID1);
+		System.out.println(cc.get("key"));
+		
+		cc.replace("key", "value5", 0, cacheID2);
+		System.out.println(cc.get("key"));
+
+		cc.flush();
+		
+		manager.shutdown();
+	}
+}
+}}}
+{{{
+// result
+null
+value2
+value3
+value3
+value5
+}}}
