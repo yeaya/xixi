@@ -273,7 +273,7 @@ public class CacheClient extends Defines {
 	public long replaceW(String key, Object value, int expiration, long cacheID) {
 		return client.replace(key, value, expiration, cacheID, true);
 	}
-
+/*
 	public long createDelta(String key, long delta) {
 		return add(key, "" + delta, NO_EXPIRATION);
 	}
@@ -293,7 +293,7 @@ public class CacheClient extends Defines {
 	public long setDelta(String key, long delta, int expiration, long cacheID) {
 		return set(key, "" + delta, expiration, cacheID);
 	}
-
+*/
 	public DeltaItem incr(String key) {
 		return client.incr(key, 1, NO_CAS);
 	}

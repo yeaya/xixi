@@ -19,14 +19,7 @@ package com.xixibase.cache;
 public final class CacheItem extends CacheBaseItem {
 	protected Object value;
 	protected int itemSize;
-/*
-	public CacheItem(long cacheID, long expireTime, int groupID, int flags,
-			Object value, int dataSize) {
-		super(cacheID, expireTime, groupID, flags);
-		this.value = value;
-		this.valueSize = dataSize + 1024;
-	}
-*/
+
 	public CacheItem(String key, long cacheID, int expiration, int groupID, int flags,
 			Object value, int dataSize) {
 		super(key, cacheID, expiration, groupID, flags);

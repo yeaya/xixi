@@ -45,6 +45,10 @@ public class CacheBaseItem {
 		this.flags = flags;
 	}
 	
+	public String getKey() {
+		return key;
+	}
+
 	public long getCacheID() {
 		return cacheID;
 	}

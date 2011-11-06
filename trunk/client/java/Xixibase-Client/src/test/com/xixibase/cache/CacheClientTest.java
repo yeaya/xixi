@@ -517,7 +517,7 @@ public class CacheClientTest extends TestCase {
 
 	public void testDelta() {
 		assertNull(cc1.incr(null));
-		long ret = cc1.createDelta("xixi", 0);
+		long ret = cc1.add("xixi", "0");
 		assertTrue(ret != 0);
 		assertEquals(cc1.get("xixi"), Long.valueOf(0).toString());
 		DeltaItem ditem = cc1.incr("xixi");
@@ -526,13 +526,13 @@ public class CacheClientTest extends TestCase {
 		assertEquals(ditem.value, 4);
 		ditem = cc1.decr("xixi");
 		assertEquals(ditem.value, 3);
-		cc1.setDelta("xixi", 9);
+		cc1.set("xixi", "9");
 		ditem = cc1.incr("xixi", 0L);
 		assertEquals(9, ditem.value);
 	}
 
 	public void testDelta2() throws InterruptedException {
-		long ret = cc1.createDelta("xixi", 0, 1);
+		long ret = cc1.add("xixi", "0", 1);
 		assertTrue(ret != 0);
 		assertEquals(cc1.get("xixi"), Long.valueOf(0).toString());
 		DeltaItem ditem = cc1.incr("xixi");
@@ -545,7 +545,7 @@ public class CacheClientTest extends TestCase {
 		ditem = cc1.incr("xixi", 0L);
 		assertNull(ditem);
 		
-		cc1.setDelta("xixi", 9, 1);
+		cc1.set("xixi", "9", 1);
 		ditem = cc1.incr("xixi", 0L);
 		assertEquals(9, ditem.value);
 		
@@ -556,7 +556,7 @@ public class CacheClientTest extends TestCase {
 	}
 
 	public void testDelta3() throws InterruptedException {
-		long ret = cc1.createDelta("xixi", 0, 1);
+		long ret = cc1.add("xixi", "0", 1);
 		assertTrue(ret != 0);
 		assertEquals(cc1.get("xixi"), Long.valueOf(0).toString());
 		DeltaItem ditem = cc1.incr("xixi");
@@ -575,10 +575,10 @@ public class CacheClientTest extends TestCase {
 		assertEquals(5, ditem.value);
 		assertTrue(ditem.cacheID != 0);
 		
-		ret = cc1.setDelta("xixi", 9, 1, 123);
+		ret = cc1.set("xixi", "9", 1, 123);
 		assertEquals(0, ret);
 		CacheItem item = cc1.gets("xixi");
-		ret = cc1.setDelta("xixi", 9, 1, item.getCacheID());
+		ret = cc1.set("xixi", "9", 1, item.getCacheID());
 		assertTrue(ret != 0);
 		
 		ditem = cc1.incr("xixi", 0L);
