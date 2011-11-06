@@ -1,0 +1,128 @@
+#summary Java client example
+#labels Phase-Implementation
+
+==Hello World==
+{{{
+import com.xixibase.cache.CacheClient;
+import com.xixibase.cache.CacheClientManager;
+
+public class HelloWorld  {
+
+	public static void main(String[] args) {
+		String servers = "localhost:7788";
+		if (args.length >= 1) {
+			servers = args[0];
+		}
+
+		String[] serverlist = servers.split(",");
+
+		CacheClientManager manager = CacheClientManager.getInstance("example");
+		manager.initialize(serverlist);
+		
+		CacheClient cc = manager.createClient();
+		
+		cc.set("xixi", "Hello World!");
+		String value = (String)cc.get("xixi");
+		System.out.println(value);
+		
+		cc.flush();
+		
+		manager.shutdown();
+	}
+}
+}}}
+{{{
+// result
+Hello World!
+}}}
+
+==Add==
+{{{
+import com.xixibase.cache.CacheClient;
+import com.xixibase.cache.CacheClientManager;
+
+public class Add  {
+
+	public static void main(String[] args) {
+		String servers = "localhost:7788";
+		if (args.length >= 1) {
+			servers = args[0];
+		}
+
+		String[] serverlist = servers.split(",");
+
+		CacheClientManager manager = CacheClientManager.getInstance("example");
+		manager.initialize(serverlist);
+		
+		CacheClient cc = manager.createClient();
+		
+		cc.add("key", "value1");
+		System.out.println(cc.get("key"));
+		
+		cc.add("key", "value2");
+		System.out.println(cc.get("key"));
+
+		cc.flush();
+		
+		manager.shutdown();
+	}
+}
+}}}
+{{{
+// result
+value1
+value1
+}}}
+
+==Delete==
+{{{
+import com.xixibase.cache.CacheClient;
+import com.xixibase.cache.CacheClientManager;
+
+public class Delete  {
+
+	public static void main(String[] args) {
+		String servers = "localhost:7788";
+		if (args.length >= 1) {
+			servers = args[0];
+		}
+
+		String[] serverlist = servers.split(",");
+
+		CacheClientManager manager = CacheClientManager.getInstance("example");
+		manager.initialize(serverlist);
+		
+		CacheClient cc = manager.createClient();
+		
+		cc.set("key", "value");
+		System.out.println(cc.get("key"));
+		
+		cc.delete("key");
+		System.out.println(cc.get("key"));
+		
+		long cacheID1 = cc.set("key", "value1");
+		System.out.println(cc.get("key"));
+		long cacheID2 = cc.set("key", "value2");
+		System.out.println(cc.get("key"));
+
+		cc.delete("key", cacheID1);
+		System.out.println(cc.get("key"));
+
+		cc.delete("key", cacheID2);
+		System.out.println(cc.get("key"));
+
+		cc.flush();
+		
+		manager.shutdown();
+	}
+}
+}}}
+{{{
+// result
+value
+null
+value1
+value2
+value2
+null
+}}}
