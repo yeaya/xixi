@@ -49,6 +49,7 @@ exe xixibase
     auth.cpp
     /boost/system//boost_system
     /boost/thread//boost_thread
+    /boost/filesystem//boost_filesystem
   : <define>BOOST_ALL_NO_LIB=1
     #<define>_CRT_SECURE_NO_WARNINGS
     <os>SOLARIS:<library>socket

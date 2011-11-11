@@ -94,43 +94,52 @@ void set_log_level(int log_level);
 #else
 	#define log_init(file_name, rotation_size)
 	#include <iostream>
+	#include <sstream>
 	#include <boost/thread/mutex.hpp>
 	extern boost::mutex log_lock_;
 
 	extern const char* LOG_PREFIX(const char* severity);
+	extern void log_out(const stringstream& ss);
+
+#define LOG_OUT(x, s) { stringstream ss; \
+	log_lock_.lock(); \
+	ss << LOG_PREFIX(s) << x << endl; \
+	log_out(ss); \
+	log_lock_.unlock(); \
+	}
 
 	#if LOG_LEVEL <= log_level_trace
-		#define LOG_TRACE(x)  if (log_level_ <= log_level_trace) { log_lock_.lock(); std::cout << LOG_PREFIX("trace") << x << endl; log_lock_.unlock(); }
+		#define LOG_TRACE(x)  if (log_level_ <= log_level_trace) { LOG_OUT(x, "trace"); }
 	#else
 		#define LOG_TRACE(x)
 	#endif
 
 	#if (LOG_LEVEL <= log_level_debug)
-		#define LOG_DEBUG(x)  if (log_level_ <= log_level_debug) { log_lock_.lock(); std::cout << LOG_PREFIX("debug") << x << endl; log_lock_.unlock(); }
+		#define LOG_DEBUG(x)  if (log_level_ <= log_level_debug) { LOG_OUT(x, "debug"); }
 	#else
 		#define LOG_DEBUG(x)
 	#endif
 
 	#if LOG_LEVEL <= log_level_info
-		#define LOG_INFO(x)    if (log_level_ <= log_level_info) { log_lock_.lock(); std::cout << LOG_PREFIX("info") << x << endl; log_lock_.unlock(); }
+		#define LOG_INFO(x)    if (log_level_ <= log_level_info) { LOG_OUT(x, "info"); }
 	#else
 		#define LOG_INFO(x)
 	#endif
 
 	#if LOG_LEVEL <= log_level_warning
-		#define LOG_WARNING(x)  if (log_level_ <= log_level_warning) { log_lock_.lock(); std::cout << LOG_PREFIX("warning") << x << endl; log_lock_.unlock(); }
+		#define LOG_WARNING(x)  if (log_level_ <= log_level_warning) { LOG_OUT(x, "warning"); }
 	#else
 		#define LOG_WARNING(x)
 	#endif
 
 	#if LOG_LEVEL <= log_level_error
-		#define LOG_ERROR(x)  if (log_level_ <= log_level_error) { log_lock_.lock(); std::cout << LOG_PREFIX("error") << x << endl; log_lock_.unlock(); }
+		#define LOG_ERROR(x)  if (log_level_ <= log_level_error) { LOG_OUT(x, "error"); }
 	#else
 		#define LOG_ERROR(x)
 	#endif
 
 	#if LOG_LEVEL <= log_level_fatal
-		#define LOG_FATAL(x)  if (log_level_ <= log_level_fatal) { log_lock_.lock(); std::cout << LOG_PREFIX("fatal") << x << endl; log_lock_.unlock(); }
+		#define LOG_FATAL(x)  if (log_level_ <= log_level_fatal) { LOG_OUT(x, "fatal"); }
 	#else
 		#define LOG_FATAL(x)
 	#endif

@@ -18,7 +18,7 @@ SRCS = cache.cpp \
 
 INCLUDE_OPTIONS = -I../3rd/boost
 
-LINK_OPTIONS = -L../3rd/boost/stage/lib -lboost_system -lboost_thread -lpthread
+LINK_OPTIONS = -L../3rd/boost/stage/lib -lboost_system -lboost_thread -lboost_filesystem -lpthread
 #-lboost_log
 #
 

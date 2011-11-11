@@ -126,6 +126,10 @@ void printf_system_info() {
 	LOG_INFO("BOOST_WINDOWS");
 #endif
 
+#ifdef UNIX
+	LOG_INFO("UNIX");
+#endif
+
 #ifdef _WIN32
 	LOG_INFO("PLATFORM=WIN32");
 #endif

@@ -123,6 +123,65 @@ const char* LOG_PREFIX(const char* severity) {
 
 	return log_prefix;
 }
+
+#include <boost/filesystem.hpp>
+#include <ostream>
+using namespace boost::filesystem;
+FILE* log_fw_ = NULL;
+uint32_t log_size_ = 0;
+uint32_t max_log_size_per_file_ = 20 * 1024 * 1024;
+
+void create_log_file() {
+	if (log_fw_ == NULL) {
+		boost::filesystem::path p("../logs");
+		try {
+			if (exists(p)) {
+				if (!is_directory(p)) {
+					cout << p << " is not a directory" << endl;
+					return;
+				}
+			}
+			else {
+				boost::system::error_code ec;
+				if (!create_directory(p, ec)) {
+					cout << "Can not create directory:" << p << endl;
+					return;
+				}
+			}
+		} catch (const filesystem_error& ex) {
+			cout << ex.what() << endl;
+			return;
+		}
+		char filename[128];
+		std::string strTime = boost::posix_time::to_iso_string(boost::posix_time::microsec_clock::local_time());
+		if (strTime.size() > 15) {
+			const char* p = strTime.c_str();
+			_snprintf(filename, sizeof(filename), "../logs/xixibase%4.4s%2.2s%2.2s_%2.2s%2.2s%2.2s.log",
+			p, p + 4, p + 6, p + 9, p + 11, p + 13);
+			log_fw_ = fopen(filename, "a+");
+		}	
+	}
+}
+
+void log_out(const stringstream& ss) {
+	uint32_t length = ss.str().length();
+
+	if (log_fw_ != NULL) {
+		if (ftell(log_fw_) + length >= max_log_size_per_file_) {
+			fclose(log_fw_);
+			log_fw_ = NULL;
+			log_size_ = 0;
+		}
+	}
+	create_log_file();
+	if (log_fw_ != NULL) {
+		log_size_ += length;
+		fwrite(ss.str().c_str(), length, 1, log_fw_);
+		fflush(log_fw_);
+	}
+	std::cout << ss.str();
+}
+
 #endif
 
 int log_level_;
