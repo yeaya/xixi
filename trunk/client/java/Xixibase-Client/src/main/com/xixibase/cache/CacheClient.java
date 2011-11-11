@@ -166,6 +166,7 @@ public class CacheClient extends Defines {
 	 * @param key
 	 * @param value
 	 * @param expiration second
+	 * @param cacheID
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
 	 */
 	public long set(String key, Object value, int expiration, long cacheID) {
@@ -206,6 +207,7 @@ public class CacheClient extends Defines {
 	 * </pre>
 	 * @param key
 	 * @param value
+	 * @param expiration
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
 	 */
 	public long setW(String key, Object value, int expiration) {
@@ -228,48 +230,205 @@ public class CacheClient extends Defines {
 	 * </pre>
 	 * @param key
 	 * @param value
+	 * @param expiration
+	 * @param cacheID
 	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
 	 */
 	public long setW(String key, Object value, int expiration, long cacheID) {
 		return client.set(key, value, expiration, cacheID, true);
 	}
 
+	/**
+	 * Add one object to remote Xixibase server and with no expiration.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		return 0;
+	 * 	else
+	 * 		insert xixibase(key, value, expiration) values(key, value, NO_EXPIRATION);
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long add(String key, Object value) {
 		return client.add(key, value, NO_EXPIRATION, false);
 	}
 
+	/**
+	 * Add one object to remote Xixibase server and with specified expiration.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		return 0;
+	 * 	else
+	 * 		insert xixibase(key, value, expiration) values(key, value, expiration);
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long add(String key, Object value, int expiration) {
 		return client.add(key, value, expiration, false);
 	}
 
+	/**
+	 * Add one object to remote Xixibase server and watch its change. If this operation
+	 * is success, stone the object into local cache.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		return 0;
+	 * 	else
+	 * 		insert xixibase(key, value, expiration) values(key, value, NO_EXPIRATION);
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long addW(String key, Object value) {
 		return client.add(key, value, NO_EXPIRATION, true);
 	}
 
+	/**
+	 * Add one object to remote Xixibase server and watch its change. If this operation
+	 * is success, stone the object into local cache.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		return 0;
+	 * 	else
+	 * 		insert xixibase(key, value, expiration) values(key, value, expiration);
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long addW(String key, Object value, int expiration) {
 		return client.add(key, value, expiration, true);
 	}
 
+	/**
+	 * Replace one object to remote Xixibase server and with no expiration.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value
+	 * 							xixibase.expiration = NO_EXPIRATION
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long replace(String key, Object value) {
 		return client.replace(key, value, NO_EXPIRATION, NO_CAS, false);
 	}
 
+	/**
+	 * Replace one object to remote Xixibase server and with specified expiration.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value
+	 * 							xixibase.expiration = expiration
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration second
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long replace(String key, Object value, int expiration) {
 		return client.replace(key, value, expiration, NO_CAS, false);
 	}
 
+	/**
+	 * Replace one object to remote Xixibase server and with specified expiration.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value
+	 * 							xixibase.expiration = expiration
+	 * 						where
+	 * 							xixibase.key = key
+	 * 						and
+	 * 							xixibase.cacheID = cacheID
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration second
+	 * @param cacheID
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long replace(String key, Object value, int expiration, long cacheID) {
 		return client.replace(key, value, expiration, cacheID, false);
 	}
 
+	/**
+	 * Replace one object to remote Xixibase server and watch its change. If this operation
+	 * is success, stone the object into local cache.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value
+	 * 							xixibase.expiration = NO_EXPIRATION
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long replaceW(String key, Object value) {
 		return client.replace(key, value, NO_EXPIRATION, NO_CAS, true);
 	}
 
+	/**
+	 * Replace one object to remote Xixibase server and watch its change. If this operation
+	 * is success, stone the object into local cache.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value
+	 * 							xixibase.expiration = expiration
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long replaceW(String key, Object value, int expiration) {
 		return client.replace(key, value, expiration, NO_CAS, true);
 	}
 
+	/**
+	 * Replace one object to remote Xixibase server and watch its change. If this operation
+	 * is success, stone the object into local cache.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value
+	 * 							xixibase.expiration = expiration
+	 * 						where
+	 * 							xixibase.key = key
+	 * 						and
+	 * 							xixibase.cacheID = cacheID
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration
+	 * @param cacheID
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long replaceW(String key, Object value, int expiration, long cacheID) {
 		return client.replace(key, value, expiration, cacheID, true);
 	}
@@ -294,6 +453,20 @@ public class CacheClient extends Defines {
 		return set(key, "" + delta, expiration, cacheID);
 	}
 */
+	
+	/**
+	 * Incr one number that in remote Xixibase server.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = xixibase.value + 1;
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @return <tt>null</tt> if operation failed, else return the DeltaItem
+	 */
 	public DeltaItem incr(String key) {
 		return client.incr(key, 1, NO_CAS);
 	}
@@ -443,18 +616,80 @@ public class CacheClient extends Defines {
 		return client.flush(servers);
 	}
 
+	/**
+	 * Append one object to remote Xixibase server.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = xixibase.value + value
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long append(String key, Object value) {
 		return client.append(key, value, NO_CAS);
 	}
 
+	/**
+	 * Append one object to remote Xixibase server.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = xixibase.value + value
+	 * 						where
+	 * 							xixibase.key = key
+	 * 						and
+	 * 							xixibase.cacheID = cacheID
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration second
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long append(String key, Object value, long cacheID) {
 		return client.append(key, value, cacheID);
 	}
 
+	/**
+	 * Prepend one object to remote Xixibase server.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value + xixibase.value
+	 * 						where
+	 * 							xixibase.key = key
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long prepend(String key, Object value) {
 		return client.prepend(key, value, NO_CAS);
 	}
 
+	/**
+	 * Prepend one object to remote Xixibase server.
+	 * <pre>
+	 * 	if the object is exist in Xixibase server
+	 * 		update xixibase set xixibase.value = value + xixibase.value
+	 * 						where
+	 * 							xixibase.key = key
+	 * 						and
+	 * 							xixibase.cacheID = cacheID
+	 * 	else
+	 * 		return 0;
+	 * </pre>
+	 * @param key
+	 * @param value
+	 * @param expiration second
+	 * @return <tt>0</tt> if operation failed, else return the cacheID of the object
+	 */
 	public long prepend(String key, Object value, long cacheID) {
 		return client.prepend(key, value, cacheID);
 	}
