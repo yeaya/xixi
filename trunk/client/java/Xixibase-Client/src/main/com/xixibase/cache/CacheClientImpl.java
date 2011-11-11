@@ -19,6 +19,7 @@ package com.xixibase.cache;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -297,7 +298,7 @@ public class CacheClientImpl extends Defines {
 			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_FLAGS_RES) {
 				socket.readLong(); // rescacheID
-
+				localCache.remove(socket.getHost(), groupID, key);
 				return true;
 			} else {
 				short reason = socket.readShort();
@@ -362,7 +363,7 @@ public class CacheClientImpl extends Defines {
 			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_EXPIRATION_RES) {
 				socket.readLong(); // cacheID
-
+				localCache.remove(socket.getHost(), groupID, key);
 				return true;
 			} else {
 				short reason = socket.readShort();
@@ -469,6 +470,7 @@ public class CacheClientImpl extends Defines {
 			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_UPDATE_RES) {
 				long newCacheID = socket.readLong();
+				localCache.remove(socket.getHost(), groupID, key);
 				if (watchID != 0) {
 					CacheItem item = new CacheItem(
 							key,
@@ -543,6 +545,7 @@ public class CacheClientImpl extends Defines {
 			byte category = socket.readByte();
 			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DELETE_RES) {
+				localCache.remove(socket.getHost(), groupID, key);
 				return true;
 			} else {
 				short reason = ObjectTransCoder.decodeShort(socket.read(2));
@@ -617,6 +620,7 @@ public class CacheClientImpl extends Defines {
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DETLA_RES) {
 				cacheID = socket.readLong();//uint64_t ;
 				long value = socket.readLong();
+				localCache.remove(socket.getHost(), groupID, key);
 				DeltaItem item = new DeltaItem();
 				item.cacheID = cacheID;
 				item.value = value;
@@ -743,6 +747,7 @@ public class CacheClientImpl extends Defines {
 				if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_FLUSH_RES) {
 					int flushCount = socket.readInt(); // int flush_count = 
 					socket.readLong(); // long flush_size =
+					localCache.flush(socket.getHost(), groupID);
 					count += flushCount;
 				} else {
 					short reason = socket.readShort();

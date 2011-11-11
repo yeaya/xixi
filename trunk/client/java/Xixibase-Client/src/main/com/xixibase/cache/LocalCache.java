@@ -138,16 +138,16 @@ public class LocalCache {
 		return getAndTouch(host, groupID, key, expiration);
 	}
 */	
-	public void put(String host, String key, CacheItem value) {
+	public void put(String host, String key, CacheItem item) {
 		LocalCacheWatch watch = watchMap.get(host);
 		if (watch != null) {
 			if (cacheSize.longValue() > warningCacheSize) {
 				dropInactive(maxDropCount);
-				if (cacheSize.longValue() + value.itemSize < maxCacheSize) {
-					watch.put(key, value);
+				if (cacheSize.longValue() + item.itemSize < maxCacheSize) {
+					watch.put(key, item);
 				}
 			} else {
-				watch.put(key, value);
+				watch.put(key, item);
 			}
 		}
 	}
@@ -169,5 +169,12 @@ public class LocalCache {
 	public CacheItem remove(int groupID, String key) {
 		String host = manager.getHost(key);
 		return remove(host, groupID, key);
+	}
+	
+	public void flush(String host, int groupID) {
+		LocalCacheWatch updater = watchMap.get(host);
+		if (updater != null) {
+			updater.flush(groupID);
+		}
 	}
 }

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.xixibase.cache.CacheClientManager;
 import com.xixibase.cache.Defines;
+import com.xixibase.cache.LocalCache;
 import com.xixibase.cache.TransCoder;
 import com.xixibase.cache.XixiSocket;
 import com.xixibase.util.Log;
@@ -47,11 +48,13 @@ public final class MultiDelete extends Defines {
 	private AtomicInteger successCount = new AtomicInteger(0);
 	private byte opFlag = XIXI_DELETE_REPLY;
 	private String lastError = null;
+	private LocalCache localCache = null;
 
 	public MultiDelete(CacheClientManager manager, int groupID, TransCoder transCoder) {
 		this.manager = manager;
 		this.groupID = groupID;
 		this.transCoder = transCoder;
+		this.localCache = manager.getLocalCache();
 	}
 	
 	public String getLastError() {
@@ -320,7 +323,9 @@ public final class MultiDelete extends Defines {
 						byte category = header.get();
 						byte type = header.get();
 						if (category == XIXI_CATEGORY_CACHE && type == XIXI_TYPE_DELETE_RES) {
-							items.get(processedCount).reason = XIXI_REASON_SUCCESS;
+							MultiDeleteItem deleteItem = items.get(processedCount); 
+							localCache.remove(socket.getHost(), groupID, deleteItem.key);
+							deleteItem.reason = XIXI_REASON_SUCCESS;
 							processedCount++;
 							successCount.getAndIncrement();
 

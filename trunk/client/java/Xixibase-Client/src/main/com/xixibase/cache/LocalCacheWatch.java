@@ -240,14 +240,14 @@ class LocalCacheWatch extends Thread {
 		return item;
 	}
 
-	public synchronized void put(String key, CacheItem value) {
-		GroupItem gitem = groupMap.get(Integer.valueOf(value.groupID));
+	public synchronized void put(String key, CacheItem item) {
+		GroupItem gitem = groupMap.get(Integer.valueOf(item.groupID));
 		if (gitem != null) {
-			gitem.put(key, value);
+			gitem.put(key, item);
 		} else {
 			gitem = new GroupItem(cacheSize, cacheCount, cacheIDMap);
-			groupMap.put(Integer.valueOf(value.groupID), gitem);
-			gitem.put(key, value);
+			groupMap.put(Integer.valueOf(item.groupID), gitem);
+			gitem.put(key, item);
 		}
 	}
 
@@ -257,6 +257,13 @@ class LocalCacheWatch extends Thread {
 			return gitem.remove(key);
 		}
 		return null;
+	}
+	
+	public synchronized void flush(int groupID) {
+		GroupItem gitem = groupMap.get(Integer.valueOf(groupID));
+		if (gitem != null) {
+			gitem.clear();
+		}
 	}
 
 	protected synchronized void update(long[] cacheIDList) {

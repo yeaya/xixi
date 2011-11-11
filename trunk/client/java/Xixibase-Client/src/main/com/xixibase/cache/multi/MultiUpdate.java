@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.xixibase.cache.CacheClientManager;
 import com.xixibase.cache.Defines;
+import com.xixibase.cache.LocalCache;
 import com.xixibase.cache.TransCoder;
 import com.xixibase.cache.XixiSocket;
 import com.xixibase.util.Log;
@@ -47,11 +48,13 @@ public final class MultiUpdate extends Defines {
 	private byte opFlag = 0;
 	private AtomicInteger successCount = new AtomicInteger(0);
 	private String lastError = null;
+	private LocalCache localCache = null;
 	
 	public MultiUpdate(CacheClientManager manager, int groupID, TransCoder transCoder) {
 		this.manager = manager;
 		this.groupID = groupID;
 		this.transCoder = transCoder;
+		this.localCache = manager.getLocalCache();
 	}
 	
 	public String getLastError() {
@@ -374,7 +377,9 @@ public final class MultiUpdate extends Defines {
 					if (fixed.position() == FIXED_LENGTH) {
 						fixed.flip();
 						cacheID = fixed.getLong();
-						items.get(decode_count).newCacheID = cacheID;
+						MultiUpdateItem updateItem = items.get(decode_count);
+						localCache.remove(socket.getHost(), groupID, updateItem.key);
+						updateItem.newCacheID = cacheID;
 						decode_count++;
 						successCount.incrementAndGet();
 						
