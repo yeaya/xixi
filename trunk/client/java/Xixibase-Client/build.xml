@@ -87,7 +87,7 @@
 				<include name="src/**/*" />
 				<include name="doc/**/*" />
 				<include name="lib/**/*" />
-				<include name="report/**/*" />
+				<include name="javadoc/**/*" />
 				<include name=".classpath" />
 				<include name=".project" />
 				<include name="build.properties" />
