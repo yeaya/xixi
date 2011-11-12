@@ -1336,7 +1336,7 @@ void Peer_Http::handle_write(const boost::system::error_code& err) {
 	lock_.lock();
 	--op_count_;
 	if (!err) {
-		write_buf_.clear();
+	//	write_buf_.clear();
 
 		process();
 
@@ -1359,7 +1359,7 @@ void Peer_Http::handle_write(const boost::system::error_code& err) {
 }
 
 void Peer_Http::try_read() {
-//	if (op_count_ == 0) {
+	if (op_count_ == 0) {
 		++op_count_;
 		read_buffer_.handle_processed();
 		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (std::size_t)read_buffer_.get_read_buf_size()),
@@ -1368,11 +1368,11 @@ void Peer_Http::try_read() {
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred)));
 		LOG_TRACE2("try_read async_read_some get_read_buf_size=" << read_buffer_.get_read_buf_size());
-//	}
+	}
 }
 
 bool Peer_Http::try_write() {
-//	if (op_count_ == 0) {
+	if (op_count_ == 0) {
 		if (!write_buf_.empty()) {
 			++op_count_;
 			async_write(*socket_, write_buf_,
@@ -1380,9 +1380,10 @@ bool Peer_Http::try_write() {
 				boost::bind(&Peer_Http::handle_write, this,
 				boost::asio::placeholders::error)));
 			LOG_TRACE2("try_write async_write write_buf.count=" << write_buf_.size());
+			write_buf_.clear();
 			return true;
 		}
-//	}
+	}
 	return false;
 }
 
