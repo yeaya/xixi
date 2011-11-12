@@ -18,12 +18,8 @@
 #define STATS_H
 
 #include "defines.h"
-#include "util.h"
-#include "log.h"
-#include "xixibase.h"
-#include <boost/detail/atomic_count.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/thread/tss.hpp>
+//#include <boost/thread/tss.hpp>
 
 class Cache_Stats_Item {
 public:
@@ -904,7 +900,7 @@ public:
 	void set_max_class_id(uint32_t max_class_id) {
 		max_class_id_ = max_class_id;
 	}
-
+/*
 	inline Thread_Stats_Item* get_thread_stats_item() {
 		Thread_Stats_Item* item = threadLocal_.get();
 		if (item != NULL) {
@@ -918,7 +914,7 @@ public:
 			return item;
 		}
 	}
-
+*/
 private:
 	void merage(Cache_Stats_Item& cache_stat);
 
@@ -931,7 +927,7 @@ public:
 
 	Group_Stats_Item group_sum_;
 	std::map<uint32_t, Group_Stats_Item*> group_map_;
-	boost::thread_specific_ptr<Thread_Stats_Item> threadLocal_;
+//	boost::thread_specific_ptr<Thread_Stats_Item> threadLocal_;
 	std::set<Thread_Stats_Item*> thread_set_;
 };
 

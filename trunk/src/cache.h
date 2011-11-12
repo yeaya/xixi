@@ -29,8 +29,8 @@
 #include <boost/pool/pool.hpp>
 #endif
 #include <boost/thread/mutex.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/tss.hpp>
+//#include <boost/thread/shared_mutex.hpp>
+//#include <boost/thread/tss.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
 
 class Cache_Watch_Sink {
@@ -238,7 +238,7 @@ private:
 
 private:
 	mutex cache_lock_;
-	boost::thread_specific_ptr<int> tls_int_;
+//	boost::thread_specific_ptr<int> tls_int_;
 
 	xixi::hash_map<Cache_Key, Cache_Item> cache_hash_map_;
 

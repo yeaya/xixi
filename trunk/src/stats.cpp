@@ -19,6 +19,7 @@
 #include "settings.h"
 #include "currtime.h"
 #include "cache.h"
+#include "log.h"
 
 Stats stats_;
 
