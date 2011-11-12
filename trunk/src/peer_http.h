@@ -159,6 +159,11 @@ protected:
 			write_buf_total_ += size;
 		}
 	}
+	void pop_write_buf(uint32_t pop_count) {
+		for (std::size_t i = 0; i < pop_count && write_buf_.size() > 0; i++) {
+			write_buf_.pop_back();
+		}
+	}
 	inline void encode_update_list(std::list<uint64_t>& updated_list);
 
 	void handle_timer(const boost::system::error_code& err, uint32_t watch_id);

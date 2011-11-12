@@ -193,8 +193,8 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this) {
 	touch_flag_ = false;
 	delta_ = 1;
 	ack_cache_id_ = 0;
-	interval_ = 30;
-	timeout_ = 10;
+	interval_ = 120;
+	timeout_ = 30;
 	sub_op_ = 0;
 
 	stats_.new_conn();
@@ -876,13 +876,13 @@ void Peer_Http::process_get() {
 		cache_items_.push_back(it);
 
 		uint8_t* buf = request_buf_.prepare(60);
-		uint32_t data_size = _snprintf((char*)buf, 60, "\"c%"PRIu64"\"", it->cache_id);
+		uint32_t data_size = _snprintf((char*)buf, 60, "\"%"PRIu64"\"", it->cache_id);
 		if (data_size == http_request_.entity_tag_length && memcmp(buf, http_request_.entity_tag, data_size) == 0) {
 			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
 			add_write_buf(buf, data_size);
 			add_write_buf((uint8_t*)"\r\n\r\n", 4);
 		} else {
-			data_size = _snprintf((char*)buf, 60, "%"PRIu32"\r\nETag: \"c%"PRIu64"\"\r\n\r\n", it->data_size, it->cache_id);
+			data_size = _snprintf((char*)buf, 60, "%"PRIu32"\r\nETag: \"%"PRIu64"\"\r\n\r\n", it->data_size, it->cache_id);
 			add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 			add_write_buf(buf, data_size);
 			if (http_request_.method != HEAD_METHOD) {
@@ -983,7 +983,6 @@ void Peer_Http::process_delta(bool incr) {
 	LOG_DEBUG2("Delta " << string((char*)key_, key_length_));
 
 	int64_t value;
-//	uint64_t cache_id = pdu->cache_id;
 	xixi_reason reason = cache_mgr_.delta(group_id_, (uint8_t*)key_, key_length_, incr, delta_, cache_id_, value);
 	if (reason == XIXI_REASON_SUCCESS) {
 		uint8_t* buf = request_buf_.prepare(50);
@@ -1130,6 +1129,7 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 	if (buf != NULL) {
 		add_write_buf(NULL, 0); // will update next
 		add_write_buf(NULL, 0); // will update next
+		uint32_t write_buf_count = 2;
 
 		while (!updated_list.empty()) {
 			uint64_t cache_id = updated_list.front();
@@ -1143,8 +1143,9 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 			}
 			offset += data_size;
 			total_size += data_size;
-			if (offset + 30 < 2000) {
+			if (offset + 30 > 2000) {
 				add_write_buf(buf, offset);
+				write_buf_count++;
 				buf = request_buf_.prepare(2000);
 				offset = 0;
 				if (buf == NULL) {
@@ -1153,6 +1154,7 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 			}
 		}
 		if (buf == NULL) {
+			pop_write_buf(write_buf_count);
 			write_error(XIXI_REASON_OUT_OF_MEMORY);
 		} else {
 			if (offset > 0) {
@@ -1258,8 +1260,8 @@ void Peer_Http::reset_for_new_cmd() {
 	touch_flag_ = false;
 	delta_ = 1;
 	ack_cache_id_ = 0;
-	interval_ = 30;
-	timeout_ = 10;
+	interval_ = 120;
+	timeout_ = 30;
 	sub_op_ = 0;
 	http_request_.reset();
 
