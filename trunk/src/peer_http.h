@@ -79,11 +79,12 @@ public:
 
 protected:
 	virtual void on_cache_watch_notify(uint32_t watch_id) {
-		lock_.lock();
-		if (timer_ != NULL) {
-			timer_->cancel();
+		if (lock_.try_lock()) {
+			if (timer_ != NULL) {
+				timer_->cancel();
+			}
+			lock_.unlock();
 		}
-		lock_.unlock();
 	}
 
 	void process();
