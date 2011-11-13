@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>Performance Benchmark</title>
+</head>
+<body>
+
+<h1>Performance Benchmark</h1>
+<h2>Xixibase</h2>
+<a href="http://code.google.com/p/xixibase/">http://code.google.com/p/xixibase/</a><br>
+<h2>Source code</h2>
+svn co <a href="http://xixibase.googlecode.com/svn/trunk/">http://xixibase.googlecode.com/svn/trunk/</a>
+<h2>Test Environment</h2>
+	<li>Software
+	<ul>
+		<li>Xixibase Server
+		<ul>
+			<li>Version is 0.2,default install configuration.</li>
+			<li>Start with option "-m 16000"</li>
+		</ul>
+		</li>
+		<li>Java Client
+		<ul>
+			<li>JVM Version: Sun JDK 1.6.0_27</li>
+			<li>JVM args: -server -Xms1024m -Xmx2048m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=64m -XX:MaxPermSize=64m</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+	<li>Hardware
+	<ul>
+		<li>Server and client all run in one machine
+		<ul>
+			<li>CPU: 4 x Intel(R) Xeon(R) CPU E5530 @ 2.40GHz</li>
+			<li>OS: CentOS 5.3 64bit</li>
+			<li>RAM: 16 GiB</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+
+<h2>Case1</h2>
+	<ul>
+		<li>StressTest (<a href="http://xixibase.googlecode.com/svn/trunk/client/java/Xixibase-Client/src/test/com/xixibase/cache/StressTest.java">com.xixibase.cache.StressTest</a>)
+		<ul>
+			<li>Thread: 16</li>
+			<li>KeyCount: 100000</li>
+			<li>Set OPs/per thread: 100000</li>
+			<li>Get OPs/per thread: 300000</li>
+			<li>Total start 16 threads, every thread do 100000 'set' op and do 300000 'get' op</li>
+			<li>Raw log: <a href="result2/StressTest.txt">StressTest.txt</a></li>
+		</ul>
+		</li>
+	</ul>
+<img src="result2/StressTest.jpg" />
+
+<h2>Case2</h2>
+	<ul>
+		<li>StressTestLocalCache (<a href="http://xixibase.googlecode.com/svn/trunk/client/java/Xixibase-Client/src/test/com/xixibase/cache/StressTestLocalCache.java">com.xixibase.cache.StressTestLocalCache</a>)
+		<ul>
+			<li>Update Thread: 1</li>
+			<li>Get Thread: 16</li>
+			<li>KeyCount: 200000</li>
+			<li>updateReplayCount: 2</li>
+			<li>Total start 1 'update' thread and 16 'get' threads. The 'update' thread update the K/V to Xixibase server. The 'get' thread get the K/V from Xixibase server and watch the change of K/V in Xixibase server. When the watched K/V change, the client local cache will get the change immediately.</li>
+			<li>Raw log: <a href="result2/StressTestLocalCache.txt">StressTestLocalCache.txt</a></li>
+			<li>Notes: The TPS of 'get' is too bigger than other, so that we need the followed 2 charts.</li>
+		</ul>
+		</li>
+	</ul>
+<img src="result2/StressTestLocalCache1.jpg" />
+<BR>
+<img src="result2/StressTestLocalCache2.jpg" />
+
+</body>
+</html>
