@@ -146,7 +146,8 @@ protected:
 	Receive_Buffer<2048, 8192> read_buffer_;
 	vector<boost::asio::const_buffer> write_buf_;
 
-	boost::asio::deadline_timer* timer_;
+	boost::asio::deadline_timer timer_;
+	bool timer_flag_;
 
 	boost::asio::ip::tcp::socket* socket_;
 	int op_count_;

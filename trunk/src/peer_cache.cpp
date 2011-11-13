@@ -28,7 +28,7 @@
 #define LOG_WARNING2(x)  LOG_WARNING("Peer_Cache id=" << get_peer_id() << " " << x)
 #define LOG_ERROR2(x)  LOG_ERROR("Peer_Cache id=" << get_peer_id() << " " << x)
 
-Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this) {
+Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this), timer_(socket->get_io_service()) {
 	LOG_DEBUG2("Peer_Cache::Peer_Cache()");
 	op_count_ = 0;
 	socket_ = socket;
@@ -40,7 +40,8 @@ Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this) {
 	read_item_buf_ = NULL;
 	swallow_size_ = 0;
 	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
-	timer_ = NULL;
+//	timer_ = NULL;
+	timer_flag_ = false;
 
 	stats_.new_conn();
 }
@@ -63,14 +64,14 @@ void Peer_Cache::cleanup() {
 		delete socket_;
 		socket_ = NULL;
 	}
-	if (timer_ != NULL) {
+/*	if (timer_ != NULL) {
 		timer_lock_.lock();
 		if (timer_ != NULL) {
 			delete timer_;
 			timer_ = NULL;
 		}
 		timer_lock_.unlock();
-	}
+	}*/
 }
 
 void Peer_Cache::write_simple_res(xixi_choice choice) {
@@ -812,6 +813,7 @@ void Peer_Cache::process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu
 	std::list<uint64_t> updated_list;
 	uint32_t updated_count = 0;
 	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
+	timer_flag_ = false;
 	bool ret = cache_mgr_.check_watch_and_set_callback(pdu->group_id, pdu->watch_id, updated_list, updated_count, pdu->ack_cache_id, sp, pdu->max_next_check_interval);
 	//  LOG_INFO2("process_check_watch_req_pdu_fixed watch_id=" << pdu->watch_id << " ack=" << pdu->ack_cache_id << " updated_count=" << updated_count);
 
@@ -835,10 +837,17 @@ void Peer_Cache::process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu
 		} else {
 			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
 			timer_lock_.lock();
-			timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
-			timer_->expires_from_now(boost::posix_time::seconds(pdu->check_timeout));
-			timer_->async_wait(boost::bind(&Peer_Cache::handle_timer, this,
+		//	timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
+			timer_.expires_from_now(boost::posix_time::seconds(pdu->check_timeout));
+			timer_.async_wait(boost::bind(&Peer_Cache::handle_timer, this,
 				boost::asio::placeholders::error, pdu->watch_id));
+			if (timer_flag_) {
+				boost::system::error_code ec;
+				timer_.cancel(ec);
+				LOG_TRACE2("process_check_watch_req_pdu_fixed timer cancel");
+			} else {
+				timer_flag_ = true;
+			}
 			timer_lock_.unlock();
 			set_state(PEER_STATUS_ASYNC_WAIT);
 		}
@@ -893,9 +902,11 @@ void Peer_Cache::reset_for_new_cmd() {
 void Peer_Cache::on_cache_watch_notify(uint32_t watch_id) {
 //	if (lock_.try_lock()) {
 	timer_lock_.lock();
-		if (timer_ != NULL) {
+		if (timer_flag_) {
 			boost::system::error_code ec;
-			timer_->cancel(ec);
+			timer_.cancel(ec);
+		} else {
+			timer_flag_ = true;
 		}
 	timer_lock_.unlock();
 //		lock_.unlock();
@@ -1057,10 +1068,10 @@ void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t wat
 	}
 	try_write();
 	lock_.unlock();
-	timer_lock_.lock();
-	if (timer_ != NULL) {
-		delete timer_;
-		timer_ = NULL;
-	}
-	timer_lock_.unlock();
+//	timer_lock_.lock();
+//	if (timer_ != NULL) {
+//		delete timer_;
+//		timer_ = NULL;
+//	}
+//	timer_lock_.unlock();
 }
