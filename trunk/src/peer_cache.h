@@ -38,14 +38,7 @@ public:
 	void start(uint8_t* data, uint32_t data_length);
 
 protected:
-	virtual void on_cache_watch_notify(uint32_t watch_id) {
-		if (lock_.try_lock()) {
-			if (timer_ != NULL) {
-				timer_->cancel();
-			}
-			lock_.unlock();
-		}
-	}
+	virtual void on_cache_watch_notify(uint32_t watch_id);
 
 	void process();
 	inline bool is_closed() { return state_ == PEER_STATE_CLOSED; }
@@ -129,6 +122,7 @@ protected:
 	boost::shared_ptr<Peer_Cache> self_;
 
 	mutex lock_;
+	mutex timer_lock_;
 	peer_state  state_;
 	peer_state  next_state_;
 

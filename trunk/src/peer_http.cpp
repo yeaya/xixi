@@ -219,8 +219,12 @@ void Peer_Http::cleanup() {
 		socket_ = NULL;
 	}
 	if (timer_ != NULL) {
-		delete timer_;
-		timer_ = NULL;
+		timer_lock_.lock();
+		if (timer_ != NULL) {
+			delete timer_;
+			timer_ = NULL;
+		}
+		timer_lock_.unlock();
 	}
 }
 
@@ -1189,10 +1193,12 @@ void Peer_Http::process_check_watch() {
 			encode_update_list(updated_list);
 		} else {
 			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
+			timer_lock_.lock();
 			timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
 			timer_->expires_from_now(boost::posix_time::seconds(timeout_));
 			timer_->async_wait(boost::bind(&Peer_Http::handle_timer, this,
 				boost::asio::placeholders::error, watch_id_));
+			timer_lock_.unlock();
 			set_state(PEER_STATUS_ASYNC_WAIT);
 		}
 	}
@@ -1270,6 +1276,20 @@ void Peer_Http::reset_for_new_cmd() {
 	read_item_buf_ = NULL;
 	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
 	set_state(PEER_STATE_READ_HEADER);
+}
+
+void Peer_Http::on_cache_watch_notify(uint32_t watch_id) {
+//	if (lock_.try_lock()) {
+	timer_lock_.lock();
+		if (timer_ != NULL) {
+			boost::system::error_code ec;
+			timer_->cancel(ec);
+		}
+	timer_lock_.unlock();
+//		lock_.unlock();
+//	} else {
+//		LOG_INFO2("on_cache_watch_notify try_lock false, watch_id=" << watch_id);
+//	}
 }
 
 void Peer_Http::start(uint8_t* data, uint32_t data_length) {
@@ -1409,8 +1429,11 @@ void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watc
 		encode_update_list(updated_list);
 	}
 	try_write();
-
-	delete timer_;
-	timer_ = NULL;
 	lock_.unlock();
+	timer_lock_.lock();
+	if (timer_ != NULL) {
+		delete timer_;
+		timer_ = NULL;
+	}
+	timer_lock_.unlock();
 }
