@@ -4,6 +4,19 @@
 ==Xixibase is a high performance, cross platform, distributed cache system.==
 Xixibase server write in C++, based on Boost Asio.
 
+===Xixibase 0.4===
+Nov-14-2011<br>
+*Xixibase Server*
+ # Bug fix
+  * check watch may lead to deadlock
+ # Log enhancement, the log file is written
+*Xixibase Java Client*
+ # Delete the local cache when the client update the server-side data
+ # Add some comments
+ # Remove some API, such as createDelta
+ # Add some examples
+ # Javadoc
+
 ===Xixibase 0.3===
 Nov-5-2011<br>
 *Xixibase Server*
