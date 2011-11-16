@@ -880,14 +880,15 @@ void Peer_Http::process_get() {
 		cache_item_ = it;
 		cache_items_.push_back(it);
 
-		uint8_t* buf = request_buf_.prepare(60);
-		uint32_t data_size = _snprintf((char*)buf, 60, "\"%"PRIu64"\"", it->cache_id);
+		uint8_t* buf = request_buf_.prepare(150);
+		uint32_t data_size = _snprintf((char*)buf, 150, "\"%"PRIu64"\"", it->cache_id);
 		if (data_size == http_request_.entity_tag_length && memcmp(buf, http_request_.entity_tag, data_size) == 0) {
 			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
 			add_write_buf(buf, data_size);
 			add_write_buf((uint8_t*)"\r\n\r\n", 4);
 		} else {
-			data_size = _snprintf((char*)buf, 60, "%"PRIu32"\r\nETag: \"%"PRIu64"\"\r\n\r\n", it->data_size, it->cache_id);
+			data_size = _snprintf((char*)buf, 150, "%"PRIu32"\r\nXixibase: c=%"PRIu64",f=%"PRIu32",e=%"PRIu32"\r\nETag: \"%"PRIu64"\"\r\n\r\n",
+				it->data_size, it->cache_id, it->flags, expiration_, it->cache_id);
 			add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 			add_write_buf(buf, data_size);
 			if (http_request_.method != HEAD_METHOD) {
@@ -1203,7 +1204,7 @@ void Peer_Http::process_check_watch() {
 			if (timer_flag_) {
 				boost::system::error_code ec;
 				timer_.cancel(ec);
-				LOG_TRACE2("process_check_watch timer cancel");
+				LOG_INFO2("process_check_watch timer cancel");
 			} else {
 				timer_flag_ = true;
 			}

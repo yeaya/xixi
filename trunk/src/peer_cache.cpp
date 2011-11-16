@@ -844,7 +844,7 @@ void Peer_Cache::process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu
 			if (timer_flag_) {
 				boost::system::error_code ec;
 				timer_.cancel(ec);
-				LOG_TRACE2("process_check_watch_req_pdu_fixed timer cancel");
+				LOG_INFO2("process_check_watch_req_pdu_fixed timer cancel");
 			} else {
 				timer_flag_ = true;
 			}
