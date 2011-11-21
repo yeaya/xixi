@@ -887,7 +887,11 @@ void Peer_Http::process_get() {
 			add_write_buf(buf, data_size);
 			add_write_buf((uint8_t*)"\r\n\r\n", 4);
 		} else {
-			data_size = _snprintf((char*)buf, 150, "%"PRIu32"\r\nXixibase: c=%"PRIu64",f=%"PRIu32",e=%"PRIu32"\r\nETag: \"%"PRIu64"\"\r\n\r\n",
+			data_size = _snprintf((char*)buf, 150, "%"PRIu32"\r\n"
+				"CacheID: %"PRIu64"\r\n"
+				"Flags: %"PRIu32"\r\n"
+				"Expiration: %"PRIu32"\r\n"
+				"ETag: \"%"PRIu64"\"\r\n\r\n",
 				it->data_size, it->cache_id, it->flags, expiration_, it->cache_id);
 			add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 			add_write_buf(buf, data_size);
@@ -951,10 +955,12 @@ void Peer_Http::process_update(uint8_t sub_op) {
 	}
 
 	if (reason == XIXI_REASON_SUCCESS) {
-		uint8_t* buf = request_buf_.prepare(24);
-		uint32_t data_size = _snprintf((char*)buf, 24, "%"PRIu64, cache_id);
+//		uint8_t* buf = request_buf_.prepare(24);
+//		uint32_t data_size = _snprintf((char*)buf, 24, "%"PRIu64, cache_id);
 		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n%s", data_size, buf);
+		uint32_t data_size2 = _snprintf((char*)buf2, 50, "7\r\n"
+			"CacheID: %"PRIu64"\r\n"
+			"\r\n\r\n%success", cache_id);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
@@ -1017,10 +1023,14 @@ void Peer_Http::process_get_base() {
 	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration);
 	if (ret) {
 		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64" %"PRIu32" %"PRIu32, cache_id, flags, expiration);
+		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64",%"PRIu32",%"PRIu32, cache_id, flags, expiration);
 
-		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
+		uint8_t* buf2 = request_buf_.prepare(200);
+		uint32_t data_size2 = _snprintf((char*)buf2, 200, "%"PRIu32"\r\n"
+				"CacheID: %"PRIu64"\r\n"
+				"Flags: %"PRIu32"\r\n"
+				"Expiration: %"PRIu32"\r\n"
+				"\r\n", data_size, cache_id, flags, expiration);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(buf2, data_size2);
