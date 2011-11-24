@@ -23,6 +23,7 @@
 #include "server.h"
 
 #define DEFAULT_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
+#define JSON_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/json\r\nContent-Length: "
 
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Http id=" << get_peer_id() << " " << x)
 #define LOG_DEBUG2(x)  LOG_DEBUG("Peer_Http id=" << get_peer_id() << " " << x)
@@ -78,6 +79,26 @@ char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len) {
 		}
 	}
 	return NULL;
+}
+
+const char* content_types[] = 
+{
+	"html", "text/html",
+	"htm", "text/html"
+};
+
+const char* get_content_type(const char* key, uint32_t length) {
+	if (key == NULL || length < 2) {
+		return "text/html";
+	}
+	uint32_t count = 0;
+	for (int32_t i = length - 1; i >= 0 && count < 5; i--, count++) {
+		if (key[i] == '.') {
+			const char* ext = key + i + 1;
+			uint32_t ext_length = length - i - 1;
+		}
+	}
+	return "text/html";
 }
 
 void tokenize_command(char* command, vector<token_t>& tokens) {
@@ -398,7 +419,7 @@ uint32_t Peer_Http::try_read_command(char* data, uint32_t data_len) {
 		return (uint32_t)(p - data + 4);
 	}
 
-	if (data_len >= 4096) {
+	if (data_len >= 8192) {
 		LOG_WARNING2("try_read_command header too large > " << data_len);
 		write_error(XIXI_REASON_TOO_LARGE);
 		return data_len; // ?
@@ -955,15 +976,16 @@ void Peer_Http::process_update(uint8_t sub_op) {
 	}
 
 	if (reason == XIXI_REASON_SUCCESS) {
-//		uint8_t* buf = request_buf_.prepare(24);
-//		uint32_t data_size = _snprintf((char*)buf, 24, "%"PRIu64, cache_id);
-		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "7\r\n"
-			"CacheID: %"PRIu64"\r\n"
-			"\r\n\r\n%success", cache_id);
+		uint8_t* body = request_buf_.prepare(50);
+		uint32_t body_size = _snprintf((char*)body, 50, "{\"cacheid\":%"PRIu64"}", cache_id);
+		uint8_t* header = request_buf_.prepare(100);
+		uint32_t header_size = _snprintf((char*)header, 100, "%"PRIu32"\r\n"
+		//	"CacheID: %"PRIu64"\r\n"
+			"\r\n%", body_size);
 
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-		add_write_buf(buf2, data_size2);
+		add_write_buf((uint8_t*)JSON_RES_200, sizeof(JSON_RES_200) - 1);
+		add_write_buf(header, header_size);
+		add_write_buf(body, body_size);
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
@@ -980,7 +1002,8 @@ void Peer_Http::process_delete() {
 
 	xixi_reason reason = cache_mgr_.remove(group_id_, (uint8_t*)key_, key_length_, cache_id_);
 	if (reason == XIXI_REASON_SUCCESS) {
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		#define DELETE_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
+		add_write_buf((uint8_t*)DELETE_RES_200, sizeof(DELETE_RES_200) - 1);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -997,15 +1020,15 @@ void Peer_Http::process_delta(bool incr) {
 	int64_t value;
 	xixi_reason reason = cache_mgr_.delta(group_id_, (uint8_t*)key_, key_length_, incr, delta_, cache_id_, value);
 	if (reason == XIXI_REASON_SUCCESS) {
-		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRId64" %"PRIu64, value, cache_id_);
+		uint8_t* body = request_buf_.prepare(100);
+		uint32_t body_size = _snprintf((char*)body, 100, "{\"value\":%"PRId64",\"cacheid\":%"PRIu64"}", value, cache_id_);
 
-		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
+		uint8_t* header = request_buf_.prepare(50);
+		uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-		add_write_buf(buf2, data_size2);
-		add_write_buf(buf, data_size);
+		add_write_buf(header, header_size);
+		add_write_buf(body, body_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1022,19 +1045,19 @@ void Peer_Http::process_get_base() {
 	uint32_t expiration;
 	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration);
 	if (ret) {
-		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64",%"PRIu32",%"PRIu32, cache_id, flags, expiration);
+		uint8_t* body = request_buf_.prepare(100);
+		uint32_t body_size = _snprintf((char*)body, 100, "{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32"}", cache_id, flags, expiration);
 
-		uint8_t* buf2 = request_buf_.prepare(200);
-		uint32_t data_size2 = _snprintf((char*)buf2, 200, "%"PRIu32"\r\n"
-				"CacheID: %"PRIu64"\r\n"
-				"Flags: %"PRIu32"\r\n"
-				"Expiration: %"PRIu32"\r\n"
-				"\r\n", data_size, cache_id, flags, expiration);
+		uint8_t* header = request_buf_.prepare(200);
+		uint32_t header_size = _snprintf((char*)header, 200, "%"PRIu32"\r\n"
+		//		"CacheID: %"PRIu64"\r\n"
+		//		"Flags: %"PRIu32"\r\n"
+		//		"Expiration: %"PRIu32"\r\n"
+				"\r\n", body_size/*, cache_id, flags, expiration*/);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-		add_write_buf(buf2, data_size2);
-		add_write_buf(buf, data_size);
+		add_write_buf(header, header_size);
+		add_write_buf(body, body_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1053,15 +1076,15 @@ void Peer_Http::process_update_flags() {
 	uint64_t cache_id = 0;
 	bool ret = cache_mgr_.update_flags(group_id_, key_, key_length_, &pdu, cache_id);
 	if (ret) {
-		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64, cache_id);
+		uint8_t* body = request_buf_.prepare(50);
+		uint32_t body_size = _snprintf((char*)body, 50, "{\"cacheid\":%"PRIu64"}", cache_id);
 
-		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
+		uint8_t* header = request_buf_.prepare(50);
+		uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-		add_write_buf(buf2, data_size2);
-		add_write_buf(buf, data_size);
+		add_write_buf(header, header_size);
+		add_write_buf(body, body_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1083,15 +1106,15 @@ void Peer_Http::process_touch() {
 	uint64_t cache_id = 0;
 	bool ret = cache_mgr_.update_expiration(group_id_, (uint8_t*)key_, key_length_, &pdu, cache_id);
 	if (ret) {
-		uint8_t* buf = request_buf_.prepare(50);
-		uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu64, cache_id);
+		uint8_t* body = request_buf_.prepare(50);
+		uint32_t body_size = _snprintf((char*)body, 50, "{\"cacheid\":%"PRIu64"}", cache_id);
 
-		uint8_t* buf2 = request_buf_.prepare(50);
-		uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
+		uint8_t* header = request_buf_.prepare(50);
+		uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-		add_write_buf(buf2, data_size2);
-		add_write_buf(buf, data_size);
+		add_write_buf(header, header_size);
+		add_write_buf(body, body_size);
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1123,15 +1146,15 @@ void Peer_Http::process_create_watch() {
 	LOG_INFO2("process_create_watch");
 	uint32_t watch_id = cache_mgr_.create_watch(group_id_, interval_);
 
-	uint8_t* buf = request_buf_.prepare(50);
-	uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu32, watch_id);
+	uint8_t* body = request_buf_.prepare(50);
+	uint32_t body_size = _snprintf((char*)body, 50, "{\"watchid\":%"PRIu32"}", watch_id);
 
-	uint8_t* buf2 = request_buf_.prepare(50);
-	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
+	uint8_t* header = request_buf_.prepare(50);
+	uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
 	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-	add_write_buf(buf2, data_size2);
-	add_write_buf(buf, data_size);
+	add_write_buf(header, header_size);
+	add_write_buf(body, body_size);
 
 	set_state(PEER_STATUS_WRITE);
 	next_state_ = PEER_STATE_NEW_CMD;
@@ -1229,15 +1252,15 @@ void Peer_Http::process_flush() {
 	uint64_t flush_size = 0;
 	cache_mgr_.flush(group_id_, flush_count, flush_size);
 
-	uint8_t* buf = request_buf_.prepare(50);
-	uint32_t data_size = _snprintf((char*)buf, 50, "%"PRIu32" %"PRIu64, flush_count, flush_size);
+	uint8_t* body = request_buf_.prepare(50);
+	uint32_t body_size = _snprintf((char*)body, 50, "{\"flushcount\":%"PRIu32",\"flushsize\":%"PRIu64"}", flush_count, flush_size);
 
-	uint8_t* buf2 = request_buf_.prepare(50);
-	uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", data_size);
+	uint8_t* header = request_buf_.prepare(50);
+	uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
 	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-	add_write_buf(buf2, data_size2);
-	add_write_buf(buf, data_size);
+	add_write_buf(header, header_size);
+	add_write_buf(body, body_size);
 
 	set_state(PEER_STATUS_WRITE);
 	next_state_ = PEER_STATE_NEW_CMD;

@@ -901,20 +901,22 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 		}
 		reason = XIXI_REASON_NOT_FOUND;
 	} else if (cache_id == 0 || cache_id == it->cache_id) {
-		if (!safe_toi64((char*)it->get_data(), it->data_size, value)) {
+		value = 0;
+		safe_toi64((char*)it->get_data(), it->data_size, value);
+	/*	if (!safe_toi64((char*)it->get_data(), it->data_size, value)) {
 			cache_id = 0;
 			value = 0;
 
-			reason = XIXI_REASON_INVALID_PARAMETER;
-		} else {
+			reason = XIXI_REASON_INVALID_OPERATION;
+		} else {*/
 			if (incr) {
 				value += delta;
 			} else {
-				if (delta > value) {
-					value = 0;
-				} else {
+//				if (delta > value) {
+//					value = 0;
+//				} else {
 					value -= delta;
-				}
+//				}
 			}
 
 			char buf[INCR_MAX_STORAGE_LEN];
@@ -950,7 +952,7 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 				}
 				reason = XIXI_REASON_SUCCESS;
 			}
-		}
+	//	}
 		do_release_reference(it);
 	} else {
 		cache_id = 0;
