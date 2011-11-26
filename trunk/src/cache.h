@@ -100,6 +100,8 @@ public:
 		class_id = 0;
 		expiration_id = 0;
 		key_length = 0;
+		ext_size = 0;
+		item_flag = 0;
 	}
 	~Cache_Item() {
 		reset();
@@ -119,6 +121,8 @@ public:
 		class_id = 0;
 		expiration_id = 0;
 		key_length = 0;
+		ext_size = 0;
+		item_flag = 0;
 	}
 	void set_key(uint8_t* key) {
 		memcpy(get_key(), key, key_length);
@@ -128,12 +132,17 @@ public:
 		memcpy(get_key(), key, key_length);
 		hash_value_ = hash_value;
 	}
+	void set_ext(uint8_t* ext) {
+		memcpy(get_ext(), ext, ext_size);
+	}
 	inline bool is_key(const Cache_Key* p) const { return (group_id == p->group_id) && (key_length == p->size) && (memcmp((uint8_t*)body, p->data, key_length) == 0); }
 	inline uint8_t* get_key() { return (uint8_t*)body; }
 	inline uint32_t get_key_length() { return key_length; }
 
 	inline uint8_t* get_data() { return ((uint8_t*)body) + key_length; }
-	inline uint32_t total_size() { return sizeof(Cache_Item) + key_length + data_size; }
+	inline uint8_t* get_ext() { return ((uint8_t*)body) + key_length + data_size; }
+	inline uint32_t get_ext_size() { return ext_size; }
+	inline uint32_t total_size() { return sizeof(Cache_Item) + key_length + data_size + ext_size; }
 
 	inline void calc_hash_value() { hash_value_ = hash32((uint8_t*)body, key_length, group_id); }
 
@@ -158,8 +167,9 @@ protected:
 	uint16_t ref_count;
 public:
 	uint16_t key_length;
+	uint8_t ext_size;
 protected:
-	uint16_t item_flag;
+	uint8_t item_flag;
 	uint8_t class_id;
 	uint8_t expiration_id;
 	void* body[1];
@@ -178,12 +188,13 @@ public:
 	~Cache_Mgr();
 
 	void init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_min, double factor);
-	Cache_Item* alloc_item(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expiration, uint32_t data_size);
+	Cache_Item* alloc_item(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expiration, uint32_t data_size, uint32_t ext_size);
 	void flush(uint32_t group_id, uint32_t&/*out*/ flush_count, uint64_t&/*out*/ flush_size);
 	Cache_Item* get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t&/*out*/ expiration, bool&/*out*/ watch_error);
 	Cache_Item* get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, bool&/*out*/ watch_error);
 	void release_reference(Cache_Item* item);
-	bool get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration);
+	bool get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length,
+		uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration, char*/*out*/ ext, uint32_t&/*in out*/ ext_size);
 	bool update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 	bool update_expiration(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 
@@ -195,7 +206,7 @@ public:
 
 	xixi_reason remove(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t cache_id);
 	xixi_reason delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*in and out*/ cache_id, int64_t&/*out*/ value);
-	bool item_size_ok(uint32_t key_length, uint32_t data_size);
+	bool item_size_ok(uint32_t key_length, uint32_t data_size, uint32_t ext_size);
 
 	uint32_t create_watch(uint32_t group_id, uint32_t max_next_check_interval);
 	bool check_watch_and_set_callback(uint32_t group_id, uint32_t watch_id, std::list<uint64_t>&/*out*/ updated_list, uint32_t&/*out*/ updated_count,
@@ -216,7 +227,7 @@ public:
 private:
 	inline void free_item(Cache_Item* it);
 	inline uint64_t get_cache_id();
-	inline Cache_Item* do_alloc(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expire_time, uint32_t data_size);
+	inline Cache_Item* do_alloc(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expire_time, uint32_t data_size, uint32_t ext_size);
 	inline void do_link(Cache_Item* it);
 	inline void do_unlink(Cache_Item* it);
 	inline void do_unlink_flush(Cache_Item* it);

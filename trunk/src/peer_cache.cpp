@@ -541,7 +541,8 @@ uint32_t Peer_Cache::process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu,
 	uint64_t cache_id;
 	uint32_t flags;
 	uint32_t expiration;
-	bool ret = cache_mgr_.get_base(pdu->group_id, key, key_length, cache_id, flags, expiration);
+	uint32_t ext_size = 0;
+	bool ret = cache_mgr_.get_base(pdu->group_id, key, key_length, cache_id, flags, expiration, NULL, ext_size);
 	if (ret) {
 		uint8_t* cb = cache_buf_.prepare(XIXI_Get_Base_Res_Pdu::calc_encode_size());
 		XIXI_Get_Base_Res_Pdu rs;
@@ -571,10 +572,10 @@ void Peer_Cache::process_update_req_pdu_fixed(XIXI_Update_Req_Pdu* pdu) {
 	uint32_t data_len = pdu->key_length + pdu->data_length;
 
 	cache_item_ = cache_mgr_.alloc_item(pdu->group_id, pdu->key_length, pdu->flags,
-		pdu->expiration, pdu->data_length);
+		pdu->expiration, pdu->data_length, 0);
 
 	if (cache_item_ == NULL) {
-		if (cache_mgr_.item_size_ok(pdu->key_length, pdu->data_length)) {
+		if (cache_mgr_.item_size_ok(pdu->key_length, pdu->data_length, 0)) {
 			write_error(XIXI_REASON_OUT_OF_MEMORY, data_len, pdu->reply());
 		} else {
 			write_error(XIXI_REASON_TOO_LARGE, data_len, pdu->reply());

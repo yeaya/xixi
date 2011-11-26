@@ -123,7 +123,7 @@ protected:
 	inline void process_create_watch();
 
 	// check watch
-	inline void process_check_watch();
+	inline void process_watch();
 
 	// flush
 	inline void process_flush();
@@ -182,6 +182,8 @@ protected:
 	uint32_t key_length_;
 	uint8_t* value_;
 	uint32_t value_length_;
+	char* value_content_type_;
+	uint32_t value_content_type_length_;
 	uint8_t* post_data_;
 	uint32_t content_length_;
 	uint32_t flags_;

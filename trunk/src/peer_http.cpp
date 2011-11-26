@@ -22,8 +22,8 @@
 #include "auth.h"
 #include "server.h"
 
+// text/plain
 #define DEFAULT_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
-#define JSON_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/json\r\nContent-Length: "
 
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Http id=" << get_peer_id() << " " << x)
 #define LOG_DEBUG2(x)  LOG_DEBUG("Peer_Http id=" << get_peer_id() << " " << x)
@@ -208,6 +208,8 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this), timer_
 	key_length_ = 0;
 	value_ = NULL;
 	value_length_ = 0;
+	value_content_type_ = "";
+	value_content_type_length_ = 0;
 	post_data_ = NULL;
 	content_length_ = 0;
 	flags_ = 0;
@@ -555,7 +557,7 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length) {
 	if (name_length == 12) {
 		to_lower(name, name_length);
-		if (memcmp(name, "content-type", name_length) == 0) {
+		if (memcmp(name, "content-type", name_length) == 0 && value_length > 0) {
 			char* buf = (char*)request_buf_.prepare(value_length + 1);
 			if (buf == NULL) {
 				return false;
@@ -566,7 +568,11 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			http_request_.content_type = buf;
 			http_request_.content_type_length = value_length;
 
-			if (value_length > 30 && memcmp(buf, "multipart/form-data", 19) == 0) {
+			if (value_length > 33 && memcmp(buf, "application/x-www-form-urlencoded", 33) == 0) {
+				buf[33] = '\0';
+				http_request_.content_type_length = 33;
+			}
+			else if (value_length > 30 && memcmp(buf, "multipart/form-data", 19) == 0) {
 				char* p = strstr(buf + 19, "boundary=");
 				if (p != NULL) {
 					http_request_.boundary = p + 9;
@@ -674,8 +680,8 @@ void Peer_Http::process_command() {
 				return;
 			}
 		} else if (cmd_length == 10) {
-			if (memcmp(cmd, "checkwatch", cmd_length) == 0) {
-				this->process_check_watch();
+			if (memcmp(cmd, "watch", cmd_length) == 0) {
+				this->process_watch();
 			} else {
 				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -793,7 +799,8 @@ void Peer_Http::process_post() {
 		}
 		process_command();
 	} else if (http_request_.content_type_length == 19
-			&& memcmp(http_request_.content_type, "multipart/form-data", http_request_.content_type_length) == 0) {
+			&& memcmp(http_request_.content_type, "multipart/form-data", http_request_.content_type_length) == 0
+			&& http_request_.boundary_length > 0) {
 		char* buf = (char*)memfind((char*)post_data_, content_length_, (char*)http_request_.boundary, http_request_.boundary_length);
 		while (buf != NULL) {
 			buf += http_request_.boundary_length + 2;
@@ -804,6 +811,24 @@ void Peer_Http::process_post() {
 				char* end = strstr(name, "\"");
 				if (end != NULL) {
 					name_length = (uint32_t)(end - name);
+				}
+
+				if (name_length == 1 && name[0] == 'v')  {
+					char* content_type = strstr(name + 2, "\r\nContent-Type:");
+					if (content_type != NULL) {
+						content_type += 15;
+						while (*content_type == ' ') {
+							content_type++;
+						}
+						end = strstr(content_type, "\r\n");
+						if (end != NULL) {
+							uint32_t content_type_length_ = (uint32_t)(end - content_type);
+							if (content_type_length_ < 64) {
+								value_content_type_ = content_type;
+								value_content_type_length_ = content_type_length_;
+							}
+						}
+					}
 				}
 				
 				char* value = strstr(name + 2, "\r\n\r\n");
@@ -886,7 +911,8 @@ void Peer_Http::process_post() {
 	}
 }
 
-#define GET_RES_304 "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nEtag: "
+#define GET_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: "
+#define GET_RES_304 "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nContent-Type: "
 
 void Peer_Http::process_get() {
 	Cache_Item* it;
@@ -900,22 +926,37 @@ void Peer_Http::process_get() {
 	if (it != NULL) {
 		cache_item_ = it;
 		cache_items_.push_back(it);
+		char* content_type = "text/html";
+		uint32_t ext_size = it->get_ext_size();
+		if (ext_size > 0 && ext_size <= 64) {
+			content_type = (char*)request_buf_.prepare(ext_size + 1);
+			memcpy(content_type, it->get_ext(), ext_size);
+			content_type[ext_size] = '\0';
+		}
 
-		uint8_t* buf = request_buf_.prepare(150);
-		uint32_t data_size = _snprintf((char*)buf, 150, "\"%"PRIu64"\"", it->cache_id);
-		if (data_size == http_request_.entity_tag_length && memcmp(buf, http_request_.entity_tag, data_size) == 0) {
-			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
-			add_write_buf(buf, data_size);
-			add_write_buf((uint8_t*)"\r\n\r\n", 4);
-		} else {
-			data_size = _snprintf((char*)buf, 150, "%"PRIu32"\r\n"
+		char etag[30];
+		uint32_t etag_length = _snprintf((char*)etag, sizeof(etag), "\"%"PRIu64"\"", it->cache_id);
+		if (etag_length == http_request_.entity_tag_length && memcmp(etag, http_request_.entity_tag, etag_length) == 0) {
+			uint8_t* header = request_buf_.prepare(200);
+			uint32_t header_size = _snprintf((char*)header, 200, "%s\r\n"
 				"CacheID: %"PRIu64"\r\n"
 				"Flags: %"PRIu32"\r\n"
 				"Expiration: %"PRIu32"\r\n"
-				"ETag: \"%"PRIu64"\"\r\n\r\n",
-				it->data_size, it->cache_id, it->flags, expiration_, it->cache_id);
-			add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
-			add_write_buf(buf, data_size);
+				"ETag: %s\r\n\r\n",
+				content_type, it->cache_id, it->flags, expiration_, etag);
+
+			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
+			add_write_buf((uint8_t*)header, header_size);
+		} else {
+			uint8_t* header = request_buf_.prepare(200);
+			uint32_t header_size = _snprintf((char*)header, 200, "%s\r\nContent-Length: %"PRIu32"\r\n"
+				"CacheID: %"PRIu64"\r\n"
+				"Flags: %"PRIu32"\r\n"
+				"Expiration: %"PRIu32"\r\n"
+				"ETag: %s\r\n\r\n",
+				content_type, it->data_size, it->cache_id, it->flags, expiration_, etag);
+			add_write_buf((uint8_t*)GET_RES_200, sizeof(GET_RES_200) - 1);
+			add_write_buf(header, header_size);
 			if (http_request_.method != HEAD_METHOD) {
 				add_write_buf(it->get_data(), it->data_size);
 			}
@@ -933,10 +974,10 @@ void Peer_Http::process_get() {
 
 void Peer_Http::process_update(uint8_t sub_op) {
 	cache_item_ = cache_mgr_.alloc_item(group_id_, key_length_, flags_,
-		expiration_, value_length_);
+		expiration_, value_length_, value_content_type_length_);
 
 	if (cache_item_ == NULL) {
-		if (cache_mgr_.item_size_ok(key_length_, value_length_)) {
+		if (cache_mgr_.item_size_ok(key_length_, value_length_, value_content_type_length_)) {
 			write_error(XIXI_REASON_OUT_OF_MEMORY);
 		} else {
 			write_error(XIXI_REASON_TOO_LARGE);
@@ -946,6 +987,7 @@ void Peer_Http::process_update(uint8_t sub_op) {
 
 	memcpy(cache_item_->get_key(), key_, key_length_);
 	memcpy(cache_item_->get_data(), value_, value_length_);
+	cache_item_->set_ext((uint8_t*)value_content_type_);
 
 	cache_item_->calc_hash_value();
 
@@ -983,7 +1025,7 @@ void Peer_Http::process_update(uint8_t sub_op) {
 		//	"CacheID: %"PRIu64"\r\n"
 			"\r\n%", body_size);
 
-		add_write_buf((uint8_t*)JSON_RES_200, sizeof(JSON_RES_200) - 1);
+		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(header, header_size);
 		add_write_buf(body, body_size);
 		set_state(PEER_STATUS_WRITE);
@@ -1043,17 +1085,23 @@ void Peer_Http::process_get_base() {
 	uint64_t cache_id;
 	uint32_t flags;
 	uint32_t expiration;
-	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration);
+	char ext[64];
+	uint32_t ext_size = sizeof(ext);
+	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration, ext, ext_size);
 	if (ret) {
-		uint8_t* body = request_buf_.prepare(100);
-		uint32_t body_size = _snprintf((char*)body, 100, "{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32"}", cache_id, flags, expiration);
+		char* content_type = "text/html";
+		if (ext_size > 0 && ext_size <= 64) {
+			content_type = (char*)request_buf_.prepare(ext_size + 1);
+			memcpy(content_type, ext, ext_size);
+			content_type[ext_size] = '\0';
+		}
+		uint8_t* body = request_buf_.prepare(200);
+		uint32_t body_size = _snprintf((char*)body, 200,
+			"{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32",\"contenttype\":\"%s\"}",
+			cache_id, flags, expiration, content_type);
 
-		uint8_t* header = request_buf_.prepare(200);
-		uint32_t header_size = _snprintf((char*)header, 200, "%"PRIu32"\r\n"
-		//		"CacheID: %"PRIu64"\r\n"
-		//		"Flags: %"PRIu32"\r\n"
-		//		"Expiration: %"PRIu32"\r\n"
-				"\r\n", body_size/*, cache_id, flags, expiration*/);
+		uint8_t* header = request_buf_.prepare(30);
+		uint32_t header_size = _snprintf((char*)header, 30, "%"PRIu32"\r\n\r\n", body_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(header, header_size);
@@ -1214,7 +1262,7 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 	}
 }
 
-void Peer_Http::process_check_watch() {
+void Peer_Http::process_watch() {
 	std::list<uint64_t> updated_list;
 	uint32_t updated_count = 0;
 	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
@@ -1302,6 +1350,8 @@ void Peer_Http::reset_for_new_cmd() {
 	key_length_ = 0;
 	value_ = NULL;
 	value_length_ = 0;
+	value_content_type_ = "";
+	value_content_type_length_ = 0;
 	post_data_ = NULL;
 	content_length_ = 0;
 	flags_ = 0;

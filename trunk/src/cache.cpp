@@ -25,7 +25,7 @@
 
 Cache_Mgr cache_mgr_;
 
-#define CALC_ITEM_SIZE(k, d) (sizeof(Cache_Item) + k + d)
+#define CALC_ITEM_SIZE(k, d, e) (sizeof(Cache_Item) + k + d + e)
 #define CHUNK_ALIGN_BYTES 8
 
 Cache_Watch::Cache_Watch(uint32_t watch_id, uint32_t expire_time) {
@@ -275,8 +275,8 @@ void Cache_Mgr::expire_items(uint32_t curr_time) {
 }
 
 Cache_Item* Cache_Mgr::do_alloc(uint32_t group_id, uint32_t key_length, uint32_t flags, 
-								uint32_t expire_time, uint32_t data_size) {
-	uint32_t item_size = CALC_ITEM_SIZE(key_length, data_size);
+								uint32_t expire_time, uint32_t data_size, uint32_t ext_size) {
+	uint32_t item_size = CALC_ITEM_SIZE(key_length, data_size, ext_size);
 
 	uint32_t id = get_class_id(item_size);
 	if (id == 0) {
@@ -311,6 +311,7 @@ Cache_Item* Cache_Mgr::do_alloc(uint32_t group_id, uint32_t key_length, uint32_t
 	it->data_size = data_size;
 	it->expire_time = expire_time;
 	it->flags = flags;
+	it->ext_size = ext_size;
 
 	return it;
 }
@@ -334,8 +335,8 @@ void Cache_Mgr::free_item(Cache_Item* it) {
 	}
 }
 
-bool Cache_Mgr::item_size_ok(uint32_t key_length, uint32_t data_size) {
-	return get_class_id(CALC_ITEM_SIZE(key_length, data_size)) != 0;
+bool Cache_Mgr::item_size_ok(uint32_t key_length, uint32_t data_size, uint32_t ext_size) {
+	return get_class_id(CALC_ITEM_SIZE(key_length, data_size, ext_size)) != 0;
 }
 
 uint32_t Cache_Mgr::get_expiration_id(uint32_t curr_time, uint32_t expire_time) {
@@ -474,10 +475,10 @@ Cache_Item* Cache_Mgr::do_get_touch(uint32_t group_id, const uint8_t* key, uint3
 }
 
 Cache_Item* Cache_Mgr::alloc_item(uint32_t group_id, uint32_t key_length, uint32_t flags,
-								  uint32_t expiration, uint32_t data_size) {
+								  uint32_t expiration, uint32_t data_size, uint32_t ext_size) {
 	Cache_Item* it;
 	cache_lock_.lock();
-	it = do_alloc(group_id, key_length, flags, curr_time_.realtime(expiration), data_size);
+	it = do_alloc(group_id, key_length, flags, curr_time_.realtime(expiration), data_size, ext_size);
 	cache_lock_.unlock();
 	return it;
 }
@@ -541,24 +542,32 @@ Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, uint32_
 }
 
 bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t&/*out*/ cache_id,
-						 uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration) {
-	 Cache_Item* it;
-	 bool ret;
-	 uint32_t hash_value = hash32(key, key_length, group_id);
-	 cache_lock_.lock();
-	 it = do_get(group_id, key, key_length, hash_value, expiration);
-	 if (it != NULL) {
-		 cache_id = it->cache_id;
-		 flags = it->flags;
-		 stats_.get_base_hit(it->group_id, it->class_id);
-		 do_release_reference(it);
-		 ret = true;
-	 } else {
-		 stats_.get_base_miss(group_id);
-		 ret = false;
-	 }
-	 cache_lock_.unlock();
-	 return ret;
+						 uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration, char*/*out*/ ext, uint32_t&/*in out*/ ext_size) {
+	Cache_Item* it;
+	bool ret;
+	uint32_t hash_value = hash32(key, key_length, group_id);
+	cache_lock_.lock();
+	it = do_get(group_id, key, key_length, hash_value, expiration);
+	if (it != NULL) {
+		cache_id = it->cache_id;
+		flags = it->flags;
+		if (it->ext_size > 0 && ext_size > 0) {
+			if (ext_size > it->ext_size) {
+				ext_size = it->ext_size;
+			}
+			memcpy(ext, it->get_ext(), ext_size);
+		} else {
+			ext_size = 0;
+		}
+		stats_.get_base_hit(it->group_id, it->class_id);
+		do_release_reference(it);
+		ret = true;
+	} else {
+		stats_.get_base_miss(group_id);
+		ret = false;
+	}
+	cache_lock_.unlock();
+	return ret;
 }
 
 bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
@@ -769,11 +778,12 @@ xixi_reason Cache_Mgr::append(Cache_Item* it, uint32_t watch_id, uint64_t&/*out*
 			stats_.append_mismatch(it->group_id, it->class_id);
 			reason = XIXI_REASON_MISMATCH;
 		} else {
-			Cache_Item* new_it = do_alloc(it->group_id, it->key_length, old_it->flags, old_it->expire_time, it->data_size + old_it->data_size);
+			Cache_Item* new_it = do_alloc(it->group_id, it->key_length, old_it->flags, old_it->expire_time, it->data_size + old_it->data_size, old_it->ext_size);
 			if (new_it != NULL) {
 				new_it->set_key_with_hash(it->get_key(), it->hash_value_);
 				memcpy(new_it->get_data(), old_it->get_data(), old_it->data_size);
 				memcpy(new_it->get_data() + old_it->data_size, it->get_data(), it->data_size);
+				new_it->set_ext(old_it->get_ext());
 				if (watch_id != 0) {
 					if (is_valid_watch_id(watch_id)) {
 						stats_.append_success_watch(it->group_id, it->class_id, it->total_size());
@@ -819,11 +829,12 @@ xixi_reason Cache_Mgr::prepend(Cache_Item* it, uint32_t watch_id, uint64_t&/*out
 			stats_.prepend_mismatch(it->group_id, it->class_id);
 			reason = XIXI_REASON_MISMATCH;
 		} else {
-			Cache_Item* new_it = do_alloc(it->group_id, it->key_length, old_it->flags, old_it->expire_time, it->data_size + old_it->data_size);
+			Cache_Item* new_it = do_alloc(it->group_id, it->key_length, old_it->flags, old_it->expire_time, it->data_size + old_it->data_size, old_it->ext_size);
 			if (new_it != NULL) {
 				new_it->set_key_with_hash(it->get_key(), it->hash_value_);
 				memcpy(new_it->get_data(), it->get_data(), it->data_size);
 				memcpy(new_it->get_data() + it->data_size, old_it->get_data(), old_it->data_size);
+				new_it->set_ext(old_it->get_ext());
 				if (watch_id != 0) {
 					if (is_valid_watch_id(watch_id)) {
 						stats_.prepend_success_watch(it->group_id, it->class_id, it->total_size());
@@ -922,12 +933,13 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 			char buf[INCR_MAX_STORAGE_LEN];
 			uint32_t data_size = _snprintf(buf, INCR_MAX_STORAGE_LEN, "%"PRId64" ", value);
 			if (data_size > it->data_size) {
-				Cache_Item* new_it = do_alloc(it->group_id, it->key_length, it->flags, it->expire_time, data_size);
+				Cache_Item* new_it = do_alloc(it->group_id, it->key_length, it->flags, it->expire_time, data_size, it->ext_size);
 				if (new_it == NULL) {
 					reason = XIXI_REASON_OUT_OF_MEMORY;
 				} else {
 					new_it->set_key_with_hash(it->get_key(), it->hash_value_);
 					memcpy(new_it->get_data(), buf, data_size);
+					new_it->set_ext(it->get_ext());
 					do_replace(it, new_it);
 					cache_id = new_it->cache_id;
 					do_release_reference(new_it);
