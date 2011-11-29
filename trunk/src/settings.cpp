@@ -15,6 +15,9 @@
 */
 
 #include "settings.h"
+#include "tinyxml.h"
+#include <boost/filesystem.hpp>
+using namespace boost::filesystem;
 
 Settings settings_;
 
@@ -23,6 +26,15 @@ Settings::Settings() {
 }
 
 void Settings::init() {
+	system::error_code ec;
+	boost::filesystem::path scp = system_complete(boost::filesystem::path("../"), ec);
+	if (ec) {
+		scp = system_complete(current_path(ec), ec);
+	}
+	if (!ec) {
+		home_dir = scp.string();
+	}
+
 	port = 7788;
 	inter = "0.0.0.0";
 	maxbytes = 768 * 1024 * 1024;
@@ -34,4 +46,52 @@ void Settings::init() {
 	item_size_max = 5 * 1024 * 1024;
 
 	max_stats_group = 1024;
+}
+
+bool Settings::load_conf() {
+	string xmlfile = settings_.home_dir + "conf/web.xml";
+	TiXmlDocument doc(xmlfile.c_str());
+	if (!doc.LoadFile()) {
+		return false;
+	}
+
+	TiXmlHandle hDoc(&doc);
+	TiXmlHandle hRoot(0);
+
+	TiXmlElement* first = hDoc.FirstChildElement().Element();
+	if (first == NULL) {
+		return false;
+	}
+	string name = first->Value();
+
+	hRoot = TiXmlHandle(first);
+
+	TiXmlElement* mime = hRoot.FirstChild( "mime-mapping" ).Element();
+	while (mime != NULL) {
+		const char* ext = NULL;
+		const char* type = NULL;
+		TiXmlNode* node_ext = mime->FirstChild("extension");
+		if (node_ext != NULL) {
+			ext = node_ext->ToElement()->GetText();
+		}
+		TiXmlNode* node_type = mime->FirstChild("mime-type");
+		if (node_type != NULL) {
+			type = node_type->ToElement()->GetText();
+		}
+		if (ext != NULL && type != NULL) {
+			mime_map_[string(ext)] = string(type);
+		}
+		mime = mime->NextSiblingElement();
+	}
+
+	return true;
+}
+
+bool Settings::ext_to_mime(const string& ext, string& mime_type) {
+	map<string, string>::iterator it = mime_map_.find(ext);
+	if (it != mime_map_.end()) {
+		mime_type = it->second;
+		return true;
+	}
+	return false;
 }

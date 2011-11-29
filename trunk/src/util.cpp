@@ -205,6 +205,17 @@ extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out) {
 	out = negative ? -ret : ret;
 	return true;
 }
+
+extern const char* get_ext(const char* key, uint32_t length) {
+	uint32_t count = 0;
+	for (int32_t i = length - 1; i >= 0 && count < 5; i--, count++) {
+		if (key[i] == '.') {
+			return key + i + 1;
+		}
+	}
+	return "";
+}
+
 /*
 bool safe_strtoui64(const char* str, uint64_t& out) {
 	errno = 0;

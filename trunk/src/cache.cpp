@@ -22,6 +22,7 @@
 #include "util.h"
 #include "log.h"
 #include "peer_cache_pdu.h"
+#include "settings.h"
 
 Cache_Mgr cache_mgr_;
 
@@ -640,6 +641,79 @@ void Cache_Mgr::release_reference(Cache_Item* item) {
 	cache_lock_.lock();
 	do_release_reference(item);
 	cache_lock_.unlock();
+}
+
+xixi_reason Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, Cache_Item*&/*out*/ item) {
+	string filename = settings_.home_dir + "webapps/" + (char*)key;
+	FILE* file = fopen(filename.c_str(), "rb");
+	if (file == NULL) {
+		return XIXI_REASON_NOT_FOUND;
+	}
+	fseek(file, 0, SEEK_END);
+	size_t file_size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+ 
+	string ext = get_ext((char*)key, key_length); // p.extension().string();
+	string mime_type;
+	if (settings_.ext_to_mime(ext, mime_type)) {
+	}
+
+	uint32_t load_expiration = 300;
+	item = alloc_item(group_id, key_length, 0,
+		load_expiration, file_size, mime_type.size());
+
+	if (item == NULL) {
+		fclose(file);
+		if (item_size_ok(key_length, file_size, mime_type.size())) {
+			return XIXI_REASON_OUT_OF_MEMORY;
+		} else {
+			return XIXI_REASON_TOO_LARGE;
+		}
+	}
+
+	memcpy(item->get_key(), key, key_length);
+	size_t count = fread(item->get_data(), file_size, 1, file);
+	fclose(file);
+	file = NULL;
+//	memcpy(cache_item_->get_data(), value_, value_length_);
+	item->set_ext((uint8_t*)mime_type.c_str());
+
+	item->calc_hash_value();
+
+//	item->cache_id = 0;
+
+	uint64_t cache_id;
+	xixi_reason reason = XIXI_REASON_SUCCESS;
+
+
+	cache_lock_.lock();
+
+	Cache_Item* old_it = do_get(group_id, key, key_length, item->hash_value_);
+	if (old_it == NULL) {
+		if (watch_id != 0) {
+			if (is_valid_watch_id(watch_id)) {
+				item->add_watch(watch_id);
+				stats_.add_success_watch(item->group_id, item->class_id, item->total_size());
+			} else {
+				stats_.add_watch_miss(item->group_id, item->class_id);
+				reason = XIXI_REASON_WATCH_NOT_FOUND;
+			}
+		} else {
+			stats_.add_success(item->group_id, item->class_id, item->total_size());
+		}
+
+		if (reason == XIXI_REASON_SUCCESS) {
+			do_link(item);
+			cache_id = item->cache_id;
+		}
+	} else {
+		do_release_reference(item);
+		item = old_it;
+	}
+
+	cache_lock_.unlock();
+
+	return reason;
 }
 
 xixi_reason Cache_Mgr::add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id) {

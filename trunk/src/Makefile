@@ -14,9 +14,13 @@ SRCS = cache.cpp \
   peer_cache.cpp \
   peer_http.cpp \
   peer_pdu.cpp \
-  auth.cpp
+  auth.cpp \
+  ../3rd/tinyxml/tinystr.cpp \
+  ../3rd/tinyxml/tinyxml.cpp \
+  ../3rd/tinyxml/tinyxmlerror.cpp \
+  ../3rd/tinyxml/tinyxmlparser.cpp
 
-INCLUDE_OPTIONS = -I../3rd/boost
+INCLUDE_OPTIONS = -I../3rd/boost -I../3rd/tinyxml
 
 LINK_OPTIONS = -L../3rd/boost/stage/lib -lboost_system -lboost_thread -lboost_filesystem -lpthread
 #-lboost_log

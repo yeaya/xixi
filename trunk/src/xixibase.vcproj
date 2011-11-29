@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\3rd\boost"
+				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -359,6 +359,30 @@
 			</File>
 			<File
 				RelativePath=".\lookup3.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\3rd\tinyxml\tinystr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\3rd\tinyxml\tinystr.h"
+				>
+			</File>
+			<File
+				RelativePath="..\3rd\tinyxml\tinyxml.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\3rd\tinyxml\tinyxml.h"
+				>
+			</File>
+			<File
+				RelativePath="..\3rd\tinyxml\tinyxmlerror.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\3rd\tinyxml\tinyxmlparser.cpp"
 				>
 			</File>
 			<File

@@ -15,6 +15,7 @@
 */
 
 #include "log.h"
+#include "settings.h"
 #include <stdio.h>
 
 //#define ENABLE_LINE_ID
@@ -125,7 +126,7 @@ const char* LOG_PREFIX(const char* severity) {
 }
 
 #include <boost/filesystem.hpp>
-#include <ostream>
+//#include <ostream>
 using namespace boost::filesystem;
 FILE* log_fw_ = NULL;
 uint32_t log_size_ = 0;
@@ -133,7 +134,8 @@ uint32_t max_log_size_per_file_ = 20 * 1024 * 1024;
 
 void create_log_file() {
 	if (log_fw_ == NULL) {
-		boost::filesystem::path p("../logs");
+		string s = settings_.home_dir + "logs";
+		boost::filesystem::path p(s); // "../logs"
 		try {
 			if (exists(p)) {
 				if (!is_directory(p)) {
@@ -152,12 +154,12 @@ void create_log_file() {
 			cout << ex.what() << endl;
 			return;
 		}
-		char filename[128];
+		char filename[260];
 		std::string strTime = boost::posix_time::to_iso_string(boost::posix_time::microsec_clock::local_time());
 		if (strTime.size() > 15) {
 			const char* p = strTime.c_str();
-			_snprintf(filename, sizeof(filename), "../logs/xixibase%4.4s%2.2s%2.2s_%2.2s%2.2s%2.2s.log",
-			p, p + 4, p + 6, p + 9, p + 11, p + 13);
+			_snprintf(filename, sizeof(filename), "%s/xixibase%4.4s%2.2s%2.2s_%2.2s%2.2s%2.2s.log",
+				s.c_str(), p, p + 4, p + 6, p + 9, p + 11, p + 13);
 			log_fw_ = fopen(filename, "a+");
 		}	
 	}

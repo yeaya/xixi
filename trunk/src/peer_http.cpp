@@ -917,11 +917,20 @@ void Peer_Http::process_post() {
 void Peer_Http::process_get() {
 	Cache_Item* it;
 	bool watch_error = false;
-	if (touch_flag_) {
+		if (touch_flag_) {
 		it = cache_mgr_.get_touch(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration_, watch_error);
 	} else {
 		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration_, watch_error);
-	}	
+	}
+
+	// try load from file /webapps
+	if (it == NULL && key_length_ > 0 && key_[0] == '/') {
+		xixi_reason reason = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, it);
+		if (reason != XIXI_REASON_SUCCESS) {
+			write_error(reason);
+			return;
+		}
+	}
 
 	if (it != NULL) {
 		cache_item_ = it;

@@ -47,6 +47,10 @@ exe xixibase
     peer_http.cpp 
     peer_pdu.cpp 
     auth.cpp
+    ../3rd/tinyxml/tinystr.cpp
+    ../3rd/tinyxml/tinyxml.cpp
+    ../3rd/tinyxml/tinyxmlerror.cpp
+    ../3rd/tinyxml/tinyxmlparser.cpp
     /boost/system//boost_system
     /boost/thread//boost_thread
     /boost/filesystem//boost_filesystem

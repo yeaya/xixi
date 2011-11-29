@@ -24,6 +24,10 @@ class Settings {
 public:
 	Settings();
 	void init();
+	bool load_conf();
+	bool ext_to_mime(const string& ext, string& mime_type);
+
+	string home_dir;
 
 	uint64_t maxbytes;
 	uint32_t maxconns;
@@ -37,6 +41,8 @@ public:
 	uint32_t item_size_max;
 
 	uint32_t max_stats_group;
+
+	map<string, string> mime_map_;
 };
 
 extern Settings settings_;
