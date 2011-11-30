@@ -17,7 +17,6 @@
 #include "settings.h"
 #include "tinyxml.h"
 #include <boost/filesystem.hpp>
-using namespace boost::filesystem;
 
 Settings settings_;
 
@@ -26,10 +25,10 @@ Settings::Settings() {
 }
 
 void Settings::init() {
-	system::error_code ec;
-	boost::filesystem::path scp = system_complete(boost::filesystem::path("../"), ec);
+	boost::system::error_code ec;
+	boost::filesystem::path scp = boost::filesystem::system_complete(boost::filesystem::path("../"), ec);
 	if (ec) {
-		scp = system_complete(current_path(ec), ec);
+		scp = boost::filesystem::system_complete(boost::filesystem::current_path(ec), ec);
 	}
 	if (!ec) {
 		home_dir = scp.string();
@@ -79,17 +78,26 @@ bool Settings::load_conf() {
 			type = node_type->ToElement()->GetText();
 		}
 		if (ext != NULL && type != NULL) {
-			mime_map_[string(ext)] = string(type);
+			mime_map[string(ext)] = string(type);
 		}
 		mime = mime->NextSiblingElement();
+	}
+
+	TiXmlElement* welcome = hRoot.FirstChild( "welcome-file-list" ).FirstChildElement("welcome-file").Element();
+	while (welcome != NULL) {
+		const char* file = welcome->GetText();
+		if (file != NULL) {
+			welcome_file_list.push_back(string(file));
+		}
+		welcome = welcome->NextSiblingElement();
 	}
 
 	return true;
 }
 
 bool Settings::ext_to_mime(const string& ext, string& mime_type) {
-	map<string, string>::iterator it = mime_map_.find(ext);
-	if (it != mime_map_.end()) {
+	map<string, string>::iterator it = mime_map.find(ext);
+	if (it != mime_map.end()) {
 		mime_type = it->second;
 		return true;
 	}

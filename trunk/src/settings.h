@@ -42,7 +42,8 @@ public:
 
 	uint32_t max_stats_group;
 
-	map<string, string> mime_map_;
+	map<string, string> mime_map;
+	vector<string> welcome_file_list;
 };
 
 extern Settings settings_;

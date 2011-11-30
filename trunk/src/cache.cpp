@@ -643,11 +643,12 @@ void Cache_Mgr::release_reference(Cache_Item* item) {
 	cache_lock_.unlock();
 }
 
-xixi_reason Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, Cache_Item*&/*out*/ item) {
-	string filename = settings_.home_dir + "webapps/" + (char*)key;
+Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, xixi_reason&/*out*/ reason) {
+	string filename = settings_.home_dir + "webapps" + (char*)key;
 	FILE* file = fopen(filename.c_str(), "rb");
 	if (file == NULL) {
-		return XIXI_REASON_NOT_FOUND;
+		reason = XIXI_REASON_NOT_FOUND;
+		return NULL;
 	}
 	fseek(file, 0, SEEK_END);
 	size_t file_size = ftell(file);
@@ -658,33 +659,29 @@ xixi_reason Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 	if (settings_.ext_to_mime(ext, mime_type)) {
 	}
 
-	uint32_t load_expiration = 300;
-	item = alloc_item(group_id, key_length, 0,
-		load_expiration, file_size, mime_type.size());
+	Cache_Item* item = alloc_item(group_id, key_length, 0,
+		expiration, (uint32_t)file_size, (uint32_t)mime_type.size());
 
 	if (item == NULL) {
 		fclose(file);
-		if (item_size_ok(key_length, file_size, mime_type.size())) {
-			return XIXI_REASON_OUT_OF_MEMORY;
+		if (item_size_ok(key_length, (uint32_t)file_size, (uint32_t)mime_type.size())) {
+			reason = XIXI_REASON_OUT_OF_MEMORY;
 		} else {
-			return XIXI_REASON_TOO_LARGE;
+			reason = XIXI_REASON_TOO_LARGE;
 		}
+		return NULL;
 	}
 
 	memcpy(item->get_key(), key, key_length);
-	size_t count = fread(item->get_data(), file_size, 1, file);
+	size_t count = fread(item->get_data(), (uint32_t)file_size, 1, file);
 	fclose(file);
 	file = NULL;
-//	memcpy(cache_item_->get_data(), value_, value_length_);
+
 	item->set_ext((uint8_t*)mime_type.c_str());
 
 	item->calc_hash_value();
 
-//	item->cache_id = 0;
-
-	uint64_t cache_id;
-	xixi_reason reason = XIXI_REASON_SUCCESS;
-
+	reason = XIXI_REASON_SUCCESS;
 
 	cache_lock_.lock();
 
@@ -704,7 +701,9 @@ xixi_reason Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 
 		if (reason == XIXI_REASON_SUCCESS) {
 			do_link(item);
-			cache_id = item->cache_id;
+		} else {
+			do_release_reference(item);
+			item = NULL;
 		}
 	} else {
 		do_release_reference(item);
@@ -713,7 +712,7 @@ xixi_reason Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 
 	cache_lock_.unlock();
 
-	return reason;
+	return item;
 }
 
 xixi_reason Cache_Mgr::add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id) {

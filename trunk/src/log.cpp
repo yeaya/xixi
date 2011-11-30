@@ -126,8 +126,6 @@ const char* LOG_PREFIX(const char* severity) {
 }
 
 #include <boost/filesystem.hpp>
-//#include <ostream>
-using namespace boost::filesystem;
 FILE* log_fw_ = NULL;
 uint32_t log_size_ = 0;
 uint32_t max_log_size_per_file_ = 20 * 1024 * 1024;
@@ -135,22 +133,20 @@ uint32_t max_log_size_per_file_ = 20 * 1024 * 1024;
 void create_log_file() {
 	if (log_fw_ == NULL) {
 		string s = settings_.home_dir + "logs";
-		boost::filesystem::path p(s); // "../logs"
 		try {
+			boost::filesystem::path p(s);
 			if (exists(p)) {
 				if (!is_directory(p)) {
 					cout << p << " is not a directory" << endl;
 					return;
 				}
-			}
-			else {
-				boost::system::error_code ec;
-				if (!create_directory(p, ec)) {
+			} else {
+				if (!create_directory(p)) {
 					cout << "Can not create directory:" << p << endl;
 					return;
 				}
 			}
-		} catch (const filesystem_error& ex) {
+		} catch (const boost::system::system_error& ex) {
 			cout << ex.what() << endl;
 			return;
 		}

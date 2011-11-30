@@ -97,6 +97,9 @@ protected:
 	// get
 	inline void process_get();
 
+	// get welcome file
+	Cache_Item* get_welcome_file(xixi_reason& reason, uint32_t& expiration);
+
 	// get base
 	inline void process_get_base();
 
@@ -200,7 +203,7 @@ protected:
 	uint8_t* read_item_buf_;
 
 	Cache_Item* cache_item_;
-	vector<Cache_Item*> cache_items_;
+//	vector<Cache_Item*> cache_items_;
 
 	Cache_Buffer<2048> request_buf_;
 

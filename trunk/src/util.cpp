@@ -216,6 +216,56 @@ extern const char* get_ext(const char* key, uint32_t length) {
 	return "";
 }
 
+char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len) {
+	if (length < sub_len) {
+		return NULL;
+	}
+	for (uint32_t i = 0; i <= length - sub_len; i++) {
+		uint32_t j = 0;
+		for (; j < sub_len; j++) {
+			if (data[i + j] != sub[j]) {
+				break;
+			}
+		}
+		if (j == sub_len) {
+			return data + i;
+		}
+	}
+	return NULL;
+}
+
+int strcasecmp(char* str1, char* str2, uint32_t length) {
+	for (uint32_t i = 0; i < length; i++) {
+		char c1 = str1[i];
+		char c2 = str2[i];
+		if (c1 >= 'a' && c1 <= 'z') {
+			c1 -= ('a' - 'A');
+		}
+
+		if (c2 >= 'a' && c2 <= 'z') {
+			c2 -= ('a' - 'A');
+		}
+
+		if (c1 == c2) {
+			continue;
+		} else if (c1 > c2) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+void to_lower(char* buf, uint32_t length) {
+	for (uint32_t i = 0; i < length; i++) {
+		char c = buf[i];
+		if (c >= 'A' && c <= 'Z') {
+			buf[i] = c + ('a' - 'A');
+		}
+	}
+}
+
 /*
 bool safe_strtoui64(const char* str, uint64_t& out) {
 	errno = 0;

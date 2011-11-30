@@ -63,47 +63,8 @@
 // length: must > 0
 // sub: must not be NULL
 // sub_len: must > 0
-char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len) {
-	if (length < sub_len) {
-		return NULL;
-	}
-	for (uint32_t i = 0; i <= length - sub_len; i++) {
-		uint32_t j = 0;
-		for (; j < sub_len; j++) {
-			if (data[i + j] != sub[j]) {
-				break;
-			}
-		}
-		if (j == sub_len) {
-			return data + i;
-		}
-	}
-	return NULL;
-}
-
-const char* content_types[] = 
-{
-	"html", "text/html",
-	"htm", "text/html"
-};
-
-const char* get_content_type(const char* key, uint32_t length) {
-	if (key == NULL || length < 2) {
-		return "text/html";
-	}
-	uint32_t count = 0;
-	for (int32_t i = length - 1; i >= 0 && count < 5; i--, count++) {
-		if (key[i] == '.') {
-			const char* ext = key + i + 1;
-			uint32_t ext_length = length - i - 1;
-		}
-	}
-	return "text/html";
-}
 
 void tokenize_command(char* command, vector<token_t>& tokens) {
-	assert(command != NULL);
-
 	char* start = command;
 	char* end = command;
 	token_t t;
@@ -127,15 +88,6 @@ void tokenize_command(char* command, vector<token_t>& tokens) {
 			break;
 		}
 		++end;
-	}
-}
-
-void to_lower(char* buf, uint32_t length) {
-	for (uint32_t i = 0; i < length; i++) {
-		char c = buf[i];
-		if (c >= 'A' && c <= 'Z') {
-			buf[i] = c + ('a' - 'A');
-		}
 	}
 }
 
@@ -231,12 +183,15 @@ Peer_Http::~Peer_Http() {
 }
 
 void Peer_Http::cleanup() {
-	cache_item_ = NULL;
-
-	for (uint32_t i = 0; i < cache_items_.size(); i++) {
-		cache_mgr_.release_reference(cache_items_[i]);
+	if (cache_item_ != NULL) {
+		cache_mgr_.release_reference(cache_item_);
+		cache_item_ = NULL;
 	}
-	cache_items_.clear();
+
+//	for (uint32_t i = 0; i < cache_items_.size(); i++) {
+//		cache_mgr_.release_reference(cache_items_[i]);
+//	}
+//	cache_items_.clear();
 
 	if (socket_ != NULL) {
 		delete socket_;
@@ -556,23 +511,22 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 
 bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length) {
 	if (name_length == 12) {
-		to_lower(name, name_length);
-		if (memcmp(name, "content-type", name_length) == 0 && value_length > 0) {
+	//	to_lower(name, name_length);
+		if (strcasecmp(name, "content-type", name_length) == 0 && value_length > 0) {
 			char* buf = (char*)request_buf_.prepare(value_length + 1);
 			if (buf == NULL) {
 				return false;
 			}
 			memcpy(buf, value, value_length);
 			buf[value_length] = '\0';
-			to_lower(buf, value_length);
+		//	to_lower(buf, value_length);
 			http_request_.content_type = buf;
 			http_request_.content_type_length = value_length;
 
-			if (value_length > 33 && memcmp(buf, "application/x-www-form-urlencoded", 33) == 0) {
+			if (value_length > 33 && strcasecmp(buf, "application/x-www-form-urlencoded", 33) == 0) {
 				buf[33] = '\0';
 				http_request_.content_type_length = 33;
-			}
-			else if (value_length > 30 && memcmp(buf, "multipart/form-data", 19) == 0) {
+			} else if (value_length > 30 && strcasecmp(buf, "multipart/form-data", 19) == 0) {
 				char* p = strstr(buf + 19, "boundary=");
 				if (p != NULL) {
 					http_request_.boundary = p + 9;
@@ -583,21 +537,21 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			}
 		}
 	} else if (name_length == 13) {
-		to_lower(name, name_length);
-		if (memcmp(name, "if-none-match", name_length) == 0) {
+	//	to_lower(name, name_length);
+		if (strcasecmp(name, "if-none-match", name_length) == 0) {
 			char* buf = (char*)request_buf_.prepare(value_length + 1);
 			if (buf == NULL) {
 				return false;
 			}
 			memcpy(buf, value, value_length);
 			buf[value_length] = '\0';
-			to_lower(buf, value_length);
+		//	to_lower(buf, value_length);
 			http_request_.entity_tag = buf;
 			http_request_.entity_tag_length = value_length;
 		}
 	} else if (name_length == 14) {
-		to_lower(name, name_length);
-		if (memcmp(name, "content-length", name_length) == 0) {
+	//	to_lower(name, name_length);
+		if (strcasecmp(name, "content-length", name_length) == 0) {
 			if (!safe_toui32(value, value_length, content_length_)) {
 				return false;
 			}
@@ -791,7 +745,7 @@ bool Peer_Http::process_request_arg(char* arg) {
 
 void Peer_Http::process_post() {
 	if (http_request_.content_type_length == 33
-			&& memcmp(http_request_.content_type, "application/x-www-form-urlencoded", http_request_.content_type_length) == 0) {
+			&& strcasecmp(http_request_.content_type, "application/x-www-form-urlencoded", http_request_.content_type_length) == 0) {
 
 		if (!process_request_arg((char*)post_data_)) {
 			LOG_WARNING2("process_cahce_arg failed");
@@ -799,7 +753,7 @@ void Peer_Http::process_post() {
 		}
 		process_command();
 	} else if (http_request_.content_type_length == 19
-			&& memcmp(http_request_.content_type, "multipart/form-data", http_request_.content_type_length) == 0
+			&& strcasecmp(http_request_.content_type, "multipart/form-data", http_request_.content_type_length) == 0
 			&& http_request_.boundary_length > 0) {
 		char* buf = (char*)memfind((char*)post_data_, content_length_, (char*)http_request_.boundary, http_request_.boundary_length);
 		while (buf != NULL) {
@@ -917,16 +871,29 @@ void Peer_Http::process_post() {
 void Peer_Http::process_get() {
 	Cache_Item* it;
 	bool watch_error = false;
-		if (touch_flag_) {
-		it = cache_mgr_.get_touch(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration_, watch_error);
+	uint32_t expiration;
+	if (touch_flag_) {
+		expiration = expiration_;
+		it = cache_mgr_.get_touch(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, watch_error);
 	} else {
-		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration_, watch_error);
+		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, watch_error);
 	}
 
 	// try load from file /webapps
 	if (it == NULL && key_length_ > 0 && key_[0] == '/') {
-		xixi_reason reason = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, it);
-		if (reason != XIXI_REASON_SUCCESS) {
+		uint32_t load_expiration = 600;
+		if (!touch_flag_) {
+			expiration = load_expiration;
+		}
+		xixi_reason reason;
+		it = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
+		if (reason == XIXI_REASON_NOT_FOUND && key_[key_length_ - 1] == '/') {
+			it = get_welcome_file(reason, expiration);
+			if (it == NULL) {
+				write_error(reason);
+				return;
+			}
+		} else if (reason != XIXI_REASON_SUCCESS) {
 			write_error(reason);
 			return;
 		}
@@ -934,7 +901,7 @@ void Peer_Http::process_get() {
 
 	if (it != NULL) {
 		cache_item_ = it;
-		cache_items_.push_back(it);
+//		cache_items_.push_back(it);
 		char* content_type = "text/html";
 		uint32_t ext_size = it->get_ext_size();
 		if (ext_size > 0 && ext_size <= 64) {
@@ -952,7 +919,7 @@ void Peer_Http::process_get() {
 				"Flags: %"PRIu32"\r\n"
 				"Expiration: %"PRIu32"\r\n"
 				"ETag: %s\r\n\r\n",
-				content_type, it->cache_id, it->flags, expiration_, etag);
+				content_type, it->cache_id, it->flags, expiration, etag);
 
 			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
 			add_write_buf((uint8_t*)header, header_size);
@@ -963,7 +930,7 @@ void Peer_Http::process_get() {
 				"Flags: %"PRIu32"\r\n"
 				"Expiration: %"PRIu32"\r\n"
 				"ETag: %s\r\n\r\n",
-				content_type, it->data_size, it->cache_id, it->flags, expiration_, etag);
+				content_type, it->data_size, it->cache_id, it->flags, expiration, etag);
 			add_write_buf((uint8_t*)GET_RES_200, sizeof(GET_RES_200) - 1);
 			add_write_buf(header, header_size);
 			if (http_request_.method != HEAD_METHOD) {
@@ -979,6 +946,49 @@ void Peer_Http::process_get() {
 			write_error(XIXI_REASON_NOT_FOUND);
 		}
 	}
+}
+
+Cache_Item* Peer_Http::get_welcome_file(xixi_reason& reason, uint32_t& expiration) {
+	Cache_Item* it = NULL;
+	reason = XIXI_REASON_NOT_FOUND;
+	for (size_t i = 0; i < settings_.welcome_file_list.size(); i++) {
+		string& welcome = settings_.welcome_file_list[i];
+		uint32_t new_key_length = key_length_ + welcome.size() + 1;
+		uint8_t* new_key = request_buf_.prepare(new_key_length + 1);
+		memcpy(new_key, key_, key_length_);
+		if (key_[key_length_ - 1] != '/') {
+			new_key[key_length_] = '/';
+			memcpy(new_key + key_length_ + 1, welcome.c_str(), welcome.size());
+		} else {
+			new_key_length--;
+			memcpy(new_key + key_length_, welcome.c_str(), welcome.size());
+		}
+		new_key[new_key_length] = '\0';
+
+		bool watch_error = false;
+		if (touch_flag_) {
+			expiration = expiration_;
+			it = cache_mgr_.get_touch(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, watch_error);
+		} else {
+			it = cache_mgr_.get(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, watch_error);
+		}
+		if (it != NULL) {
+			reason = XIXI_REASON_SUCCESS;
+			break;
+		} else {
+			uint32_t load_expiration = 600;
+			if (!touch_flag_) {
+				expiration = load_expiration;
+			}
+			it = cache_mgr_.load_from_file(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, reason);
+			if (reason == XIXI_REASON_NOT_FOUND) {
+				continue;
+			} else {
+				break;
+			}
+		}
+	}
+	return it;
 }
 
 void Peer_Http::process_update(uint8_t sub_op) {
@@ -1346,11 +1356,15 @@ void Peer_Http::process_stats() {
 }
 
 void Peer_Http::reset_for_new_cmd() {
-	cache_item_ = NULL;
-	for (uint32_t i = 0; i < cache_items_.size(); i++) {
-		cache_mgr_.release_reference(cache_items_[i]);
+	if (cache_item_ != NULL) {
+		cache_mgr_.release_reference(cache_item_);
+		cache_item_ = NULL;
 	}
-	cache_items_.clear();
+
+//	for (uint32_t i = 0; i < cache_items_.size(); i++) {
+//		cache_mgr_.release_reference(cache_items_[i]);
+//	}
+//	cache_items_.clear();
 
 	group_id_ = 0;
 	watch_id_ = 0;

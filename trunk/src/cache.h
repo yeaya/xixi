@@ -198,7 +198,7 @@ public:
 	bool update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 	bool update_expiration(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 
-	xixi_reason load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, Cache_Item*&/*out*/ item);
+	Cache_Item* load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, xixi_reason&/*out*/ reason);
 
 	xixi_reason add(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);
 	xixi_reason set(Cache_Item* item, uint32_t watch_id, uint64_t&/*out*/ cache_id);

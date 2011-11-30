@@ -29,6 +29,9 @@ extern bool safe_toi64(const char* data, uint32_t data_len, int64_t& out);
 extern bool safe_toui32(const char* data, uint32_t data_len, uint32_t& out);
 extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out);
 extern const char* get_ext(const char* key, uint32_t length);
+extern char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len);
+extern int strcasecmp(char* str1, char* str2, uint32_t length);
+extern void to_lower(char* buf, uint32_t length);
 
 template <int a = 0>
 class Swap {
