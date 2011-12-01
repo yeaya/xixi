@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
 	string reason = settings_.load_conf();
 	if (reason != "") {
 		fprintf(stderr, "Failed to load configuration file, %s\n", reason.c_str());
-	//	return -1;
+		return -1;
 	}
 	log_init("xixibase_%N.log", 20 * 1024 * 1024);
 	set_log_level(log_level_info);
