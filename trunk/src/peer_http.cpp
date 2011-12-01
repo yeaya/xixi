@@ -1069,9 +1069,7 @@ void Peer_Http::process_update(uint8_t sub_op) {
 		uint8_t* body = request_buf_.prepare(50);
 		uint32_t body_size = _snprintf((char*)body, 50, "{\"cacheid\":%"PRIu64"}", cache_id);
 		uint8_t* header = request_buf_.prepare(30);
-		uint32_t header_size = _snprintf((char*)header, 30, "%"PRIu32"\r\n"
-		//	"CacheID: %"PRIu64"\r\n"
-			"\r\n%", body_size);
+		uint32_t header_size = _snprintf((char*)header, 30, "%"PRIu32"\r\n\r\n", body_size);
 
 		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
 		add_write_buf(header, header_size);
