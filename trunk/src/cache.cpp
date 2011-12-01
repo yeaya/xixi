@@ -485,10 +485,10 @@ Cache_Item* Cache_Mgr::alloc_item(uint32_t group_id, uint32_t key_length, uint32
 }
 
 Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id,
-							uint32_t&/*out*/ expiration, bool&/*out*/ watch_error) {
+							bool is_base, uint32_t&/*out*/ expiration, xixi_reason&/*out*/ reason) {
 	Cache_Item* item;
 	uint32_t hash_value = hash32(key, key_length, group_id);
-	watch_error = false;
+	reason = XIXI_REASON_SUCCESS;
 	cache_lock_.lock();
 
 	item = do_get(group_id, key, key_length, hash_value, expiration);
@@ -498,26 +498,35 @@ Cache_Item*  Cache_Mgr::get(uint32_t group_id, const uint8_t* key, uint32_t key_
 				item->add_watch(watch_id);
 				stats_.get_hit_watch(group_id, item->class_id, item->total_size());
 			} else {
-				watch_error = true;
+				reason = XIXI_REASON_WATCH_NOT_FOUND;
 				stats_.get_hit_watch_miss(group_id, item->class_id);
 				do_release_reference(item);
 				item = NULL;
 			}
 		} else {
-			stats_.get_hit_no_watch(group_id, item->class_id, item->total_size());
+			if (is_base) {
+				stats_.get_base_hit(item->group_id, item->class_id);
+			} else {
+				stats_.get_hit_no_watch(group_id, item->class_id, item->total_size());
+			}
 		}
 	} else {
-		stats_.get_miss(group_id);
+		reason = XIXI_REASON_NOT_FOUND;
+		if (is_base) {
+			stats_.get_base_miss(group_id);
+		} else {
+			stats_.get_miss(group_id);
+		}
 	}
 	cache_lock_.unlock();
 	return item;
 }
 
-Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id,
-								uint32_t expiration, bool&/*out*/ watch_error) {
+Cache_Item* Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id,
+								uint32_t expiration, xixi_reason&/*out*/ reason) {
 	Cache_Item* item;
 	uint32_t hash_value = hash32(key, key_length, group_id);
-	watch_error = false;
+	reason = XIXI_REASON_SUCCESS;
 	cache_lock_.lock();
 
 	item = do_get_touch(group_id, key, key_length, hash_value, expiration);
@@ -527,7 +536,7 @@ Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, uint32_
 			  item->add_watch(watch_id);
 			  stats_.get_touch_hit_watch(group_id, item->class_id, item->total_size());
 		  } else {
-			  watch_error = true;
+			  reason = XIXI_REASON_WATCH_NOT_FOUND;
 			  stats_.get_touch_hit_watch_miss(group_id, item->class_id);
 			  do_release_reference(item);
 			  item = NULL;
@@ -536,14 +545,15 @@ Cache_Item*  Cache_Mgr::get_touch(uint32_t group_id, const uint8_t* key, uint32_
 		  stats_.get_touch_hit_no_watch(group_id, item->class_id, item->total_size());
 	  }
 	} else {
-	  stats_.get_touch_miss(group_id);
+		reason = XIXI_REASON_NOT_FOUND;
+		stats_.get_touch_miss(group_id);
 	}
 	cache_lock_.unlock();
 	return item;
 }
-
-bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t&/*out*/ cache_id,
-						 uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration, char*/*out*/ ext, uint32_t&/*in out*/ ext_size) {
+/*
+bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint64_t&/*out * / cache_id,
+						 uint32_t&/*out* / flags, uint32_t&/*out * / expiration, char* /*out* / ext, uint32_t&/*in out* / ext_size) {
 	Cache_Item* it;
 	bool ret;
 	uint32_t hash_value = hash32(key, key_length, group_id);
@@ -570,7 +580,7 @@ bool Cache_Mgr::get_base(uint32_t group_id, const uint8_t* key, uint32_t key_len
 	cache_lock_.unlock();
 	return ret;
 }
-
+*/
 bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id) {
 	Cache_Item* it;
 	bool ret = true;
@@ -647,7 +657,7 @@ void Cache_Mgr::release_reference(Cache_Item* item) {
 Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, xixi_reason&/*out*/ reason) {
 	string filename = settings_.home_dir + "webapps" + (char*)key;
 	LOG_INFO("load_from_file " << filename);
-	try {
+/*	try {
 		boost::filesystem::path p(filename);
 		if (exists(p)) {
 			if (is_directory(p)) {
@@ -669,7 +679,7 @@ Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 		reason = XIXI_REASON_NOT_FOUND;
 		return NULL;
 	}
-
+*/
 	FILE* file = fopen(filename.c_str(), "rb");
 	if (file == NULL) {
 		reason = XIXI_REASON_NOT_FOUND;
@@ -689,6 +699,7 @@ Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 
 	if (item == NULL) {
 		fclose(file);
+		file = NULL;
 		if (item_size_ok(key_length, (uint32_t)file_size, (uint32_t)mime_type.size())) {
 			reason = XIXI_REASON_OUT_OF_MEMORY;
 		} else {
@@ -993,7 +1004,7 @@ xixi_reason Cache_Mgr::remove(uint32_t group_id, const uint8_t* key, uint32_t ke
 	return reason;
 }
 
-#define INCR_MAX_STORAGE_LEN 24
+#define INT64_MAX_STORAGE_LEN 25
 xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key_length, bool incr, int64_t delta, uint64_t&/*in and out*/ cache_id, int64_t&/*out*/ value) {
 	xixi_reason reason;
 	uint32_t hash_value = hash32(key, key_length, group_id);
@@ -1012,49 +1023,25 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 	} else if (cache_id == 0 || cache_id == it->cache_id) {
 		value = 0;
 		safe_toi64((char*)it->get_data(), it->data_size, value);
-	/*	if (!safe_toi64((char*)it->get_data(), it->data_size, value)) {
-			cache_id = 0;
-			value = 0;
+		if (incr) {
+			value += delta;
+		} else {
+			value -= delta;
+		}
 
-			reason = XIXI_REASON_INVALID_OPERATION;
-		} else {*/
-			if (incr) {
-				value += delta;
+		char buf[INT64_MAX_STORAGE_LEN];
+		uint32_t data_size = _snprintf(buf, INT64_MAX_STORAGE_LEN, "%"PRId64, value);
+		if (data_size != it->data_size) {
+			Cache_Item* new_it = do_alloc(it->group_id, it->key_length, it->flags, it->expire_time, data_size, it->ext_size);
+			if (new_it == NULL) {
+				reason = XIXI_REASON_OUT_OF_MEMORY;
 			} else {
-//				if (delta > value) {
-//					value = 0;
-//				} else {
-					value -= delta;
-//				}
-			}
-
-			char buf[INCR_MAX_STORAGE_LEN];
-			uint32_t data_size = _snprintf(buf, INCR_MAX_STORAGE_LEN, "%"PRId64" ", value);
-			if (data_size > it->data_size) {
-				Cache_Item* new_it = do_alloc(it->group_id, it->key_length, it->flags, it->expire_time, data_size, it->ext_size);
-				if (new_it == NULL) {
-					reason = XIXI_REASON_OUT_OF_MEMORY;
-				} else {
-					new_it->set_key_with_hash(it->get_key(), it->hash_value_);
-					memcpy(new_it->get_data(), buf, data_size);
-					new_it->set_ext(it->get_ext());
-					do_replace(it, new_it);
-					cache_id = new_it->cache_id;
-					do_release_reference(new_it);
-					if (incr) {
-						stats_.incr_success(group_id);
-					} else {
-						stats_.decr_success(group_id);
-					}
-					reason = XIXI_REASON_SUCCESS;
-				}
-			} else {
-				it->cache_id = get_cache_id();
-				it->last_update_time = curr_time_.get_current_time();
-
-				memcpy(it->get_data(), buf, data_size);
-				memset(it->get_data() + data_size, ' ', it->data_size - data_size);
-				cache_id = it->cache_id;
+				new_it->set_key_with_hash(it->get_key(), it->hash_value_);
+				memcpy(new_it->get_data(), buf, data_size);
+				new_it->set_ext(it->get_ext());
+				do_replace(it, new_it);
+				cache_id = new_it->cache_id;
+				do_release_reference(new_it);
 				if (incr) {
 					stats_.incr_success(group_id);
 				} else {
@@ -1062,7 +1049,19 @@ xixi_reason Cache_Mgr::delta(uint32_t group_id, const uint8_t* key, uint32_t key
 				}
 				reason = XIXI_REASON_SUCCESS;
 			}
-	//	}
+		} else {
+			it->cache_id = get_cache_id();
+			it->last_update_time = curr_time_.get_current_time();
+
+			memcpy(it->get_data(), buf, data_size);
+			cache_id = it->cache_id;
+			if (incr) {
+				stats_.incr_success(group_id);
+			} else {
+				stats_.decr_success(group_id);
+			}
+			reason = XIXI_REASON_SUCCESS;
+		}
 		do_release_reference(it);
 	} else {
 		cache_id = 0;

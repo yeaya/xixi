@@ -97,6 +97,9 @@ protected:
 	// get
 	inline void process_get();
 
+	// get cache item
+	inline Cache_Item* get_cache_item(xixi_reason& reason, uint32_t& expiration);
+
 	// get welcome file
 	Cache_Item* get_welcome_file(xixi_reason& reason, uint32_t& expiration);
 

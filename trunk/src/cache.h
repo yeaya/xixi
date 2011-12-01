@@ -190,11 +190,11 @@ public:
 	void init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_min, double factor);
 	Cache_Item* alloc_item(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expiration, uint32_t data_size, uint32_t ext_size);
 	void flush(uint32_t group_id, uint32_t&/*out*/ flush_count, uint64_t&/*out*/ flush_size);
-	Cache_Item* get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t&/*out*/ expiration, bool&/*out*/ watch_error);
-	Cache_Item* get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, bool&/*out*/ watch_error);
+	Cache_Item* get(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, bool is_base, uint32_t&/*out*/ expiration, xixi_reason&/*out*/ reason);
+	Cache_Item* get_touch(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, xixi_reason&/*out*/ reason);
 	void release_reference(Cache_Item* item);
-	bool get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length,
-		uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration, char*/*out*/ ext, uint32_t&/*in out*/ ext_size);
+//	bool get_base(uint32_t group_id, const uint8_t* key, uint32_t key_length,
+//		uint64_t&/*out*/ cache_id, uint32_t&/*out*/ flags, uint32_t&/*out*/ expiration, char* /*out*/ ext, uint32_t&/*in out*/ ext_size);
 	bool update_flags(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Flags_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 	bool update_expiration(uint32_t group_id, const uint8_t* key, uint32_t key_length, const XIXI_Update_Expiration_Req_Pdu* pdu, uint64_t&/*out*/ cache_id);
 

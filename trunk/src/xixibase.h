@@ -35,11 +35,14 @@ const xixi_reason XIXI_REASON_TOO_LARGE = 3;
 const xixi_reason XIXI_REASON_INVALID_PARAMETER = 4;
 const xixi_reason XIXI_REASON_INVALID_OPERATION = 5;
 const xixi_reason XIXI_REASON_MISMATCH = 6;
-const xixi_reason XIXI_RES_AUTH_ERROR = 7;
+const xixi_reason XIXI_REASON_AUTH_ERROR = 7;
 const xixi_reason XIXI_REASON_UNKNOWN_COMMAND = 8;
 const xixi_reason XIXI_REASON_OUT_OF_MEMORY = 9;
 //const xixi_reason XIXI_REASON_WAIT_FOR_ME = 10;
 //const xixi_reason XIXI_REASON_PLEASE_TRY_AGAIN = 11;
 const xixi_reason XIXI_REASON_WATCH_NOT_FOUND = 12;
+const xixi_reason XIXI_REASON_IO_ERROR = 13;
+
+const xixi_reason XIXI_REASON_MOVED_PERMANENTLY = 20;
 
 #endif // XIXIBASE_H

@@ -461,9 +461,9 @@ uint32_t Peer_Cache::process_get_req_pdu_extras(XIXI_Get_Req_Pdu* pdu, uint8_t* 
 		return 0;
 	}
 
-	bool watch_error = false;
+	xixi_reason reason;
 	uint32_t expiration;
-	Cache_Item* it = cache_mgr_.get(pdu->group_id, key, key_length, pdu->watch_id, expiration, watch_error);
+	Cache_Item* it = cache_mgr_.get(pdu->group_id, key, key_length, pdu->watch_id, false, expiration, reason);
 	if (it != NULL) {
 		cache_item_ = it;
 		cache_items_.push_back(it);
@@ -482,11 +482,12 @@ uint32_t Peer_Cache::process_get_req_pdu_extras(XIXI_Get_Req_Pdu* pdu, uint8_t* 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
-		if (watch_error) {
-			write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
-		} else {
-			write_error(XIXI_REASON_NOT_FOUND, 0, true);
-		}
+		write_error(reason, 0, true);
+//		if (watch_error) {
+//			write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
+//		} else {
+//			write_error(XIXI_REASON_NOT_FOUND, 0, true);
+//		}
 	}
 
 	return key_length;
@@ -500,8 +501,8 @@ uint32_t Peer_Cache::process_get_touch_req_pdu_extras(XIXI_Get_Touch_Req_Pdu* pd
 		return 0;
 	}
 
-	bool watch_error = false;
-	Cache_Item* it = cache_mgr_.get_touch(pdu->group_id, key, key_length, pdu->watch_id, pdu->expiration, watch_error);
+	xixi_reason reason;
+	Cache_Item* it = cache_mgr_.get_touch(pdu->group_id, key, key_length, pdu->watch_id, pdu->expiration, reason);
 	if (it != NULL) {
 		cache_item_ = it;  
 		cache_items_.push_back(it);
@@ -520,11 +521,12 @@ uint32_t Peer_Cache::process_get_touch_req_pdu_extras(XIXI_Get_Touch_Req_Pdu* pd
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
-		if (watch_error) {
-			write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
-		} else {
-			write_error(XIXI_REASON_NOT_FOUND, 0, true);
-		}
+		write_error(reason, 0, true);
+//		if (watch_error) {
+//			write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
+//		} else {
+//			write_error(XIXI_REASON_NOT_FOUND, 0, true);
+//		}
 	}
 
 	return key_length;
@@ -538,16 +540,23 @@ uint32_t Peer_Cache::process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu,
 		return 0;
 	}
 
+	xixi_reason reason;
+	uint32_t expiration;
+	Cache_Item* it = cache_mgr_.get(pdu->group_id, key, key_length, 0, true, expiration, reason);
+/*
 	uint64_t cache_id;
 	uint32_t flags;
 	uint32_t expiration;
 	uint32_t ext_size = 0;
 	bool ret = cache_mgr_.get_base(pdu->group_id, key, key_length, cache_id, flags, expiration, NULL, ext_size);
-	if (ret) {
+	if (ret) {*/
+	if (it != NULL) {
 		uint8_t* cb = cache_buf_.prepare(XIXI_Get_Base_Res_Pdu::calc_encode_size());
 		XIXI_Get_Base_Res_Pdu rs;
-		rs.cache_id = cache_id;
-		rs.flags = flags;
+		rs.cache_id = it->cache_id;
+		rs.flags = it->flags;
+		cache_mgr_.release_reference(it);
+		it = NULL;
 		rs.expiration = expiration;
 		rs.encode(cb);
 

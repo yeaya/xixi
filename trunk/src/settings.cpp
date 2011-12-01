@@ -15,6 +15,7 @@
 */
 
 #include "settings.h"
+#include "util.h"
 #include "tinyxml.h"
 #include <boost/filesystem.hpp>
 
@@ -45,13 +46,15 @@ void Settings::init() {
 	item_size_max = 5 * 1024 * 1024;
 
 	max_stats_group = 1024;
+
+	cache_expiration = 600;
 }
 
-bool Settings::load_conf() {
+string Settings::load_conf() {
 	string xmlfile = settings_.home_dir + "conf/web.xml";
 	TiXmlDocument doc(xmlfile.c_str());
 	if (!doc.LoadFile()) {
-		return false;
+		return "[web.xml] load error";
 	}
 
 	TiXmlHandle hDoc(&doc);
@@ -59,23 +62,33 @@ bool Settings::load_conf() {
 
 	TiXmlElement* first = hDoc.FirstChildElement().Element();
 	if (first == NULL) {
-		return false;
+		return "[web.xml] format error";
 	}
 	string name = first->Value();
 
 	hRoot = TiXmlHandle(first);
 
-	TiXmlElement* mime = hRoot.FirstChild( "mime-mapping" ).Element();
+	TiXmlElement* ele = hRoot.FirstChildElement("default-cache-expiration").Element();
+	if (ele != NULL) {
+		string t = ele->GetText();
+		if (!safe_toui32(t.c_str(), t.size(), cache_expiration)) {
+			return "[web.xml] reading default-cache-expiration error";
+		}
+	}
+
+	TiXmlElement* mime = hRoot.FirstChild("mime-mapping").Element();
 	while (mime != NULL) {
 		const char* ext = NULL;
 		const char* type = NULL;
-		TiXmlNode* node_ext = mime->FirstChild("extension");
-		if (node_ext != NULL) {
-			ext = node_ext->ToElement()->GetText();
+//		TiXmlNode* node_ext = mime->FirstChild("extension");
+		ele = mime->FirstChildElement("extension");
+		if (ele != NULL) {
+			ext = ele->GetText();
 		}
-		TiXmlNode* node_type = mime->FirstChild("mime-type");
-		if (node_type != NULL) {
-			type = node_type->ToElement()->GetText();
+	//	TiXmlNode* node_type = mime->FirstChild("mime-type");
+		ele = mime->FirstChildElement("mime-type");
+		if (ele != NULL) {
+			type = ele->GetText();
 		}
 		if (ext != NULL && type != NULL) {
 			mime_map[string(ext)] = string(type);
@@ -83,7 +96,7 @@ bool Settings::load_conf() {
 		mime = mime->NextSiblingElement();
 	}
 
-	TiXmlElement* welcome = hRoot.FirstChild( "welcome-file-list" ).FirstChildElement("welcome-file").Element();
+	TiXmlElement* welcome = hRoot.FirstChild("welcome-file-list").FirstChildElement("welcome-file").Element();
 	while (welcome != NULL) {
 		const char* file = welcome->GetText();
 		if (file != NULL) {
@@ -92,7 +105,7 @@ bool Settings::load_conf() {
 		welcome = welcome->NextSiblingElement();
 	}
 
-	return true;
+	return "";
 }
 
 bool Settings::ext_to_mime(const string& ext, string& mime_type) {

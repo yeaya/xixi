@@ -22,6 +22,7 @@
 #include "auth.h"
 #include "server.h"
 
+#define MAX_EXTENSION_SIZE 128
 // text/plain
 #define DEFAULT_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
 #define DEFAULT_RES_200_B "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/plain\r\nContent-Length: "
@@ -242,7 +243,7 @@ void Peer_Http::write_error(xixi_reason error_code) {
 			res = ERROR_XIXI_REASON_MISMATCH;
 			res_size = sizeof(ERROR_XIXI_REASON_MISMATCH) - 1;
 			break;
-		case XIXI_RES_AUTH_ERROR:
+		case XIXI_REASON_AUTH_ERROR:
 #define ERROR_XIXI_RES_AUTH_ERROR "HTTP/1.1 401 Unauthorized\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 19\r\n\r\n""XIXI_RES_AUTH_ERROR"
 			res = ERROR_XIXI_RES_AUTH_ERROR;
 			res_size = sizeof(ERROR_XIXI_RES_AUTH_ERROR) - 1;
@@ -718,25 +719,21 @@ bool Peer_Http::process_request_arg(char* arg) {
 					return false;
 				}
 			} else if (t.value[0] =='a') {
-				touch_flag_ = true;
 				if (!safe_toui64(t.value + 2, t.length - 2, ack_cache_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
 			} else if (t.value[0] =='i') {
-				touch_flag_ = true;
 				if (!safe_toui32(t.value + 2, t.length - 2, interval_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
 			} else if (t.value[0] =='t') {
-				touch_flag_ = true;
 				if (!safe_toui32(t.value + 2, t.length - 2, timeout_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
 			} else if (t.value[0] =='s') {
-				touch_flag_ = true;
 				if (!safe_toui32(t.value + 2, t.length - 2, sub_op_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
@@ -871,44 +868,18 @@ void Peer_Http::process_post() {
 
 #define GET_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: "
 #define GET_RES_304 "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nContent-Type: "
+#define HTTP_RES_301 "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
 
 void Peer_Http::process_get() {
-	Cache_Item* it;
-	bool watch_error = false;
+	xixi_reason reason;
 	uint32_t expiration;
-	if (touch_flag_) {
-		expiration = expiration_;
-		it = cache_mgr_.get_touch(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, watch_error);
-	} else {
-		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, watch_error);
-	}
-
-	// try load from file /webapps
-	if (it == NULL && key_length_ > 0 && key_[0] == '/') {
-		uint32_t load_expiration = 600;
-		if (!touch_flag_) {
-			expiration = load_expiration;
-		}
-		xixi_reason reason;
-		it = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
-		if (reason == XIXI_REASON_NOT_FOUND/* && key_[key_length_ - 1] == '/'*/) {
-			it = get_welcome_file(reason, expiration);
-			if (it == NULL) {
-				write_error(reason);
-				return;
-			}
-		} else if (reason != XIXI_REASON_SUCCESS) {
-			write_error(reason);
-			return;
-		}
-	}
+	Cache_Item* it = get_cache_item(reason, expiration);
 
 	if (it != NULL) {
 		cache_item_ = it;
-//		cache_items_.push_back(it);
 		char* content_type = "text/html";
 		uint32_t ext_size = it->get_ext_size();
-		if (ext_size > 0 && ext_size <= 64) {
+		if (ext_size > 0 && ext_size <= MAX_EXTENSION_SIZE) {
 			content_type = (char*)request_buf_.prepare(ext_size + 1);
 			memcpy(content_type, it->get_ext(), ext_size);
 			content_type[ext_size] = '\0';
@@ -944,12 +915,74 @@ void Peer_Http::process_get() {
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
-		if (watch_error) {
-			write_error(XIXI_REASON_WATCH_NOT_FOUND);
+		if (reason == XIXI_REASON_MOVED_PERMANENTLY) {
+			uint32_t prepare_size = 150 + key_length_;
+			uint8_t* body = request_buf_.prepare(prepare_size);
+			uint32_t body_size = _snprintf((char*)body, prepare_size, "<HTML><HEAD><TITLE>301 Moved</TITLE></HEAD><BODY><H1>301 Moved</H1>The document has moved"
+				"<A HREF=\"%s/\">here</A>.</BODY></HTML>",
+				(char*)key_);
+			prepare_size = 35 +key_length_;
+			uint8_t* header = request_buf_.prepare(prepare_size);
+			uint32_t header_size = _snprintf((char*)header, prepare_size, "%"PRIu32"\r\nLocation: %s/\r\n\r\n",
+				body_size, (char*)key_);
+
+			add_write_buf((uint8_t*)HTTP_RES_301, sizeof(HTTP_RES_301) - 1);
+			add_write_buf((uint8_t*)header, header_size);
+			add_write_buf((uint8_t*)body, body_size);
+			set_state(PEER_STATUS_WRITE);
+			next_state_ = PEER_STATE_NEW_CMD;
 		} else {
-			write_error(XIXI_REASON_NOT_FOUND);
+			write_error(reason);
 		}
 	}
+}
+
+#include <boost/filesystem.hpp>
+Cache_Item* Peer_Http::get_cache_item(xixi_reason& reason, uint32_t& expiration) {
+	Cache_Item* it;
+	if (touch_flag_) {
+		expiration = expiration_;
+		it = cache_mgr_.get_touch(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
+	} else {
+		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, false, expiration, reason);
+	}
+
+	// try load from file /webapps
+	if (it == NULL && key_length_ > 0 && key_[0] == '/') {
+		string filename = settings_.home_dir + "webapps" + (char*)key_;
+		LOG_INFO("get_cache_item " << filename);
+		try {
+			boost::filesystem::path p(filename);
+			if (exists(p)) {
+				if (is_directory(p)) {
+					cout << p << " is a directory" << endl;
+					if (key_[key_length_ - 1] == '/') {
+						// load welcome file
+						it = get_welcome_file(reason, expiration);
+					} else {
+						// localion to the directary
+						reason = XIXI_REASON_MOVED_PERMANENTLY;
+					}
+					return it;
+				} else {
+					// load from file
+					if (!touch_flag_) {
+						expiration = settings_.cache_expiration;
+					}
+					it = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
+				}
+			} else {
+				cout << p << " no exists" << endl;
+				reason = XIXI_REASON_NOT_FOUND;
+				return NULL;
+			}
+		} catch (const boost::system::system_error& ex) {
+			cout << ex.what() << endl;
+			reason = XIXI_REASON_NOT_FOUND;
+			return NULL;
+		}
+	}
+	return it;
 }
 
 Cache_Item* Peer_Http::get_welcome_file(xixi_reason& reason, uint32_t& expiration) {
@@ -957,32 +990,24 @@ Cache_Item* Peer_Http::get_welcome_file(xixi_reason& reason, uint32_t& expiratio
 	reason = XIXI_REASON_NOT_FOUND;
 	for (size_t i = 0; i < settings_.welcome_file_list.size(); i++) {
 		string& welcome = settings_.welcome_file_list[i];
-		uint32_t new_key_length = key_length_ + welcome.size() + 1;
+		uint32_t new_key_length = key_length_ + welcome.size();
 		uint8_t* new_key = request_buf_.prepare(new_key_length + 1);
 		memcpy(new_key, key_, key_length_);
-		if (key_[key_length_ - 1] != '/') {
-			new_key[key_length_] = '/';
-			memcpy(new_key + key_length_ + 1, welcome.c_str(), welcome.size());
-		} else {
-			new_key_length--;
-			memcpy(new_key + key_length_, welcome.c_str(), welcome.size());
-		}
+		memcpy(new_key + key_length_, welcome.c_str(), welcome.size());
 		new_key[new_key_length] = '\0';
 
-		bool watch_error = false;
 		if (touch_flag_) {
 			expiration = expiration_;
-			it = cache_mgr_.get_touch(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, watch_error);
+			it = cache_mgr_.get_touch(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, reason);
 		} else {
-			it = cache_mgr_.get(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, watch_error);
+			it = cache_mgr_.get(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, false, expiration, reason);
 		}
 		if (it != NULL) {
 			reason = XIXI_REASON_SUCCESS;
 			break;
 		} else {
-			uint32_t load_expiration = 600;
 			if (!touch_flag_) {
-				expiration = load_expiration;
+				expiration = settings_.cache_expiration;
 			}
 			it = cache_mgr_.load_from_file(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, reason);
 			if (reason == XIXI_REASON_NOT_FOUND) {
@@ -1105,23 +1130,32 @@ void Peer_Http::process_delta(bool incr) {
 void Peer_Http::process_get_base() {
 	LOG_TRACE2("process_get_base");
 
+	xixi_reason reason;
+	uint32_t expiration;
+	Cache_Item* it = get_cache_item(reason, expiration);
+/*
 	uint64_t cache_id;
 	uint32_t flags;
-	uint32_t expiration;
-	char ext[64];
-	uint32_t ext_size = sizeof(ext);
+	
+	char ext[MAX_EXTENSION_SIZE + 1];
+	uint32_t ext_size = MAX_EXTENSION_SIZE;
 	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration, ext, ext_size);
-	if (ret) {
+	if (ret) {*/
+	if (it != NULL) {
 		char* content_type = "text/html";
-		if (ext_size > 0 && ext_size <= 64) {
+		uint32_t ext_size = it->get_ext_size();
+		if (ext_size > 0 && ext_size <= MAX_EXTENSION_SIZE) {
 			content_type = (char*)request_buf_.prepare(ext_size + 1);
-			memcpy(content_type, ext, ext_size);
+			memcpy(content_type, it->get_ext(), ext_size);
 			content_type[ext_size] = '\0';
 		}
 		uint8_t* body = request_buf_.prepare(200);
 		uint32_t body_size = _snprintf((char*)body, 200,
-			"{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32",\"contenttype\":\"%s\"}",
-			cache_id, flags, expiration, content_type);
+			"{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32",\"contenttype\":\"%s\",\"size\":%"PRIu32"}",
+			it->cache_id, it->flags, expiration, content_type, it->data_size);
+
+		cache_mgr_.release_reference(it);
+		it = NULL;
 
 		uint8_t* header = request_buf_.prepare(30);
 		uint32_t header_size = _snprintf((char*)header, 30, "%"PRIu32"\r\n\r\n", body_size);
@@ -1133,7 +1167,7 @@ void Peer_Http::process_get_base() {
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
 	} else {
-		write_error(XIXI_REASON_NOT_FOUND);
+		write_error(reason);
 	}
 }
 
@@ -1552,10 +1586,4 @@ void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watc
 	}
 	try_write();
 	lock_.unlock();
-//	timer_lock_.lock();
-//	if (timer_ != NULL) {
-//		delete timer_;
-//		timer_ = NULL;
-//	}
-//	timer_lock_.unlock();
 }

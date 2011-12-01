@@ -185,8 +185,9 @@ void printf_system_info() {
 #define cmdcmp(x, const_str) strncmp(x, const_str, sizeof(const_str))
 
 int main(int argc, char* argv[]) {
-	if (!settings_.load_conf()) {
-		fprintf(stderr, "Failed to load configuration file.\n");
+	string reason = settings_.load_conf();
+	if (reason != "") {
+		fprintf(stderr, "Failed to load configuration file, %s\n", reason.c_str());
 	//	return -1;
 	}
 	log_init("xixibase_%N.log", 20 * 1024 * 1024);

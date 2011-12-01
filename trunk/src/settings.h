@@ -24,7 +24,7 @@ class Settings {
 public:
 	Settings();
 	void init();
-	bool load_conf();
+	string load_conf();
 	bool ext_to_mime(const string& ext, string& mime_type);
 
 	string home_dir;
@@ -42,6 +42,7 @@ public:
 
 	uint32_t max_stats_group;
 
+	uint32_t cache_expiration;
 	map<string, string> mime_map;
 	vector<string> welcome_file_list;
 };
