@@ -115,7 +115,7 @@ Cache_Mgr::Cache_Mgr() {
 	for (int i = 0; i < 32; i++) {
 		expiration_time_[i] = 1 << i;
 	}
-	expiration_time_[32] = 0xFFFFFFFF;
+	expiration_time_[32] = UINT32_C(0xFFFFFFFF);
 	//  for (int i = 0; i < 33; i++) {
 	//    LOG_INFO("expiration_time_" << i << " =" << expiration_time_[i]);
 	//  }

@@ -158,19 +158,19 @@ void printf_system_info() {
 	LOG_INFO("PRIx64=" << PRIx64);
 
 	char tmp[30];
-	int32_t id32 = 0x7FFFFFFF;
+	int32_t id32 = INT32_C(0x7FFFFFFF);
 	_snprintf(tmp, sizeof(tmp), "%"PRId32, id32);
 	LOG_INFO("max_i32=" << id32);
 
-	int64_t id64 = 0x7FFFFFFFFFFFFFFF;
+	int64_t id64 = INT64_C(0x7FFFFFFFFFFFFFFF);
 	_snprintf(tmp, sizeof(tmp), "%"PRId64, id64);
 	LOG_INFO("max_i64=" << id64);
 
-	uint32_t ui32 = 0xFFFFFFFF;
+	uint32_t ui32 = UINT32_C(0xFFFFFFFF);
 	_snprintf(tmp, sizeof(tmp), "%"PRIu32, ui32);
 	LOG_INFO("max_ui32=" << ui32);
 
-	uint64_t ui64 = 0xFFFFFFFFFFFFFFFF;
+	uint64_t ui64 = UINT64_C(0xFFFFFFFFFFFFFFFF);
 	_snprintf(tmp, sizeof(tmp), "%"PRIu64, ui64);
 	LOG_INFO("max_ui64=" << ui64);
 

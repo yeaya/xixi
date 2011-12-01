@@ -35,7 +35,7 @@ public:
 		} else {
 			uint64_t t = expiration;
 			t += current_time_;
-			if (t <= 0xFFFFFFFFL) {
+			if (t <= UINT32_C(0xFFFFFFFF)) {
 				return (uint32_t)t;
 			}
 		}
@@ -47,7 +47,7 @@ public:
 		} else {
 			uint64_t t = expiration;
 			t += curr_time;
-			if (t <= 0xFFFFFFFFL) {
+			if (t <= UINT32_C(0xFFFFFFFF)) {
 				return (uint32_t)t;
 			}
 		}
