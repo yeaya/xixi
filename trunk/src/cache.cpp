@@ -643,8 +643,33 @@ void Cache_Mgr::release_reference(Cache_Item* item) {
 	cache_lock_.unlock();
 }
 
+#include <boost/filesystem.hpp>
 Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, xixi_reason&/*out*/ reason) {
 	string filename = settings_.home_dir + "webapps" + (char*)key;
+	LOG_INFO("load_from_file " << filename);
+	try {
+		boost::filesystem::path p(filename);
+		if (exists(p)) {
+			if (is_directory(p)) {
+				cout << p << " is a directory" << endl;
+				reason = XIXI_REASON_NOT_FOUND;
+				return NULL;
+			}
+		} else {
+			cout << p << " no exists" << endl;
+			reason = XIXI_REASON_NOT_FOUND;
+			return NULL;
+		//	if (!create_directory(p)) {
+		//		cout << "Can not create directory:" << p << endl;
+		//		return;
+		//	}
+		}
+	} catch (const boost::system::system_error& ex) {
+		cout << ex.what() << endl;
+		reason = XIXI_REASON_NOT_FOUND;
+		return NULL;
+	}
+
 	FILE* file = fopen(filename.c_str(), "rb");
 	if (file == NULL) {
 		reason = XIXI_REASON_NOT_FOUND;
@@ -653,7 +678,7 @@ Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 	fseek(file, 0, SEEK_END);
 	size_t file_size = ftell(file);
 	fseek(file, 0, SEEK_SET);
- 
+ 	LOG_INFO("load_from_file " << filename << " size=" << file_size);
 	string ext = get_ext((char*)key, key_length); // p.extension().string();
 	string mime_type;
 	if (settings_.ext_to_mime(ext, mime_type)) {
