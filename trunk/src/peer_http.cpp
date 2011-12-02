@@ -24,8 +24,35 @@
 
 #define MAX_EXTENSION_SIZE 128
 // text/plain
-#define DEFAULT_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
-#define DEFAULT_RES_200_B "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/plain\r\nContent-Length: "
+#define DEFAULT_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
+#define DEFAULT_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: "
+
+#define GET_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: "
+#define GET_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: CloseContent-Type: "
+
+#define GET_RES_304_KEEP_ALIVE "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: "
+#define GET_RES_304_CLOSE "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nConnection: CloseContent-Type: "
+
+#define GET_RES_301_KEEP_ALIVE "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
+#define GET_RES_301_CLOSE "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nConnection: CloseContent-Type: text/html\r\nContent-Length: "
+
+#define DELETE_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
+#define DELETE_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
+
+#define ERROR_RES_400_KEEP_ALIVE "HTTP/1.1 400 Bad Request\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 24\r\n\r\n<H1>400 Bad Request</H1>"
+#define ERROR_RES_400_CLOSE "HTTP/1.1 400 Bad Request\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 24\r\n\r\n<H1>400 Bad Request</H1>"
+
+#define ERROR_RES_401_KEEP_ALIVE "HTTP/1.1 401 Unauthorized\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 25\r\n\r\n<H1>401 Unauthorized</H1>"
+#define ERROR_RES_401_CLOSE "HTTP/1.1 401 Unauthorized\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 25\r\n\r\n<H1>401 Unauthorized</H1>"
+
+#define ERROR_RES_404_KEEP_ALIVE "HTTP/1.1 404 Not Found\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 22\r\n\r\n<H1>404 Not Found</H1>"
+#define ERROR_RES_404_CLOSE "HTTP/1.1 404 Not Found\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 22\r\n\r\n<H1>404 Not Found</H1>"
+
+#define ERROR_RES_413_KEEP_ALIVE "HTTP/1.1 413 Request Entity Too Large\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 37\r\n\r\n<H1>413 Request Entity Too Large</H1>"
+#define ERROR_RES_413_CLOSE "HTTP/1.1 413 Request Entity Too Large\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 37\r\n\r\n<H1>413 Request Entity Too Large</H1>"
+
+#define ERROR_RES_500_KEEP_ALIVE "HTTP/1.1 500 Internal Server Error\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 34\r\n\r\n<H1>500 Internal Server Error</H1>"
+#define ERROR_RES_500_CLOSE "HTTP/1.1 500 Internal Server Error\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 34\r\n\r\n<H1>500 Internal Server Error</H1>"
 
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Http id=" << get_peer_id() << " " << x)
 #define LOG_DEBUG2(x)  LOG_DEBUG("Peer_Http id=" << get_peer_id() << " " << x)
@@ -214,60 +241,62 @@ void Peer_Http::write_error(xixi_reason error_code) {
 	uint32_t res_size = 0;
 	switch (error_code) {
 		case XIXI_REASON_NOT_FOUND:
-#define ERROR_XIXI_REASON_NOT_FOUND "HTTP/1.1 404 Not Found\r\n""Server: "HTTP_SERVER"\r\n"	"Content-Type: text/html\r\n""Content-Length: 21\r\n\r\n""XIXI_REASON_NOT_FOUND"
-			res = ERROR_XIXI_REASON_NOT_FOUND;
-			res_size = sizeof(ERROR_XIXI_REASON_NOT_FOUND) - 1;
+			if (http_request_.keepalive) {
+				res = ERROR_RES_404_KEEP_ALIVE;
+				res_size = sizeof(ERROR_RES_404_KEEP_ALIVE) - 1;
+			} else {
+				res = ERROR_RES_404_CLOSE;
+				res_size = sizeof(ERROR_RES_404_CLOSE) - 1;
+			}
 			break;
-		case XIXI_REASON_EXISTS:
-#define ERROR_XIXI_REASON_EXISTS "HTTP/1.1 405 Method Not Allowed\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 18\r\n\r\n""XIXI_REASON_EXISTS"
-			res = ERROR_XIXI_REASON_EXISTS;
-			res_size = sizeof(ERROR_XIXI_REASON_EXISTS) - 1;
-			break;
+
 		case XIXI_REASON_TOO_LARGE:
-#define ERROR_XIXI_REASON_TOO_LARGE "HTTP/1.1 413 Request Entity Too Large\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 21\r\n\r\n""XIXI_REASON_TOO_LARGE"
-			res = ERROR_XIXI_REASON_TOO_LARGE;
-			res_size = sizeof(ERROR_XIXI_REASON_TOO_LARGE) - 1;
-			break;
-		case XIXI_REASON_INVALID_PARAMETER:
-#define ERROR_XIXI_REASON_INVALID_PARAMETER "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 29\r\n\r\n""XIXI_REASON_INVALID_PARAMETER"
-			res = ERROR_XIXI_REASON_INVALID_PARAMETER;
-			res_size = sizeof(ERROR_XIXI_REASON_INVALID_PARAMETER) - 1;
-			break;
-		case XIXI_REASON_INVALID_OPERATION:
-#define ERROR_XIXI_REASON_INVALID_OPERATION "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 29\r\n\r\n""XIXI_REASON_INVALID_OPERATION"
-			res = ERROR_XIXI_REASON_INVALID_OPERATION;
-			res_size = sizeof(ERROR_XIXI_REASON_INVALID_OPERATION) - 1;
-			break;
-		case XIXI_REASON_MISMATCH:
-#define ERROR_XIXI_REASON_MISMATCH "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 20\r\n\r\n""XIXI_REASON_MISMATCH"
-			res = ERROR_XIXI_REASON_MISMATCH;
-			res_size = sizeof(ERROR_XIXI_REASON_MISMATCH) - 1;
+			if (http_request_.keepalive) {
+				res = ERROR_RES_413_KEEP_ALIVE;
+				res_size = sizeof(ERROR_RES_413_KEEP_ALIVE) - 1;
+			} else {
+				res = ERROR_RES_413_KEEP_ALIVE;
+				res_size = sizeof(ERROR_RES_413_CLOSE) - 1;
+			}
 			break;
 		case XIXI_REASON_AUTH_ERROR:
-#define ERROR_XIXI_RES_AUTH_ERROR "HTTP/1.1 401 Unauthorized\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 19\r\n\r\n""XIXI_RES_AUTH_ERROR"
-			res = ERROR_XIXI_RES_AUTH_ERROR;
-			res_size = sizeof(ERROR_XIXI_RES_AUTH_ERROR) - 1;
-			break;
-		case XIXI_REASON_UNKNOWN_COMMAND:
-#define ERROR_XIXI_REASON_UNKNOWN_COMMAND "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 28\r\n\r\n""XIXI_REASON_UNKNOWN_COMMAND"
-			res = ERROR_XIXI_REASON_UNKNOWN_COMMAND;
-			res_size = sizeof(ERROR_XIXI_REASON_UNKNOWN_COMMAND) - 1;
+			if (http_request_.keepalive) {
+				res = ERROR_RES_401_KEEP_ALIVE;
+				res_size = sizeof(ERROR_RES_401_KEEP_ALIVE) - 1;
+			} else {
+				res = ERROR_RES_401_CLOSE;
+				res_size = sizeof(ERROR_RES_401_CLOSE) - 1;
+			}
 			break;
 		case XIXI_REASON_OUT_OF_MEMORY:
-#define ERROR_XIXI_REASON_OUT_OF_MEMORY "HTTP/1.1 500 Internal Server Error\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 25\r\n\r\n""XIXI_REASON_OUT_OF_MEMORY"
-			res = ERROR_XIXI_REASON_OUT_OF_MEMORY;
-			res_size = sizeof(ERROR_XIXI_REASON_OUT_OF_MEMORY) - 1;
+			if (http_request_.keepalive) {
+				res = ERROR_RES_500_KEEP_ALIVE;
+				res_size = sizeof(ERROR_RES_500_KEEP_ALIVE) - 1;
+			} else {
+				res = ERROR_RES_500_CLOSE;
+				res_size = sizeof(ERROR_RES_500_CLOSE) - 1;
+			}
 			break;
+		case XIXI_REASON_EXISTS:
+		case XIXI_REASON_INVALID_PARAMETER:
+		case XIXI_REASON_INVALID_OPERATION:
+		case XIXI_REASON_MISMATCH:
+		case XIXI_REASON_UNKNOWN_COMMAND:
 		case XIXI_REASON_WATCH_NOT_FOUND:
-#define ERROR_XIXI_REASON_WATCH_NOT_FOUND "HTTP/1.1 400 Bad Request\r\n""Server: "HTTP_SERVER"\r\n""Content-Type: text/html\r\n""Content-Length: 27\r\n\r\n""XIXI_REASON_WATCH_NOT_FOUND"
-			res = ERROR_XIXI_REASON_WATCH_NOT_FOUND;
-			res_size = sizeof(ERROR_XIXI_REASON_WATCH_NOT_FOUND) - 1;
+		default:
+			if (http_request_.keepalive) {
+				res = ERROR_RES_400_KEEP_ALIVE;
+				res_size = sizeof(ERROR_RES_400_KEEP_ALIVE) - 1;
+			} else {
+				res = ERROR_RES_400_CLOSE;
+				res_size = sizeof(ERROR_RES_400_CLOSE) - 1;
+			}
 			break;
 	}
 
 	add_write_buf((uint8_t*)res, res_size);
 	set_state(PEER_STATUS_WRITE);
-	next_state_ = PEER_STATE_CLOSING;
+	next_state_ = PEER_STATE_NEW_CMD;
 }
 
 void Peer_Http::process() {
@@ -331,6 +360,9 @@ void Peer_Http::process() {
 			break;
 
 		case PEER_STATUS_WRITE:
+			if (!http_request_.keepalive) {
+				next_state_ = PEER_STATE_CLOSING;
+			}
 			set_state(next_state_);
 			next_state_ = PEER_STATE_NEW_CMD;
 			if (state_ == PEER_STATE_NEW_CMD && process_reqest_count < 1) {
@@ -403,6 +435,7 @@ void Peer_Http::process_request_header(char* request_header, uint32_t length) {
 	if (request_line_length >= 6) {
 		if (memcmp(request_line + request_line_length - 3, "1.1", 3) == 0) {
 			http_request_.http_11 = true;
+			http_request_.keepalive = true;
 		}
 
 		uint32_t offset = 0;
@@ -510,13 +543,17 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 			break;
 		}
 	}
-
 	return true;
 }
 
 bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length) {
-	if (name_length == 12) {
-	//	to_lower(name, name_length);
+	if (name_length == 10) {
+		if (strcasecmp(name, "Connection", name_length) == 0) {
+			if (value_length >= 10 && strcasecmp(name, "Keep-Alive", 10) == 0) {
+				http_request_.keepalive = true;
+			}
+		}
+	} else if (name_length == 12) {
 		if (strcasecmp(name, "content-type", name_length) == 0 && value_length > 0) {
 			char* buf = (char*)request_buf_.prepare(value_length + 1);
 			if (buf == NULL) {
@@ -524,7 +561,6 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			}
 			memcpy(buf, value, value_length);
 			buf[value_length] = '\0';
-		//	to_lower(buf, value_length);
 			http_request_.content_type = buf;
 			http_request_.content_type_length = value_length;
 
@@ -542,7 +578,6 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			}
 		}
 	} else if (name_length == 13) {
-	//	to_lower(name, name_length);
 		if (strcasecmp(name, "if-none-match", name_length) == 0) {
 			char* buf = (char*)request_buf_.prepare(value_length + 1);
 			if (buf == NULL) {
@@ -663,9 +698,9 @@ void Peer_Http::process_command() {
 		key_length_ = http_request_.uri_length;
 		process_get();
 	}
-	if (!http_request_.http_11) {
-		next_state_ = PEER_STATE_CLOSING;
-	}
+//	if (!http_request_.keepalive) {
+//		next_state_ = PEER_STATE_CLOSING;
+//	}
 }
 
 bool Peer_Http::process_request_arg(char* arg) {
@@ -866,10 +901,6 @@ void Peer_Http::process_post() {
 	}
 }
 
-#define GET_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: "
-#define GET_RES_304 "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nContent-Type: "
-#define HTTP_RES_301 "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: "
-
 void Peer_Http::process_get() {
 	xixi_reason reason;
 	uint32_t expiration;
@@ -896,7 +927,11 @@ void Peer_Http::process_get() {
 				"ETag: %s\r\n\r\n",
 				content_type, it->cache_id, it->flags, expiration, etag);
 
-			add_write_buf((uint8_t*)GET_RES_304, sizeof(GET_RES_304) - 1);
+			if (http_request_.keepalive) {
+				add_write_buf((uint8_t*)GET_RES_304_KEEP_ALIVE, sizeof(GET_RES_304_KEEP_ALIVE) - 1);
+			} else {
+				add_write_buf((uint8_t*)GET_RES_304_CLOSE, sizeof(GET_RES_304_CLOSE) - 1);
+			}
 			add_write_buf((uint8_t*)header, header_size);
 		} else {
 			uint8_t* header = request_buf_.prepare(200);
@@ -906,7 +941,11 @@ void Peer_Http::process_get() {
 				"Expiration: %"PRIu32"\r\n"
 				"ETag: %s\r\n\r\n",
 				content_type, it->data_size, it->cache_id, it->flags, expiration, etag);
-			add_write_buf((uint8_t*)GET_RES_200, sizeof(GET_RES_200) - 1);
+			if (http_request_.keepalive) {
+				add_write_buf((uint8_t*)GET_RES_200_KEEP_ALIVE, sizeof(GET_RES_200_KEEP_ALIVE) - 1);
+			} else {
+				add_write_buf((uint8_t*)GET_RES_200_CLOSE, sizeof(GET_RES_200_CLOSE) - 1);
+			}
 			add_write_buf(header, header_size);
 			if (http_request_.method != HEAD_METHOD) {
 				add_write_buf(it->get_data(), it->data_size);
@@ -926,7 +965,11 @@ void Peer_Http::process_get() {
 			uint32_t header_size = _snprintf((char*)header, prepare_size, "%"PRIu32"\r\nLocation: %s/\r\n\r\n",
 				body_size, (char*)key_);
 
-			add_write_buf((uint8_t*)HTTP_RES_301, sizeof(HTTP_RES_301) - 1);
+			if (http_request_.keepalive) {
+				add_write_buf((uint8_t*)GET_RES_301_KEEP_ALIVE, sizeof(GET_RES_301_KEEP_ALIVE) - 1);
+			} else {
+				add_write_buf((uint8_t*)GET_RES_301_CLOSE, sizeof(GET_RES_301_CLOSE) - 1);
+			}
 			add_write_buf((uint8_t*)header, header_size);
 			add_write_buf((uint8_t*)body, body_size);
 			set_state(PEER_STATUS_WRITE);
@@ -1071,7 +1114,11 @@ void Peer_Http::process_update(uint8_t sub_op) {
 		uint8_t* header = request_buf_.prepare(30);
 		uint32_t header_size = _snprintf((char*)header, 30, "%"PRIu32"\r\n\r\n", body_size);
 
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		if (http_request_.keepalive) {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+		} else {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+		}
 		add_write_buf(header, header_size);
 		add_write_buf(body, body_size);
 		set_state(PEER_STATUS_WRITE);
@@ -1090,8 +1137,11 @@ void Peer_Http::process_delete() {
 
 	xixi_reason reason = cache_mgr_.remove(group_id_, (uint8_t*)key_, key_length_, cache_id_);
 	if (reason == XIXI_REASON_SUCCESS) {
-		#define DELETE_RES_200 "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
-		add_write_buf((uint8_t*)DELETE_RES_200, sizeof(DELETE_RES_200) - 1);
+		if (http_request_.keepalive) {
+			add_write_buf((uint8_t*)DELETE_RES_200_KEEP_ALIVE, sizeof(DELETE_RES_200_KEEP_ALIVE) - 1);
+		} else {
+			add_write_buf((uint8_t*)DELETE_RES_200_CLOSE, sizeof(DELETE_RES_200_CLOSE) - 1);
+		}
 
 		set_state(PEER_STATUS_WRITE);
 		next_state_ = PEER_STATE_NEW_CMD;
@@ -1114,7 +1164,11 @@ void Peer_Http::process_delta(bool incr) {
 		uint8_t* header = request_buf_.prepare(50);
 		uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		if (http_request_.keepalive) {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+		} else {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+		}
 		add_write_buf(header, header_size);
 		add_write_buf(body, body_size);
 
@@ -1158,7 +1212,11 @@ void Peer_Http::process_get_base() {
 		uint8_t* header = request_buf_.prepare(30);
 		uint32_t header_size = _snprintf((char*)header, 30, "%"PRIu32"\r\n\r\n", body_size);
 
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		if (http_request_.keepalive) {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+		} else {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+		}
 		add_write_buf(header, header_size);
 		add_write_buf(body, body_size);
 
@@ -1185,7 +1243,11 @@ void Peer_Http::process_update_flags() {
 		uint8_t* header = request_buf_.prepare(50);
 		uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		if (http_request_.keepalive) {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+		} else {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+		}
 		add_write_buf(header, header_size);
 		add_write_buf(body, body_size);
 
@@ -1215,7 +1277,11 @@ void Peer_Http::process_touch() {
 		uint8_t* header = request_buf_.prepare(50);
 		uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
-		add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+		if (http_request_.keepalive) {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+		} else {
+			add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+		}
 		add_write_buf(header, header_size);
 		add_write_buf(body, body_size);
 
@@ -1255,7 +1321,11 @@ void Peer_Http::process_create_watch() {
 	uint8_t* header = request_buf_.prepare(50);
 	uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
-	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+	if (http_request_.keepalive) {
+		add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+	} else {
+		add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+	}
 	add_write_buf(header, header_size);
 	add_write_buf(body, body_size);
 
@@ -1306,7 +1376,11 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 			uint8_t* buf2 = request_buf_.prepare(50);
 			uint32_t data_size2 = _snprintf((char*)buf2, 50, "%"PRIu32"\r\n\r\n", total_size);
 
-			update_write_buf(0, (uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+			if (http_request_.keepalive) {
+				update_write_buf(0, (uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+			} else {
+				update_write_buf(0, (uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+			}
 			update_write_buf(1, buf2, data_size2);
 
 			set_state(PEER_STATUS_WRITE);
@@ -1361,7 +1435,11 @@ void Peer_Http::process_flush() {
 	uint8_t* header = request_buf_.prepare(50);
 	uint32_t header_size = _snprintf((char*)header, 50, "%"PRIu32"\r\n\r\n", body_size);
 
-	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+	if (http_request_.keepalive) {
+		add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+	} else {
+		add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+	}
 	add_write_buf(header, header_size);
 	add_write_buf(body, body_size);
 
@@ -1383,7 +1461,11 @@ void Peer_Http::process_stats() {
 	uint8_t* buf = request_buf_.prepare(size);
 	memcpy(buf, result.c_str(), size);
 
-	add_write_buf((uint8_t*)DEFAULT_RES_200, sizeof(DEFAULT_RES_200) - 1);
+	if (http_request_.keepalive) {
+		add_write_buf((uint8_t*)DEFAULT_RES_200_KEEP_ALIVE, sizeof(DEFAULT_RES_200_KEEP_ALIVE) - 1);
+	} else {
+		add_write_buf((uint8_t*)DEFAULT_RES_200_CLOSE, sizeof(DEFAULT_RES_200_CLOSE) - 1);
+	}
 	add_write_buf(buf2, data_size2);
 	add_write_buf(buf, size);
 

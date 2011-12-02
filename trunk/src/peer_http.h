@@ -45,6 +45,7 @@ public:
 	}
 	void reset() {
 		http_11 = false;
+		keepalive = false;
 		method = 0;
 		uri = NULL;
 		uri_length = 0;
@@ -56,6 +57,7 @@ public:
 		boundary_length = 0;
 	}
 	bool http_11;
+	bool keepalive;
 	uint32_t method;
 	char* uri;
 	uint32_t uri_length;
