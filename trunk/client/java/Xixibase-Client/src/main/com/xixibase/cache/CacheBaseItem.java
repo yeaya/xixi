@@ -24,16 +24,10 @@ public class CacheBaseItem {
 	protected long expireTime;
 	protected int groupID;
 	protected int flags;
-/*
-	public CacheBaseItem(long cacheID, long expireTime, int groupID, int flags) {
-		this.cacheID = cacheID;
-		this.expireTime = expireTime;
-		this.groupID = groupID;
-		this.flags = flags;
-	}
-*/
-	
-	public CacheBaseItem(String key, long cacheID, int expiration, int groupID, int flags) {
+	protected int valueSize;
+
+	public CacheBaseItem(String key, long cacheID, int expiration,
+			int groupID, int flags, int valueSize) {
 		this.key = key;
 		this.cacheID = cacheID;
 		if (expiration == Defines.NO_EXPIRATION) {
@@ -43,6 +37,7 @@ public class CacheBaseItem {
 		}
 		this.groupID = groupID;
 		this.flags = flags;
+		this.valueSize = valueSize;
 	}
 	
 	public String getKey() {
@@ -51,10 +46,6 @@ public class CacheBaseItem {
 
 	public long getCacheID() {
 		return cacheID;
-	}
-
-	public int getGroupID() {
-		return groupID;
 	}
 
 	protected void setExpiration(int expiration) {
@@ -80,8 +71,16 @@ public class CacheBaseItem {
 		return expireTime;
 	}
 
+	public int getGroupID() {
+		return groupID;
+	}
+
 	public int getFlags() {
 		return flags;
+	}
+
+	public int getValueSize() {
+		return valueSize;
 	}
 	
 	// for ObjectTransCoder

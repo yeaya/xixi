@@ -152,7 +152,8 @@ public class CacheClientImpl extends Defines {
 							groupID,
 							flags,
 							obj,
-							objectSize[0]);
+							objectSize[0],
+							dataSize);
 					if (watchID != 0) {
 						localCache.put(socket.getHost(), key, item);
 					}
@@ -219,12 +220,14 @@ public class CacheClientImpl extends Defines {
 				long cacheID = socket.readLong();
 				int flags = socket.readInt();
 				int expiration = socket.readInt();
+				int valueSize = socket.readInt();
 				CacheBaseItem item = new CacheBaseItem(
 						key,
 						cacheID,
 						expiration,
 						groupID,
-						flags);
+						flags,
+						valueSize);
 				return item;
 			} else {
 				short reason = socket.readShort();
@@ -443,7 +446,8 @@ public class CacheClientImpl extends Defines {
 			}
 
 			int[] outflags = new int[1];
-			byte[] data = transCoder.encode(value, outflags);
+			int[] objectSize = new int[1];
+			byte[] data = transCoder.encode(value, outflags, objectSize);
 			int flags = outflags[0];
 			int dataSize = data.length;//output.getSize();
 
@@ -478,6 +482,7 @@ public class CacheClientImpl extends Defines {
 							groupID,
 							flags,
 							value,
+							objectSize[0],
 							dataSize);
 					localCache.put(socket.getHost(), key, item);
 				}

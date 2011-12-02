@@ -23,7 +23,7 @@ public interface TransCoder {
 	byte[] encodeKey(final String key);
 	
 	// never return null
-	byte[] encode(final Object object, int[]/*out*/ flags) throws IOException;
+	byte[] encode(final Object object, int[]/*out*/ flags, int[]/*out*/ objectSize) throws IOException;
 	
 	// never return null
 	Object decode(final byte[] in, int flags, int[]/*out*/ objectSize) throws IOException;

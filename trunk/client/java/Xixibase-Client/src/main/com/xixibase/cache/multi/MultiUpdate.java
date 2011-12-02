@@ -236,7 +236,7 @@ public final class MultiUpdate extends Defines {
 				keyBuf = keyBuffers.get(currKeyIndex);
 
 				int[] outflags = new int[1];
-				data = transCoder.encode(item.value, outflags);
+				data = transCoder.encode(item.value, outflags, null);
 				flags = outflags[0];
 				dataSize = data.length;
 			}
@@ -265,7 +265,7 @@ public final class MultiUpdate extends Defines {
 				keyBuf = keyBuffers.get(currKeyIndex);
 
 				int[] outflags = new int[1];
-				data = transCoder.encode(item.value, outflags);
+				data = transCoder.encode(item.value, outflags, null);
 				flags = outflags[0];
 				dataSize = data.length;
 

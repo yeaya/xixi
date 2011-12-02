@@ -25,34 +25,34 @@
 #define MAX_EXTENSION_SIZE 128
 // text/plain
 #define DEFAULT_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
-#define DEFAULT_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: "
+#define DEFAULT_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: "
 
 #define GET_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: "
-#define GET_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: CloseContent-Type: "
+#define GET_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: "
 
 #define GET_RES_304_KEEP_ALIVE "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: "
-#define GET_RES_304_CLOSE "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nConnection: CloseContent-Type: "
+#define GET_RES_304_CLOSE "HTTP/1.1 304 Not Modified\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: "
 
 #define GET_RES_301_KEEP_ALIVE "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
-#define GET_RES_301_CLOSE "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nConnection: CloseContent-Type: text/html\r\nContent-Length: "
+#define GET_RES_301_CLOSE "HTTP/1.1 301 Moved Permanently\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: "
 
 #define DELETE_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
-#define DELETE_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
+#define DELETE_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n"
 
 #define ERROR_RES_400_KEEP_ALIVE "HTTP/1.1 400 Bad Request\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 24\r\n\r\n<H1>400 Bad Request</H1>"
-#define ERROR_RES_400_CLOSE "HTTP/1.1 400 Bad Request\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 24\r\n\r\n<H1>400 Bad Request</H1>"
+#define ERROR_RES_400_CLOSE "HTTP/1.1 400 Bad Request\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 24\r\n\r\n<H1>400 Bad Request</H1>"
 
 #define ERROR_RES_401_KEEP_ALIVE "HTTP/1.1 401 Unauthorized\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 25\r\n\r\n<H1>401 Unauthorized</H1>"
-#define ERROR_RES_401_CLOSE "HTTP/1.1 401 Unauthorized\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 25\r\n\r\n<H1>401 Unauthorized</H1>"
+#define ERROR_RES_401_CLOSE "HTTP/1.1 401 Unauthorized\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 25\r\n\r\n<H1>401 Unauthorized</H1>"
 
 #define ERROR_RES_404_KEEP_ALIVE "HTTP/1.1 404 Not Found\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 22\r\n\r\n<H1>404 Not Found</H1>"
-#define ERROR_RES_404_CLOSE "HTTP/1.1 404 Not Found\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 22\r\n\r\n<H1>404 Not Found</H1>"
+#define ERROR_RES_404_CLOSE "HTTP/1.1 404 Not Found\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 22\r\n\r\n<H1>404 Not Found</H1>"
 
 #define ERROR_RES_413_KEEP_ALIVE "HTTP/1.1 413 Request Entity Too Large\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 37\r\n\r\n<H1>413 Request Entity Too Large</H1>"
-#define ERROR_RES_413_CLOSE "HTTP/1.1 413 Request Entity Too Large\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 37\r\n\r\n<H1>413 Request Entity Too Large</H1>"
+#define ERROR_RES_413_CLOSE "HTTP/1.1 413 Request Entity Too Large\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 37\r\n\r\n<H1>413 Request Entity Too Large</H1>"
 
 #define ERROR_RES_500_KEEP_ALIVE "HTTP/1.1 500 Internal Server Error\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 34\r\n\r\n<H1>500 Internal Server Error</H1>"
-#define ERROR_RES_500_CLOSE "HTTP/1.1 500 Internal Server Error\r\nServer: "HTTP_SERVER"\r\nConnection: Close\r\nContent-Type: text/html\r\nContent-Length: 34\r\n\r\n<H1>500 Internal Server Error</H1>"
+#define ERROR_RES_500_CLOSE "HTTP/1.1 500 Internal Server Error\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 34\r\n\r\n<H1>500 Internal Server Error</H1>"
 
 #define LOG_TRACE2(x)  LOG_TRACE("Peer_Http id=" << get_peer_id() << " " << x)
 #define LOG_DEBUG2(x)  LOG_DEBUG("Peer_Http id=" << get_peer_id() << " " << x)
@@ -179,7 +179,6 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this), timer_
 	write_buf_total_ = 0;
 	read_item_buf_ = NULL;
 	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
-//	timer_ = NULL;
 	timer_flag_ = false;
 
 	group_id_ = 0;
@@ -211,29 +210,50 @@ Peer_Http::~Peer_Http() {
 	stats_.close_conn();
 }
 
+void Peer_Http::reset_for_new_cmd() {
+	if (cache_item_ != NULL) {
+		cache_mgr_.release_reference(cache_item_);
+		cache_item_ = NULL;
+	}
+
+	group_id_ = 0;
+	watch_id_ = 0;
+	cache_id_ = 0;
+	key_ = NULL;
+	key_length_ = 0;
+	value_ = NULL;
+	value_length_ = 0;
+	value_content_type_ = "";
+	value_content_type_length_ = 0;
+	post_data_ = NULL;
+	content_length_ = 0;
+	flags_ = 0;
+	expiration_ = 0;
+	touch_flag_ = false;
+	delta_ = 1;
+	ack_cache_id_ = 0;
+	interval_ = 120;
+	timeout_ = 30;
+	sub_op_ = 0;
+	http_request_.reset();
+
+	request_buf_.reset();
+	write_buf_total_ = 0;
+	read_item_buf_ = NULL;
+	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
+	set_state(PEER_STATE_READ_HEADER);
+}
+
 void Peer_Http::cleanup() {
 	if (cache_item_ != NULL) {
 		cache_mgr_.release_reference(cache_item_);
 		cache_item_ = NULL;
 	}
 
-//	for (uint32_t i = 0; i < cache_items_.size(); i++) {
-//		cache_mgr_.release_reference(cache_items_[i]);
-//	}
-//	cache_items_.clear();
-
 	if (socket_ != NULL) {
 		delete socket_;
 		socket_ = NULL;
 	}
-//	if (timer_ != NULL) {
-//		timer_lock_.lock();
-//		if (timer_ != NULL) {
-//			delete timer_;
-//			timer_ = NULL;
-//		}
-//		timer_lock_.unlock();
-//	}
 }
 
 void Peer_Http::write_error(xixi_reason error_code) {
@@ -585,12 +605,10 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 			}
 			memcpy(buf, value, value_length);
 			buf[value_length] = '\0';
-		//	to_lower(buf, value_length);
 			http_request_.entity_tag = buf;
 			http_request_.entity_tag_length = value_length;
 		}
 	} else if (name_length == 14) {
-	//	to_lower(name, name_length);
 		if (strcasecmp(name, "content-length", name_length) == 0) {
 			if (!safe_toui32(value, value_length, content_length_)) {
 				return false;
@@ -698,9 +716,6 @@ void Peer_Http::process_command() {
 		key_length_ = http_request_.uri_length;
 		process_get();
 	}
-//	if (!http_request_.keepalive) {
-//		next_state_ = PEER_STATE_CLOSING;
-//	}
 }
 
 bool Peer_Http::process_request_arg(char* arg) {
@@ -904,7 +919,7 @@ void Peer_Http::process_post() {
 void Peer_Http::process_get() {
 	xixi_reason reason;
 	uint32_t expiration;
-	Cache_Item* it = get_cache_item(reason, expiration);
+	Cache_Item* it = get_cache_item(false, reason, expiration);
 
 	if (it != NULL) {
 		cache_item_ = it;
@@ -981,13 +996,13 @@ void Peer_Http::process_get() {
 }
 
 #include <boost/filesystem.hpp>
-Cache_Item* Peer_Http::get_cache_item(xixi_reason& reason, uint32_t& expiration) {
+Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_t& expiration) {
 	Cache_Item* it;
 	if (touch_flag_) {
 		expiration = expiration_;
 		it = cache_mgr_.get_touch(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
 	} else {
-		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, false, expiration, reason);
+		it = cache_mgr_.get(group_id_, (uint8_t*)key_, key_length_, watch_id_, is_base, expiration, reason);
 	}
 
 	// try load from file /webapps
@@ -1001,7 +1016,7 @@ Cache_Item* Peer_Http::get_cache_item(xixi_reason& reason, uint32_t& expiration)
 					cout << p << " is a directory" << endl;
 					if (key_[key_length_ - 1] == '/') {
 						// load welcome file
-						it = get_welcome_file(reason, expiration);
+						it = get_welcome_file(is_base, reason, expiration);
 					} else {
 						// localion to the directary
 						reason = XIXI_REASON_MOVED_PERMANENTLY;
@@ -1028,7 +1043,7 @@ Cache_Item* Peer_Http::get_cache_item(xixi_reason& reason, uint32_t& expiration)
 	return it;
 }
 
-Cache_Item* Peer_Http::get_welcome_file(xixi_reason& reason, uint32_t& expiration) {
+Cache_Item* Peer_Http::get_welcome_file(bool is_base, xixi_reason& reason, uint32_t& expiration) {
 	Cache_Item* it = NULL;
 	reason = XIXI_REASON_NOT_FOUND;
 	for (size_t i = 0; i < settings_.welcome_file_list.size(); i++) {
@@ -1043,7 +1058,7 @@ Cache_Item* Peer_Http::get_welcome_file(xixi_reason& reason, uint32_t& expiratio
 			expiration = expiration_;
 			it = cache_mgr_.get_touch(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, reason);
 		} else {
-			it = cache_mgr_.get(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, false, expiration, reason);
+			it = cache_mgr_.get(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, is_base, expiration, reason);
 		}
 		if (it != NULL) {
 			reason = XIXI_REASON_SUCCESS;
@@ -1184,15 +1199,8 @@ void Peer_Http::process_get_base() {
 
 	xixi_reason reason;
 	uint32_t expiration;
-	Cache_Item* it = get_cache_item(reason, expiration);
-/*
-	uint64_t cache_id;
-	uint32_t flags;
-	
-	char ext[MAX_EXTENSION_SIZE + 1];
-	uint32_t ext_size = MAX_EXTENSION_SIZE;
-	bool ret = cache_mgr_.get_base(group_id_, (uint8_t*)key_, key_length_, cache_id, flags, expiration, ext, ext_size);
-	if (ret) {*/
+	Cache_Item* it = get_cache_item(true, reason, expiration);
+
 	if (it != NULL) {
 		char* content_type = "text/html";
 		uint32_t ext_size = it->get_ext_size();
@@ -1407,7 +1415,6 @@ void Peer_Http::process_watch() {
 		} else {
 			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
 			timer_lock_.lock();
-//			timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
 			timer_.expires_from_now(boost::posix_time::seconds(timeout_));
 			timer_.async_wait(boost::bind(&Peer_Http::handle_timer, this,
 				boost::asio::placeholders::error, watch_id_));
@@ -1473,47 +1480,7 @@ void Peer_Http::process_stats() {
 	next_state_ = PEER_STATE_NEW_CMD;
 }
 
-void Peer_Http::reset_for_new_cmd() {
-	if (cache_item_ != NULL) {
-		cache_mgr_.release_reference(cache_item_);
-		cache_item_ = NULL;
-	}
-
-//	for (uint32_t i = 0; i < cache_items_.size(); i++) {
-//		cache_mgr_.release_reference(cache_items_[i]);
-//	}
-//	cache_items_.clear();
-
-	group_id_ = 0;
-	watch_id_ = 0;
-	cache_id_ = 0;
-	key_ = NULL;
-	key_length_ = 0;
-	value_ = NULL;
-	value_length_ = 0;
-	value_content_type_ = "";
-	value_content_type_length_ = 0;
-	post_data_ = NULL;
-	content_length_ = 0;
-	flags_ = 0;
-	expiration_ = 0;
-	touch_flag_ = false;
-	delta_ = 1;
-	ack_cache_id_ = 0;
-	interval_ = 120;
-	timeout_ = 30;
-	sub_op_ = 0;
-	http_request_.reset();
-
-	request_buf_.reset();
-	write_buf_total_ = 0;
-	read_item_buf_ = NULL;
-	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
-	set_state(PEER_STATE_READ_HEADER);
-}
-
 void Peer_Http::on_cache_watch_notify(uint32_t watch_id) {
-//	if (lock_.try_lock()) {
 	timer_lock_.lock();
 		if (timer_flag_) {
 			boost::system::error_code ec;
@@ -1522,10 +1489,6 @@ void Peer_Http::on_cache_watch_notify(uint32_t watch_id) {
 			timer_flag_ = true;
 		}
 	timer_lock_.unlock();
-//		lock_.unlock();
-//	} else {
-//		LOG_INFO2("on_cache_watch_notify try_lock false, watch_id=" << watch_id);
-//	}
 }
 
 void Peer_Http::start(uint8_t* data, uint32_t data_length) {
@@ -1592,7 +1555,6 @@ void Peer_Http::handle_write(const boost::system::error_code& err) {
 	lock_.lock();
 	--op_count_;
 	if (!err) {
-	//	write_buf_.clear();
 
 		process();
 
@@ -1652,12 +1614,12 @@ uint32_t Peer_Http::read_some(uint8_t* buf, uint32_t length) {
 }
 
 void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {
-	//  LOG_INFO("Peer_Http::handle_timer err=" << err);
+	LOG_DEBUG("Peer_Http::handle_timer err=" << err);
 	std::list<uint64_t> updated_list;
 	uint32_t updated_count = 0;
 	lock_.lock();
 	bool ret = cache_mgr_.check_watch_and_clear_callback(watch_id, updated_list, updated_count);
-	//  LOG_INFO2("handle_timer watch_id=" << watch_id << " updated_count=" << updated_count);
+	LOG_DEBUG("handle_timer watch_id=" << watch_id << " updated_count=" << updated_count);
 
 	if (!ret) {
 		write_error(XIXI_REASON_WATCH_NOT_FOUND);

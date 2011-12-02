@@ -543,21 +543,17 @@ uint32_t Peer_Cache::process_get_base_req_pdu_extras(XIXI_Get_Base_Req_Pdu* pdu,
 	xixi_reason reason;
 	uint32_t expiration;
 	Cache_Item* it = cache_mgr_.get(pdu->group_id, key, key_length, 0, true, expiration, reason);
-/*
-	uint64_t cache_id;
-	uint32_t flags;
-	uint32_t expiration;
-	uint32_t ext_size = 0;
-	bool ret = cache_mgr_.get_base(pdu->group_id, key, key_length, cache_id, flags, expiration, NULL, ext_size);
-	if (ret) {*/
+
 	if (it != NULL) {
 		uint8_t* cb = cache_buf_.prepare(XIXI_Get_Base_Res_Pdu::calc_encode_size());
 		XIXI_Get_Base_Res_Pdu rs;
 		rs.cache_id = it->cache_id;
 		rs.flags = it->flags;
+		rs.expiration = expiration;
+		rs.data_length = it->data_size;
 		cache_mgr_.release_reference(it);
 		it = NULL;
-		rs.expiration = expiration;
+
 		rs.encode(cb);
 
 		add_write_buf(cb, XIXI_Get_Base_Res_Pdu::calc_encode_size());

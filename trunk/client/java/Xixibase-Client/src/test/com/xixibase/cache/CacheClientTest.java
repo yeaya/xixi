@@ -186,8 +186,8 @@ public class CacheClientTest extends TestCase {
 		TransCoder oldCoder = cc1.getTransCoder();
 		TransCoder coder = new ObjectTransCoder() {
 			@Override
-			public byte[] encode(final Object object, int[] flags) throws IOException {
-				return super.encode(object, flags);
+			public byte[] encode(final Object object, int[] flags, int[]/*out*/ objectSize) throws IOException {
+				return super.encode(object, flags, objectSize);
 			}
 		};
 		cc1.setTransCoder(coder);

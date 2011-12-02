@@ -367,8 +367,9 @@ public final class MultiGet extends Defines {
 						String key = keys.get(processedCount);
 						
 						byte[] buf = data.array();
+						int[] objectSize = new int[1];
 						try {
-							Object obj = transCoder.decode(buf, flags, null);
+							Object obj = transCoder.decode(buf, flags, objectSize);
 							CacheItem item = new CacheItem(
 									key,
 									cacheID,
@@ -376,6 +377,7 @@ public final class MultiGet extends Defines {
 									groupID,
 									flags,
 									obj,
+									objectSize[0],
 									dataSize);
 							result.set(keyIndexs.get(processedCount).intValue(), item);
 						} catch (IOException e) {

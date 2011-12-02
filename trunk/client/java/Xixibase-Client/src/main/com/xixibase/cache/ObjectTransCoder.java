@@ -102,7 +102,7 @@ public class ObjectTransCoder implements TransCoder {
 		this.option2 = (this.option2 << 8) & 0xFF00;
 	}
 
-	public byte[] encode(final Object obj, int[]/*out*/ outflags) throws IOException {
+	public byte[] encode(final Object obj, int[]/*out*/ outflags, int[]/*out*/ objectSize) throws IOException {
 		byte[] b = null;
 		int flags = 0;
 		if (obj instanceof String) {
@@ -159,18 +159,19 @@ public class ObjectTransCoder implements TransCoder {
 			b = bos.toByteArray();
 		}
 
-		if (b != null) {
-			if (b.length >= compressionThreshold && compressionThreshold > 0) {
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				GZIPOutputStream gos = new GZIPOutputStream(bos);
-				gos.write(b);
-				gos.close();
-				bos.close();
-				byte[] c = bos.toByteArray();
-				if (c.length < b.length) {
-					b = c;
-					flags |= FLAGS_COMPRESSED;
-				}
+		if (objectSize != null) {
+			objectSize[0] = b.length;
+		}
+		if (b.length >= compressionThreshold && compressionThreshold > 0) {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			GZIPOutputStream gos = new GZIPOutputStream(bos);
+			gos.write(b);
+			gos.close();
+			bos.close();
+			byte[] c = bos.toByteArray();
+			if (c.length < b.length) {
+				b = c;
+				flags |= FLAGS_COMPRESSED;
 			}
 		}
 		outflags[0] = flags + option1 + option2;

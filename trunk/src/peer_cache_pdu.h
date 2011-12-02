@@ -135,18 +135,20 @@ public:
 class XIXI_Get_Base_Res_Pdu : public XIXI_Pdu {
 public:
 	static uint32_t calc_encode_size() {
-		return XIXI_PDU_CHOICE_LENGTH + 16;
+		return XIXI_PDU_CHOICE_LENGTH + 20;
 	}
 	void encode(uint8_t* buf) {
 		ENCODE_CHOICE(buf, XIXI_CHOICE_GET_BASE_RES); buf += XIXI_PDU_CHOICE_LENGTH;
 		ENCODE_UINT64(buf, cache_id); buf += 8;
 		ENCODE_UINT32(buf, flags); buf += 4;
-		ENCODE_UINT32(buf, expiration);
+		ENCODE_UINT32(buf, expiration); buf += 4;
+		ENCODE_UINT32(buf, data_length);
 	}
 
 	uint64_t cache_id;
 	uint32_t flags;
 	uint32_t expiration;
+	uint32_t data_length;
 };
 
 const uint8_t XIXI_UPDATE_SUB_OP_MASK = 7;

@@ -100,10 +100,10 @@ protected:
 	inline void process_get();
 
 	// get cache item
-	inline Cache_Item* get_cache_item(xixi_reason& reason, uint32_t& expiration);
+	inline Cache_Item* get_cache_item(bool is_base, xixi_reason& reason, uint32_t& expiration);
 
 	// get welcome file
-	Cache_Item* get_welcome_file(xixi_reason& reason, uint32_t& expiration);
+	Cache_Item* get_welcome_file(bool is_base, xixi_reason& reason, uint32_t& expiration);
 
 	// get base
 	inline void process_get_base();

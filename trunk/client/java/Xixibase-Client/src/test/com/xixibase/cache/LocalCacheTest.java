@@ -72,7 +72,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		assertNull(lc.remove("errhost", cc.getGroupID(), "xixi"));
 		assertNull(lc.remove(cc.getGroupID() + 1, "xixi"));
@@ -117,7 +117,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -162,7 +162,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -205,7 +205,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -221,7 +221,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
 		lc.setWarningCacheRate(0.8);
 		assertEquals(lc.getWarningCacheRate(), 0.8);
@@ -249,7 +249,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -265,7 +265,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		
 		Thread.sleep(2000);
 		
@@ -306,7 +306,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -322,7 +322,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.get(cc.getGroupID(), "xixi").getValue(), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
 		lc.setWarningCacheRate(0.8);
 		assertEquals(lc.getWarningCacheRate(), 0.8);
@@ -354,7 +354,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -370,7 +370,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		
 		Thread.sleep(2000);
 		
@@ -410,7 +410,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value");
 		assertEquals(cc.getLW("xixi"), "value");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(530, lc.getCacheSize());
+		assertEquals(525, lc.getCacheSize());
 		assertEquals(lc.getMaxCacheSize(), 64 * 1024 * 1024);
 		lc.setMaxCacheSize(1024 * 1024);
 		assertEquals(lc.getMaxCacheSize(), 1024 * 1024);
@@ -426,7 +426,7 @@ public class LocalCacheTest extends TestCase {
 		assertEquals(cc.getW("xixi"), "value2");
 		assertEquals(cc.getLW("xixi"), "value2");
 		assertEquals(lc.getCacheCount(), 1);
-		assertEquals(532, lc.getCacheSize());
+		assertEquals(526, lc.getCacheSize());
 		
 		Thread.sleep(2000);
 		
@@ -680,7 +680,7 @@ public class LocalCacheTest extends TestCase {
 		for (int i = 0; i < 100; i++) {
 			cc.setW("xixi" + i, "0315");
 		}
-		assertEquals(40, lc.getCacheCount());
+		assertEquals(39, lc.getCacheCount());
 
 		mgr.shutdown();
 	}
