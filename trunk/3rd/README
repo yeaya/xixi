@@ -1,2 +1,8 @@
 1. boost
    mini boost lib, based on boost/1_47_0
+
+2. tinyxml
+   tinyxml/2.6.2
+
+3. zlib
+   mini zlib lib, based on zlib/1.2.5
