@@ -5,12 +5,16 @@ http://code.google.com/p/xixibase/
 --------------------------------------------------------------------------------
 Dependencies:
    -- boost, http://www.boost.org/
+   -- tinyxml
+   -- zlib
 
 --------------------------------------------------------------------------------
 Building Xixibase server
 Windows:
 1. Please check the directory.
        xixibase--3rd--boost
+                    --tinyxml
+                    --zlib
                --client
                --src
 2. run build.bat
@@ -18,6 +22,8 @@ Windows:
 Linux/Mac:
 1. Please check the directory.
        xixibase--3rd--boost
+                    --tinyxml
+                    --zlib
                --client
                --src
 2. chmod +x build.sh
