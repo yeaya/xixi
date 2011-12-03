@@ -656,30 +656,8 @@ void Cache_Mgr::release_reference(Cache_Item* item) {
 #include <boost/filesystem.hpp>
 Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uint32_t key_length, uint32_t watch_id, uint32_t expiration, xixi_reason&/*out*/ reason) {
 	string filename = settings_.home_dir + "webapps" + (char*)key;
-	LOG_INFO("load_from_file " << filename);
-/*	try {
-		boost::filesystem::path p(filename);
-		if (exists(p)) {
-			if (is_directory(p)) {
-				cout << p << " is a directory" << endl;
-				reason = XIXI_REASON_NOT_FOUND;
-				return NULL;
-			}
-		} else {
-			cout << p << " no exists" << endl;
-			reason = XIXI_REASON_NOT_FOUND;
-			return NULL;
-		//	if (!create_directory(p)) {
-		//		cout << "Can not create directory:" << p << endl;
-		//		return;
-		//	}
-		}
-	} catch (const boost::system::system_error& ex) {
-		cout << ex.what() << endl;
-		reason = XIXI_REASON_NOT_FOUND;
-		return NULL;
-	}
-*/
+	LOG_DEBUG("load_from_file " << filename);
+
 	FILE* file = fopen(filename.c_str(), "rb");
 	if (file == NULL) {
 		reason = XIXI_REASON_NOT_FOUND;
@@ -688,19 +666,23 @@ Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 	fseek(file, 0, SEEK_END);
 	size_t file_size = ftell(file);
 	fseek(file, 0, SEEK_SET);
- 	LOG_INFO("load_from_file " << filename << " size=" << file_size);
-	string ext = get_ext((char*)key, key_length); // p.extension().string();
-	string mime_type;
-	if (settings_.ext_to_mime(ext, mime_type)) {
-	}
+ 	LOG_DEBUG("load_from_file " << filename << " size=" << file_size);
+	uint32_t ext_size;
+	const char* ext = get_ext((const char*)key, key_length, ext_size); // p.extension().string();
+//	string mime_type;
+//	if (settings_.ext_to_mime(ext, mime_type)) {
+//	}
+
+	uint32_t mime_type_length = 0;
+	const uint8_t* mime_type = settings_.get_mime_type((const uint8_t*)ext, ext_size, mime_type_length);
 
 	Cache_Item* item = alloc_item(group_id, key_length, 0,
-		expiration, (uint32_t)file_size, (uint32_t)mime_type.size());
+		expiration, (uint32_t)file_size, mime_type_length);
 
 	if (item == NULL) {
 		fclose(file);
 		file = NULL;
-		if (item_size_ok(key_length, (uint32_t)file_size, (uint32_t)mime_type.size())) {
+		if (item_size_ok(key_length, (uint32_t)file_size, mime_type_length)) {
 			reason = XIXI_REASON_OUT_OF_MEMORY;
 		} else {
 			reason = XIXI_REASON_TOO_LARGE;
@@ -713,7 +695,9 @@ Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 	fclose(file);
 	file = NULL;
 
-	item->set_ext((uint8_t*)mime_type.c_str());
+	if (mime_type != NULL) {
+		item->set_ext(mime_type);
+	}
 
 	item->calc_hash_value();
 

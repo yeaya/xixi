@@ -46,6 +46,7 @@ public:
 	void reset() {
 		http_11 = false;
 		keepalive = false;
+		accept_gzip = false;
 		method = 0;
 		uri = NULL;
 		uri_length = 0;
@@ -58,6 +59,7 @@ public:
 	}
 	bool http_11;
 	bool keepalive;
+	bool accept_gzip;
 	uint32_t method;
 	char* uri;
 	uint32_t uri_length;
@@ -170,6 +172,7 @@ protected:
 
 	void handle_timer(const boost::system::error_code& err, uint32_t watch_id);
 
+	uint32_t gzip_encode(uint8_t* data_in, uint32_t data_in_size, vector<Const_Data>& data_out);
 protected:
 	boost::shared_ptr<Peer_Http> self_;
 

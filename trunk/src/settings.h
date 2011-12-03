@@ -19,13 +19,27 @@
 
 #include "defines.h"
 #include "xixibase.h"
+#include "xixi_list.hpp"
+#include "xixi_hash_map.hpp"
+
+class Extension_Mime_Item : public xixi::hash_node_base<Const_Data, Extension_Mime_Item>, public xixi::list_node_base<Extension_Mime_Item> {
+public:
+	inline bool is_key(const Const_Data* p) const {
+		return (externsion.size == p->size) && (memcmp(externsion.data, p->data, p->size) == 0);
+	}
+
+	Simple_Data externsion;
+	Simple_Data mime_type;
+};
 
 class Settings {
 public:
 	Settings();
+	~Settings();
 	void init();
 	string load_conf();
-	bool ext_to_mime(const string& ext, string& mime_type);
+//	bool ext_to_mime(const string& ext, string& mime_type);
+	const uint8_t* get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_size);
 
 	string home_dir;
 
@@ -43,7 +57,9 @@ public:
 	uint32_t max_stats_group;
 
 	uint32_t cache_expiration;
-	map<string, string> mime_map;
+//	map<string, string> mime_map;
+	xixi::list<Extension_Mime_Item> ext_mime_list;
+	xixi::hash_map<Const_Data, Extension_Mime_Item> ext_mime_map;
 	vector<string> welcome_file_list;
 };
 

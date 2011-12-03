@@ -51,6 +51,11 @@ exe xixibase
     ../3rd/tinyxml/tinyxml.cpp
     ../3rd/tinyxml/tinyxmlerror.cpp
     ../3rd/tinyxml/tinyxmlparser.cpp
+    ../3rd/zlib/adler32.c
+    ../3rd/zlib/crc32.c
+    ../3rd/zlib/deflate.c
+    ../3rd/zlib/trees.c
+    ../3rd/zlib/zutil.c
     /boost/system//boost_system
     /boost/thread//boost_thread
     /boost/filesystem//boost_filesystem

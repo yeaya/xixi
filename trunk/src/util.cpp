@@ -206,10 +206,11 @@ extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out) {
 	return true;
 }
 
-extern const char* get_ext(const char* key, uint32_t length) {
+extern const char* get_ext(const char* key, uint32_t length, uint32_t& ext_size) {
 	uint32_t count = 0;
-	for (int32_t i = length - 1; i >= 0 && count < 5; i--, count++) {
+	for (int32_t i = length - 1; i >= 0 && count < 10; i--, count++) {
 		if (key[i] == '.') {
+			ext_size = length - i - 1;
 			return key + i + 1;
 		}
 	}
@@ -238,6 +239,11 @@ int strcasecmp(char* str1, char* str2, uint32_t length) {
 	for (uint32_t i = 0; i < length; i++) {
 		char c1 = str1[i];
 		char c2 = str2[i];
+
+		if (c1 == c2) {
+			continue;
+		}
+
 		if (c1 >= 'a' && c1 <= 'z') {
 			c1 -= ('a' - 'A');
 		}

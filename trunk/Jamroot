@@ -10,7 +10,7 @@
 
 project    
 
-: requirements <include>3rd/tinyxml
+: requirements <include>3rd/tinyxml <include>3rd/zlib
  : default-build release
  : build-dir obj/jam
 ;

@@ -614,7 +614,12 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 				return false;
 			}
 		}
-	} 
+	} else if (name_length == 15) {
+		if (strcasecmp(name, "Accept-Encoding", name_length) == 0) {
+			char* buf = memfind(value, value_length, "gzip", 4);
+			http_request_.accept_gzip = (buf != NULL);
+		}
+	}
 	return true;
 }
 
@@ -949,13 +954,31 @@ void Peer_Http::process_get() {
 			}
 			add_write_buf((uint8_t*)header, header_size);
 		} else {
-			uint8_t* header = request_buf_.prepare(200);
-			uint32_t header_size = _snprintf((char*)header, 200, "%s\r\nContent-Length: %"PRIu32"\r\n"
-				"CacheID: %"PRIu64"\r\n"
-				"Flags: %"PRIu32"\r\n"
-				"Expiration: %"PRIu32"\r\n"
-				"ETag: %s\r\n\r\n",
-				content_type, it->data_size, it->cache_id, it->flags, expiration, etag);
+			uint32_t gzip_size = 0;
+			vector<Const_Data> write_buf;
+			if (http_request_.method != HEAD_METHOD && http_request_.accept_gzip && it->data_size > 1024) {
+				gzip_size = gzip_encode(it->get_data(), it->data_size, write_buf);
+				if (gzip_size + 50 >= it->data_size) {
+					gzip_size = 0;
+				}
+			}
+			uint8_t* header = request_buf_.prepare(300);
+			uint32_t header_size;
+			if (gzip_size > 0) {
+				header_size = _snprintf((char*)header, 300, "%s\r\nContent-Encoding: gzip\r\nContent-Length: %"PRIu32"\r\n"
+					"CacheID: %"PRIu64"\r\n"
+					"Flags: %"PRIu32"\r\n"
+					"Expiration: %"PRIu32"\r\n"
+					"ETag: %s\r\n\r\n",
+					content_type, gzip_size, it->cache_id, it->flags, expiration, etag);
+			} else {
+				header_size = _snprintf((char*)header, 300, "%s\r\nContent-Length: %"PRIu32"\r\n"
+					"CacheID: %"PRIu64"\r\n"
+					"Flags: %"PRIu32"\r\n"
+					"Expiration: %"PRIu32"\r\n"
+					"ETag: %s\r\n\r\n",
+					content_type, it->data_size, it->cache_id, it->flags, expiration, etag);
+			}
 			if (http_request_.keepalive) {
 				add_write_buf((uint8_t*)GET_RES_200_KEEP_ALIVE, sizeof(GET_RES_200_KEEP_ALIVE) - 1);
 			} else {
@@ -963,7 +986,14 @@ void Peer_Http::process_get() {
 			}
 			add_write_buf(header, header_size);
 			if (http_request_.method != HEAD_METHOD) {
-				add_write_buf(it->get_data(), it->data_size);
+				if (gzip_size > 0) {
+					for (size_t i = 0; i < write_buf.size(); i++) {
+						Const_Data& cd = write_buf[i];
+						add_write_buf(cd.data, cd.size); 
+					}
+				} else {
+					add_write_buf(it->get_data(), it->data_size);
+				}
 			}
 		}
 		set_state(PEER_STATUS_WRITE);
@@ -1628,4 +1658,103 @@ void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watc
 	}
 	try_write();
 	lock_.unlock();
+}
+
+#include "zlib.h"
+
+static void out_uint32(uint8_t* out, uint32_t x) {
+    out[0] = (uint8_t)(x & 0xff);
+    out[1] = (uint8_t)((x & 0xff00) >> 8);
+    out[2] = (uint8_t)((x & 0xff0000) >> 16);
+    out[3] = (uint8_t)((x & 0xff000000) >> 24);
+}
+
+uint32_t Peer_Http::gzip_encode(uint8_t* data_in, uint32_t data_in_size, vector<Const_Data>& data_out) {
+	static const uint8_t gzip_header[10] = { '\037', '\213', Z_DEFLATED, 0,
+		  0, 0, 0, 0, // mtime
+		  0, 0x03 // Unix OS_CODE
+	};
+	if (data_in_size == 0) {
+		return 0;
+	}
+
+	#define DEFAULT_COMPRESSION Z_DEFAULT_COMPRESSION
+	#define DEFAULT_WINDOWSIZE -15
+	#define DEFAULT_MEMLEVEL 9
+
+	z_stream stream;
+	memset(&stream, 0, sizeof(stream));
+    int zRC = deflateInit2(&stream, DEFAULT_COMPRESSION, Z_DEFLATED,
+                       DEFAULT_WINDOWSIZE, DEFAULT_MEMLEVEL,
+                       Z_DEFAULT_STRATEGY);
+
+    if (zRC != Z_OK) {
+		LOG_ERROR2("deflateInit2 error, " << zRC);
+		deflateEnd(&stream);
+		return 0;
+    }
+
+	data_out.push_back(Const_Data(gzip_header, 10));
+	uint32_t data_out_size = 10;
+
+    stream.next_in = data_in;
+    stream.avail_in = data_in_size;
+
+	uint32_t chunk_size = 4096;
+	if (data_in_size < 4096) {
+		chunk_size = data_in_size;
+	}
+	uint8_t* chunk = request_buf_.prepare(chunk_size);
+	if (chunk == NULL) {
+		LOG_ERROR2("gzip_encode, out of memory, " << chunk_size);
+		deflateEnd(&stream);
+		return 0;
+	}
+	stream.avail_out = chunk_size;
+
+	stream.next_out= chunk;
+
+    zRC = deflate(&(stream), Z_FINISH);
+
+	while (zRC == Z_OK && stream.avail_out == 0) {
+		data_out.push_back(Const_Data(chunk, chunk_size));
+		data_out_size += chunk_size;
+		chunk = request_buf_.prepare(chunk_size);
+		if (chunk == NULL) {
+			LOG_ERROR2("gzip_encode, out of memory, " << chunk_size);
+			deflateEnd(&stream);
+			return 0;
+		}
+		stream.avail_out = chunk_size;
+		stream.next_out= chunk;
+		zRC = deflate(&stream, Z_FINISH);
+	}
+	if (zRC = Z_STREAM_END) {
+		uint32_t size = chunk_size - stream.avail_out;
+		data_out.push_back(Const_Data(chunk, size));
+		data_out_size += size;
+	} else if (zRC != Z_OK) {
+		LOG_ERROR2("deflateInit2 error, " << zRC);
+		deflateEnd(&stream);
+		return 0;
+    }
+
+	uint8_t* validation = request_buf_.prepare(8);
+	if (validation == NULL) {
+		LOG_ERROR2("gzip_encode, out of memory, " << 8);
+		deflateEnd(&stream);
+		return 0;
+	}
+	uint32_t crc = crc32(0, (const Bytef *)data_in, data_in_size);
+    out_uint32(&validation[0], crc);
+    out_uint32(&validation[4], stream.total_in);
+	data_out.push_back(Const_Data(validation, 8));
+	data_out_size += 8;
+
+	zRC = deflateEnd(&stream);
+	if (zRC != Z_OK) {
+		LOG_ERROR2("deflateEnd error, " << zRC);
+	}
+
+	return data_out_size;
 }

@@ -124,15 +124,15 @@ public:
 		ext_size = 0;
 		item_flag = 0;
 	}
-	void set_key(uint8_t* key) {
+	void set_key(const uint8_t* key) {
 		memcpy(get_key(), key, key_length);
 		calc_hash_value();
 	}
-	void set_key_with_hash(uint8_t* key, uint32_t hash_value) {
+	void set_key_with_hash(const uint8_t* key, uint32_t hash_value) {
 		memcpy(get_key(), key, key_length);
 		hash_value_ = hash_value;
 	}
-	void set_ext(uint8_t* ext) {
+	void set_ext(const uint8_t* ext) {
 		memcpy(get_ext(), ext, ext_size);
 	}
 	inline bool is_key(const Cache_Key* p) const { return (group_id == p->group_id) && (key_length == p->size) && (memcmp((uint8_t*)body, p->data, key_length) == 0); }

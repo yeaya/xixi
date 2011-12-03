@@ -25,6 +25,15 @@ Settings::Settings() {
 	init();
 }
 
+Settings::~Settings() {
+	while (!ext_mime_list.empty()) {
+		Extension_Mime_Item* item = ext_mime_list.pop_front();
+		ext_mime_map.remove(item);
+		delete item;
+		item = NULL;
+	}
+}
+
 void Settings::init() {
 	boost::system::error_code ec;
 	boost::filesystem::path scp = boost::filesystem::system_complete(boost::filesystem::path("../"), ec);
@@ -80,18 +89,23 @@ string Settings::load_conf() {
 	while (mime != NULL) {
 		const char* ext = NULL;
 		const char* type = NULL;
-//		TiXmlNode* node_ext = mime->FirstChild("extension");
 		ele = mime->FirstChildElement("extension");
 		if (ele != NULL) {
 			ext = ele->GetText();
 		}
-	//	TiXmlNode* node_type = mime->FirstChild("mime-type");
 		ele = mime->FirstChildElement("mime-type");
 		if (ele != NULL) {
 			type = ele->GetText();
 		}
 		if (ext != NULL && type != NULL) {
-			mime_map[string(ext)] = string(type);
+			string str_ext = string(ext);
+			string str_type = string(type);
+//			mime_map[str_ext] = str_type;
+			Extension_Mime_Item* item = new Extension_Mime_Item();
+			ext_mime_list.push_back(item);
+			item->externsion.set((uint8_t*)str_ext.c_str(), str_ext.size());
+			item->mime_type.set((uint8_t*)str_type.c_str(), str_type.size());
+			ext_mime_map.insert(item, item->externsion.hash_value());
 		}
 		mime = mime->NextSiblingElement();
 	}
@@ -107,7 +121,7 @@ string Settings::load_conf() {
 
 	return "";
 }
-
+/*
 bool Settings::ext_to_mime(const string& ext, string& mime_type) {
 	map<string, string>::iterator it = mime_map.find(ext);
 	if (it != mime_map.end()) {
@@ -115,4 +129,14 @@ bool Settings::ext_to_mime(const string& ext, string& mime_type) {
 		return true;
 	}
 	return false;
+}
+*/
+const uint8_t* Settings::get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_size) {
+	Const_Data cd(ext, ext_size);
+	Extension_Mime_Item* item = ext_mime_map.find(&cd, cd.hash_value());
+	if (item != NULL) {
+		mime_type_size = item->mime_type.size;
+		return item->mime_type.data;
+	}
+	return NULL;
 }

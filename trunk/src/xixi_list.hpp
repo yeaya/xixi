@@ -17,6 +17,8 @@
 #ifndef XIXI_LIST_H
 #define XIXI_LIST_H
 
+#include <assert.h>
+
 namespace xixi {
 
 	template <class T, int N = 1>
