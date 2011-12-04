@@ -101,6 +101,10 @@ protected:
 	// get
 	inline void process_get();
 
+	// get content type
+
+	inline const char* get_content_type(Cache_Item* it);
+
 	// get cache item
 	inline Cache_Item* get_cache_item(bool is_base, xixi_reason& reason, uint32_t& expiration);
 

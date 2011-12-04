@@ -22,7 +22,7 @@
 #include "auth.h"
 #include "server.h"
 
-#define MAX_EXTENSION_SIZE 128
+#define MAX_MIME_TYPE_LENGTH 128
 
 #define DEFAULT_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
 #define DEFAULT_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: "
@@ -961,14 +961,7 @@ void Peer_Http::process_get() {
 
 	if (it != NULL) {
 		cache_item_ = it;
-		char content_type[MAX_EXTENSION_SIZE + 1];
-		uint32_t ext_size = it->get_ext_size();
-		if (ext_size > 0 && ext_size <= MAX_EXTENSION_SIZE) {
-			memcpy(content_type, it->get_ext(), ext_size);
-			content_type[ext_size] = '\0';
-		} else {
-			memcpy(content_type, "text/html", 10);
-		}
+		const char* content_type = get_content_type(it);
 
 		char etag[30];
 		uint32_t etag_length = _snprintf((char*)etag, sizeof(etag), "\"%"PRIu64"\"", it->cache_id);
@@ -1059,6 +1052,35 @@ void Peer_Http::process_get() {
 	}
 }
 
+const char* Peer_Http::get_content_type(Cache_Item* it) {
+	const char* content_type = "";
+	uint32_t ext_size = it->get_ext_size();
+	if (ext_size > 0 && ext_size <= MAX_MIME_TYPE_LENGTH) {
+		char* tmp = (char*)this->request_buf_.prepare(ext_size + 1);
+		memcpy(tmp, it->get_ext(), ext_size);
+		tmp[ext_size] = '\0';
+		content_type = tmp;
+	} else {
+		uint32_t mime_type_length = 0;
+		uint32_t suffix_size;
+		const char* suffix = get_suffix((const char*)key_, key_length_, suffix_size);
+		if (suffix != NULL) {
+			const uint8_t* mime_type = settings_.get_mime_type((const uint8_t*)suffix, suffix_size, mime_type_length);
+			if (mime_type != NULL && mime_type_length <= MAX_MIME_TYPE_LENGTH) {
+				char* tmp = (char*)this->request_buf_.prepare(mime_type_length + 1);
+				memcpy(tmp, mime_type, mime_type_length);
+				tmp[mime_type_length] = '\0';
+				content_type = tmp;
+			} else {
+				content_type = settings_.get_default_mime_type();
+			}
+		} else {
+			content_type = settings_.get_default_mime_type();
+		}
+	}
+	return content_type;
+}
+
 #include <boost/filesystem.hpp>
 Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_t& expiration) {
 	Cache_Item* it;
@@ -1085,7 +1107,6 @@ Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_
 						// localion to the directary
 						reason = XIXI_REASON_MOVED_PERMANENTLY;
 					}
-					return it;
 				} else {
 					// load from file
 					if (!touch_flag_) {
@@ -1266,14 +1287,8 @@ void Peer_Http::process_get_base() {
 	Cache_Item* it = get_cache_item(true, reason, expiration);
 
 	if (it != NULL) {
-		char content_type[MAX_EXTENSION_SIZE + 1];
-		uint32_t ext_size = it->get_ext_size();
-		if (ext_size > 0 && ext_size <= MAX_EXTENSION_SIZE) {
-			memcpy(content_type, it->get_ext(), ext_size);
-			content_type[ext_size] = '\0';
-		} else {
-			memcpy(content_type, "text/html", 10);
-		}
+		const char* content_type = get_content_type(it);
+
 		uint8_t* body = request_buf_.prepare(200);
 		uint32_t body_size = _snprintf((char*)body, 200,
 			"{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32",\"contenttype\":\"%s\",\"size\":%"PRIu32"}",

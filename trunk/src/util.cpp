@@ -206,15 +206,16 @@ extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out) {
 	return true;
 }
 
-extern const char* get_ext(const char* key, uint32_t length, uint32_t& ext_size) {
+extern const char* get_suffix(const char* key, uint32_t length, uint32_t& suffix_size) {
 	uint32_t count = 0;
 	for (int32_t i = length - 1; i >= 0 && count < 10; i--, count++) {
 		if (key[i] == '.') {
-			ext_size = length - i - 1;
+			suffix_size = length - i - 1;
 			return key + i + 1;
 		}
 	}
-	return "";
+	suffix_size = 0;
+	return NULL;
 }
 
 char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len) {

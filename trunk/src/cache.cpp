@@ -670,14 +670,11 @@ Cache_Item* Cache_Mgr::load_from_file(uint32_t group_id, const uint8_t* key, uin
 	size_t file_size = ftell(file);
 	fseek(file, 0, SEEK_SET);
  	LOG_DEBUG("load_from_file " << filename << " size=" << file_size);
-	uint32_t ext_size;
-	const char* ext = get_ext((const char*)key, key_length, ext_size); // p.extension().string();
-//	string mime_type;
-//	if (settings_.ext_to_mime(ext, mime_type)) {
-//	}
+	uint32_t suffix_size;
+	const char* suffix = get_suffix((const char*)key, key_length, suffix_size);
 
 	uint32_t mime_type_length = 0;
-	const uint8_t* mime_type = settings_.get_mime_type((const uint8_t*)ext, ext_size, mime_type_length);
+	const uint8_t* mime_type = settings_.get_mime_type((const uint8_t*)suffix, suffix_size, mime_type_length);
 
 	Cache_Item* item = alloc_item(group_id, key_length, 0,
 		expiration, (uint32_t)file_size, mime_type_length);

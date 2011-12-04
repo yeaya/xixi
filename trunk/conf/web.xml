@@ -3699,6 +3699,17 @@
         <mime-type>application/vnd.handheld-entertainment+xml</mime-type>
     </mime-mapping>
 
+    <default-mime-type>text/html</default-mime-type>
+
+    <gzip-mime-types>
+        <mime-type>text/html</mime-type>
+        <mime-type>text/plain</mime-type>
+        <mime-type>text/css</mime-type>
+        <mime-type>application/javascript</mime-type>
+        <mime-type>text/csv</mime-type>
+        <mime-type>application/xml</mime-type>
+    </gzip-mime-types>
+
     <welcome-file-list>
         <welcome-file>index.html</welcome-file>
         <welcome-file>index.htm</welcome-file>

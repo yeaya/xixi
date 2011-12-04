@@ -39,7 +39,8 @@ public:
 	void init();
 	string load_conf();
 //	bool ext_to_mime(const string& ext, string& mime_type);
-	const uint8_t* get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_size);
+	const uint8_t* get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_length);
+	const char* get_default_mime_type();
 
 	string home_dir;
 
@@ -60,6 +61,7 @@ public:
 //	map<string, string> mime_map;
 	xixi::list<Extension_Mime_Item> ext_mime_list;
 	xixi::hash_map<Const_Data, Extension_Mime_Item> ext_mime_map;
+	string default_mime_type;
 	vector<string> welcome_file_list;
 };
 

@@ -57,6 +57,8 @@ void Settings::init() {
 	max_stats_group = 1024;
 
 	cache_expiration = 600;
+
+	default_mime_type = "text/html";
 }
 
 string Settings::load_conf() {
@@ -110,6 +112,14 @@ string Settings::load_conf() {
 		mime = mime->NextSiblingElement();
 	}
 
+	ele = hRoot.FirstChildElement("default-mime-type").Element();
+	if (ele != NULL) {
+		string s = ele->GetText();
+		if (!s.empty()) {
+			default_mime_type = s;
+		}
+	}
+
 	TiXmlElement* welcome = hRoot.FirstChild("welcome-file-list").FirstChildElement("welcome-file").Element();
 	while (welcome != NULL) {
 		const char* file = welcome->GetText();
@@ -131,12 +141,17 @@ bool Settings::ext_to_mime(const string& ext, string& mime_type) {
 	return false;
 }
 */
-const uint8_t* Settings::get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_size) {
+const uint8_t* Settings::get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_length) {
 	Const_Data cd(ext, ext_size);
 	Extension_Mime_Item* item = ext_mime_map.find(&cd, cd.hash_value());
 	if (item != NULL) {
-		mime_type_size = item->mime_type.size;
+		mime_type_length = item->mime_type.size;
 		return item->mime_type.data;
 	}
+	mime_type_length = 0;
 	return NULL;
+}
+
+const char* Settings::get_default_mime_type() {
+	return default_mime_type.c_str();
 }
