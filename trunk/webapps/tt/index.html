@@ -179,7 +179,8 @@ jQuery(function ($) {
 			url: storageBaseURL + "del",
 			data: postdata,
 			success: function(data, textStatus){
-				$('#value').val("deleted");
+			//	$('#value').val("deleted");
+				alert("deleted");
 			},
 			error: function (XMLHttpRequest, textStatus, errorThrown) {
 				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
@@ -267,8 +268,8 @@ jQuery(function ($) {
 			data: postdata,
 			success: function(data, textStatus){
 				var res = eval('(' + data + ')');
-				$('#value').val("touched");
 				$('#cacheid').val(res.cacheid);
+				alert("touched");
 			},
 			error: function (XMLHttpRequest, textStatus, errorThrown) {
 				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);

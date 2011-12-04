@@ -11,6 +11,10 @@ mkdir dist
 mkdir dist/xixibase
 mkdir dist/xixibase/bin
 cp bin/xixibase dist/xixibase/bin/.
+mkdir dist/xixibase/conf
+cp conf/web/xml dist/xixibase/conf/.
+mkdir dist/xixibase/webapps
+cp -rf webapps/* dist/xixibase/webapps/.
 cd dist
 tar cvzf xixibase-ver-os-bin.tar.gz xixibase
 cd ..

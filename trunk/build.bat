@@ -12,3 +12,5 @@ mkdir dist\xixibase\bin
 copy bin\xixibase.exe dist\xixibase\bin\
 mkdir dist\xixibase\conf
 copy conf\web.xml dist\xixibase\conf\
+mkdir dist\xixibase\webapps
+xcopy /E webapps dist\xixibase\webapps
