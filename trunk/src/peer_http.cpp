@@ -23,7 +23,7 @@
 #include "server.h"
 
 #define MAX_EXTENSION_SIZE 128
-// text/plain
+
 #define DEFAULT_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
 #define DEFAULT_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: "
 
@@ -92,7 +92,7 @@
 // length: must > 0
 // sub: must not be NULL
 // sub_len: must > 0
-
+/*
 void tokenize_command(char* command, vector<token_t>& tokens) {
 	char* start = command;
 	char* end = command;
@@ -107,7 +107,7 @@ void tokenize_command(char* command, vector<token_t>& tokens) {
 				tokens.push_back(t);
 			}
 			start = end + 1;
-		} else if (/**end == ' ' || */*end == '\0') {
+		} else if (*end == '\0') {
 			if (start != end) {
 				t.value = start;
 				t.length = (uint32_t)(end - start);
@@ -117,6 +117,29 @@ void tokenize_command(char* command, vector<token_t>& tokens) {
 			break;
 		}
 		++end;
+	}
+}
+*/
+char* get_arg(char*& arg, uint32_t& arg_size) {
+	char* begin = arg;
+	char* p = arg;
+
+	while (*p != '\0') {
+		if (*p == '&') {
+			*p = '\0';
+			arg_size = (uint32_t)(p - begin);
+			arg = p + 1;
+			return begin;
+		}
+		++p;
+	}
+	if (p > begin) {
+		arg_size = (uint32_t)(p - begin);
+		arg = p;
+		return begin;
+	} else {
+		arg_size = 0;
+		return NULL;
 	}
 }
 
@@ -723,73 +746,83 @@ void Peer_Http::process_command() {
 	}
 }
 
-bool Peer_Http::process_request_arg(char* arg) {
-	tokens_.clear();
-	tokenize_command(arg, tokens_);
+bool Peer_Http::process_request_arg(char* args) {
+//	tokens_.clear();
+//	tokenize_command(arg, tokens_);
 
-	for (size_t i = 0; i < tokens_.size(); i++) {
-		token_t& t = tokens_[i];
-		if (t.length >= 2 && t.value[1] == '=') {
-			if (t.value[0] =='g') {
-				if (!safe_toui32(t.value + 2, t.length - 2, group_id_)) {
+	char* next_arg = args;
+	uint32_t arg_size = 0;
+
+	while (true) {
+		
+		char* arg = get_arg(next_arg, arg_size);
+		if (arg == NULL) {
+			break;
+		}
+	//	next_arg = arg + arg_size + 1;
+//	for (size_t i = 0; i < tokens_.size(); i++) {
+//		token_t& t = tokens_[i];
+		if (arg_size >= 2 && arg[1] == '=') {
+			if (arg[0] =='g') {
+				if (!safe_toui32(arg + 2, arg_size - 2, group_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='w') {
-				if (!safe_toui32(t.value + 2, t.length - 2, watch_id_)) {
+			} else if (arg[0] =='w') {
+				if (!safe_toui32(arg + 2, arg_size - 2, watch_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='k') {
-				key_ = (uint8_t*)decode_uri(t.value + 2, t.length - 2, key_length_);
+			} else if (arg[0] =='k') {
+				key_ = (uint8_t*)decode_uri(arg + 2, arg_size - 2, key_length_);
 				if (key_ == NULL) {
 					write_error(XIXI_REASON_OUT_OF_MEMORY);
 					return false;
 				}
-			} else if (t.value[0] =='v') {
-				value_ = (uint8_t*)decode_uri(t.value + 2, t.length - 2, value_length_);
+			} else if (arg[0] =='v') {
+				value_ = (uint8_t*)decode_uri(arg + 2, arg_size - 2, value_length_);
 				if (value_ == NULL) {
 					write_error(XIXI_REASON_OUT_OF_MEMORY);
 					return false;
 				}
-			} else if (t.value[0] =='f') {
-				if (!safe_toui32(t.value + 2, t.length - 2, flags_)) {
+			} else if (arg[0] =='f') {
+				if (!safe_toui32(arg + 2, arg_size - 2, flags_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='c') {
-				if (!safe_toui64(t.value + 2, t.length - 2, cache_id_)) {
+			} else if (arg[0] =='c') {
+				if (!safe_toui64(arg + 2, arg_size - 2, cache_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='d') {
-				if (!safe_toi64(t.value + 2, t.length - 2, delta_)) {
+			} else if (arg[0] =='d') {
+				if (!safe_toi64(arg + 2, arg_size - 2, delta_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='e') {
+			} else if (arg[0] =='e') {
 				touch_flag_ = true;
-				if (!safe_toui32(t.value + 2, t.length - 2, expiration_)) {
+				if (!safe_toui32(arg + 2, arg_size - 2, expiration_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='a') {
-				if (!safe_toui64(t.value + 2, t.length - 2, ack_cache_id_)) {
+			} else if (arg[0] =='a') {
+				if (!safe_toui64(arg + 2, arg_size - 2, ack_cache_id_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='i') {
-				if (!safe_toui32(t.value + 2, t.length - 2, interval_)) {
+			} else if (arg[0] =='i') {
+				if (!safe_toui32(arg + 2, arg_size - 2, interval_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='t') {
-				if (!safe_toui32(t.value + 2, t.length - 2, timeout_)) {
+			} else if (arg[0] =='t') {
+				if (!safe_toui32(arg + 2, arg_size - 2, timeout_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
-			} else if (t.value[0] =='s') {
-				if (!safe_toui32(t.value + 2, t.length - 2, sub_op_)) {
+			} else if (arg[0] =='s') {
+				if (!safe_toui32(arg + 2, arg_size - 2, sub_op_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
@@ -928,12 +961,13 @@ void Peer_Http::process_get() {
 
 	if (it != NULL) {
 		cache_item_ = it;
-		char* content_type = "text/html";
+		char content_type[MAX_EXTENSION_SIZE + 1];
 		uint32_t ext_size = it->get_ext_size();
 		if (ext_size > 0 && ext_size <= MAX_EXTENSION_SIZE) {
-			content_type = (char*)request_buf_.prepare(ext_size + 1);
 			memcpy(content_type, it->get_ext(), ext_size);
 			content_type[ext_size] = '\0';
+		} else {
+			memcpy(content_type, "text/html", 10);
 		}
 
 		char etag[30];
@@ -1232,12 +1266,13 @@ void Peer_Http::process_get_base() {
 	Cache_Item* it = get_cache_item(true, reason, expiration);
 
 	if (it != NULL) {
-		char* content_type = "text/html";
+		char content_type[MAX_EXTENSION_SIZE + 1];
 		uint32_t ext_size = it->get_ext_size();
 		if (ext_size > 0 && ext_size <= MAX_EXTENSION_SIZE) {
-			content_type = (char*)request_buf_.prepare(ext_size + 1);
 			memcpy(content_type, it->get_ext(), ext_size);
 			content_type[ext_size] = '\0';
+		} else {
+			memcpy(content_type, "text/html", 10);
 		}
 		uint8_t* body = request_buf_.prepare(200);
 		uint32_t body_size = _snprintf((char*)body, 200,

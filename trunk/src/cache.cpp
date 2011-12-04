@@ -156,21 +156,24 @@ void Cache_Mgr::init(uint64_t limit, uint32_t item_size_max, uint32_t item_size_
 }
 
 uint32_t Cache_Mgr::get_class_id(uint32_t size) {
-	if (size < max_size_[last_class_id_]) {
-		if (size > max_size_[last_class_id_ - 1]) {
-			return last_class_id_;
+	uint32_t class_id = last_class_id_;
+	if (size < max_size_[class_id]) {
+		if (size > max_size_[class_id - 1]) {
+			return class_id;
 		} else {
-			for (--last_class_id_; last_class_id_ >= CLASSID_MIN; --last_class_id_) {
-				if (size > max_size_[last_class_id_ - 1]) {
+			for (--class_id; class_id >= CLASSID_MIN; --class_id) {
+				if (size > max_size_[class_id - 1]) {
 					break;
 				}
 			}
-			return last_class_id_;
+			last_class_id_ = class_id;
+			return class_id;
 		}
 	} else {
-		for (; last_class_id_ <= class_id_max_; ++last_class_id_) {
-			if (size <= max_size_[last_class_id_]) {
-				return last_class_id_;
+		for (; class_id <= class_id_max_; ++class_id) {
+			if (size <= max_size_[class_id]) {
+				last_class_id_ = class_id;
+				return class_id;
 			}
 		}
 	}

@@ -23,13 +23,14 @@
 		Value: <textarea id="value" cols="100" rows="15" style="background-color:#C7C7C7;" ></textarea><br>
 		Upload: <input id="file" type="file" size="45" name="v"><button name="button" id='upload'>upload</button> <br>
 		<button name="button" id='get'>get</button> 
-		<button name="button" id='getimg'>getimg</button> 
+		<button name="button" id='glance'>glance</button> 
 		<button name="button" id='getbase'>getbase</button> 
 		<button name="button" id='set'>set</button>
 		<button name="button" id='incr'>incr</button>
 		<button name="button" id='decr'>decr</button>
 		<button name="button" id='touch'>touch</button><br>
-		<button name="button" id='delete'>delete</button><button name="button" id='flush'>flush</button><br>
+		<button name="button" id='delete'>delete</button>
+		<button name="button" id='flush'>flush</button><br>
 		<button name="button" id='clear'>clear</button><br>
 	</div>
 	<div id='footer'>
@@ -97,6 +98,9 @@ jQuery(function ($) {
 					var text = '<h3>' + textStatus + '</h3>' + '<h3>Response Header:</h3><br>' + resHeaders.replace(/\r\n/g, "<br>")
 						+ "<h3>Response Text:</h3>" + XMLHttpRequest.responseText;
 				}
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -123,17 +127,20 @@ jQuery(function ($) {
 					$('#flags').val(XMLHttpRequest.getResponseHeader("Flags"));
 					$('#expiration').val(XMLHttpRequest.getResponseHeader("Expiration"));
 				}
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
 	});
 
-	$('#getimg').click(function (e) {
+	$('#glance').click(function (e) {
 		prepare();
 
 		var url = storageBaseURL + "get?k=" + encodeURIComponent($('#key').val())
 			+ "&g=" + $('#groupid').val() + "&random=" + (new Date()).valueOf();
-		window.open (url, "xixiimgwindow", "height=300, width=400, toolbar=no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+		window.open (url, "xixiimgwindow", "height=385, width=512, toolbar=no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
 	});
 
 	$('#set').click(function (e) {
@@ -153,6 +160,9 @@ jQuery(function ($) {
 		//		alert("success " + textStatus);
 				var res = eval('(' + data + ')');
 				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -170,6 +180,9 @@ jQuery(function ($) {
 			data: postdata,
 			success: function(data, textStatus){
 				$('#value').val("deleted");
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -186,6 +199,9 @@ jQuery(function ($) {
 			success: function(data, textStatus){
 //				var res = eval('(' + data + ')');
 				alert(data);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -206,6 +222,9 @@ jQuery(function ($) {
 				var res = eval('(' + data + ')');
 				$('#value').val(res.value);
 				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -226,6 +245,9 @@ jQuery(function ($) {
 				var res = eval('(' + data + ')');
 				$('#value').val(res.value);
 				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -247,6 +269,9 @@ jQuery(function ($) {
 				var res = eval('(' + data + ')');
 				$('#value').val("touched");
 				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 			}
 		});
 		return false;
@@ -287,18 +312,15 @@ jQuery(function ($) {
 				{
 					var res = data;
 					$('#cacheid').val(res.cacheid);
+				},
+				error: function (XMLHttpRequest, textStatus, errorThrown) {
+					alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
 				}
 			}
 		)
 		
 		return false;
-
 	}
-
-	$(document).ajaxError(function(e, xhr, settings, exception) { 
-		alert("Error requesting " + settings.url + ": " + xhr.status + " " + xhr.statusText + "\nerror:" + xhr.responseText + "\nexception=" + exception.toString());
-	}); 
-
 });
 </script>
 </body>

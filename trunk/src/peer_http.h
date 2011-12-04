@@ -32,12 +32,12 @@
 const uint32_t HEAD_METHOD = 'H'; // "HEAD"
 const uint32_t GET_METHOD = 'G'; // "GET "
 const uint32_t POST_METHOD = 'P'; // "POST"
-
+/*
 typedef struct token_s {
     char* value;
     uint32_t length;
 } token_t;
-
+*/
 class Http_Request {
 public:
 	Http_Request() {
@@ -94,7 +94,7 @@ protected:
 	inline bool process_request_header_fields(char* request_header_field, uint32_t length);
 	inline bool handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length);
 	inline void process_command();
-	inline bool process_request_arg(char* agr);
+	inline bool process_request_arg(char* agrs);
 	inline char* decode_uri(char* uri, uint32_t length, uint32_t& out);
 	inline void process_post();
 
@@ -185,7 +185,7 @@ protected:
 
 	Http_Request http_request_;
 
-	vector<token_t> tokens_;
+//	vector<token_t> tokens_;
 	uint32_t group_id_;
 	uint32_t watch_id_;
 	uint64_t cache_id_;
