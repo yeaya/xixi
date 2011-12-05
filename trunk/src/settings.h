@@ -22,6 +22,8 @@
 #include "xixi_list.hpp"
 #include "xixi_hash_map.hpp"
 
+#define MAX_MIME_TYPE_LENGTH 128
+
 class Extension_Mime_Item : public xixi::hash_node_base<Const_Data, Extension_Mime_Item>, public xixi::list_node_base<Extension_Mime_Item> {
 public:
 	inline bool is_key(const Const_Data* p) const {
@@ -32,15 +34,24 @@ public:
 	Simple_Data mime_type;
 };
 
+class Gzip_Mime_Type_Item : public xixi::hash_node_base<Const_Data, Gzip_Mime_Type_Item>, public xixi::list_node_base<Gzip_Mime_Type_Item> {
+public:
+	inline bool is_key(const Const_Data* p) const {
+		return (mime_type.size == p->size) && (memcmp(mime_type.data, p->data, p->size) == 0);
+	}
+
+	Simple_Data mime_type;
+};
+
 class Settings {
 public:
 	Settings();
 	~Settings();
 	void init();
 	string load_conf();
-//	bool ext_to_mime(const string& ext, string& mime_type);
 	const uint8_t* get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_length);
-	const char* get_default_mime_type();
+	const char* get_default_mime_type(uint32_t& mime_type_length);
+	bool is_gzip_mime_type(const uint8_t* mime_type, uint32_t mime_type_length);
 
 	string home_dir;
 
@@ -57,11 +68,15 @@ public:
 
 	uint32_t max_stats_group;
 
-	uint32_t cache_expiration;
-//	map<string, string> mime_map;
+	uint32_t default_cache_expiration;
 	xixi::list<Extension_Mime_Item> ext_mime_list;
 	xixi::hash_map<Const_Data, Extension_Mime_Item> ext_mime_map;
-	string default_mime_type;
+	uint32_t min_gzip_size;
+	uint32_t max_gzip_size;
+	xixi::list<Gzip_Mime_Type_Item> gzip_mime_list;
+	xixi::hash_map<Const_Data, Gzip_Mime_Type_Item> gzip_mime_map;
+	char default_mime_type[MAX_MIME_TYPE_LENGTH + 1];
+	uint32_t default_mime_type_length;
 	vector<string> welcome_file_list;
 };
 

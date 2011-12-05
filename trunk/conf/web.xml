@@ -3701,14 +3701,21 @@
 
     <default-mime-type>text/html</default-mime-type>
 
-    <gzip-mime-types>
+    <gzip>
+        <enable>true</enable>
+        <min-size>512</min-size>
+        <max-size>16777216</max-size>
         <mime-type>text/html</mime-type>
         <mime-type>text/plain</mime-type>
         <mime-type>text/css</mime-type>
         <mime-type>application/javascript</mime-type>
         <mime-type>text/csv</mime-type>
         <mime-type>application/xml</mime-type>
-    </gzip-mime-types>
+        <mime-type>image/bmp</mime-type>
+        <mime-type>image/png</mime-type>
+        <mime-type>image/gif</mime-type>
+        <mime-type>audio/x-wav</mime-type>
+    </gzip>
 
     <welcome-file-list>
         <welcome-file>index.html</welcome-file>

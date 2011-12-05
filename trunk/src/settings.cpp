@@ -32,6 +32,13 @@ Settings::~Settings() {
 		delete item;
 		item = NULL;
 	}
+
+	while (!gzip_mime_list.empty()) {
+		Gzip_Mime_Type_Item* item = gzip_mime_list.pop_front();
+		gzip_mime_map.remove(item);
+		delete item;
+		item = NULL;
+	}
 }
 
 void Settings::init() {
@@ -56,9 +63,15 @@ void Settings::init() {
 
 	max_stats_group = 1024;
 
-	cache_expiration = 600;
+	default_cache_expiration = 600;
 
-	default_mime_type = "text/html";
+	min_gzip_size = 512;
+	max_gzip_size = 16777216;
+
+	string mime_type = "text/html";
+	default_mime_type_length = mime_type.size();
+	memcpy(default_mime_type, mime_type.c_str(), default_mime_type_length);
+	default_mime_type[default_mime_type_length] = '\0';
 }
 
 string Settings::load_conf() {
@@ -81,9 +94,11 @@ string Settings::load_conf() {
 
 	TiXmlElement* ele = hRoot.FirstChildElement("default-cache-expiration").Element();
 	if (ele != NULL) {
-		string t = ele->GetText();
-		if (!safe_toui32(t.c_str(), t.size(), cache_expiration)) {
-			return "[web.xml] reading default-cache-expiration error";
+		if (ele->GetText() != NULL) {
+			string t = ele->GetText();
+			if (!safe_toui32(t.c_str(), t.size(), default_cache_expiration)) {
+				return "[web.xml] reading default-cache-expiration error";
+			}
 		}
 	}
 
@@ -102,11 +117,12 @@ string Settings::load_conf() {
 		if (ext != NULL && type != NULL) {
 			string str_ext = string(ext);
 			string str_type = string(type);
-//			mime_map[str_ext] = str_type;
+
 			Extension_Mime_Item* item = new Extension_Mime_Item();
-			ext_mime_list.push_back(item);
 			item->externsion.set((uint8_t*)str_ext.c_str(), str_ext.size());
 			item->mime_type.set((uint8_t*)str_type.c_str(), str_type.size());
+
+			ext_mime_list.push_back(item);
 			ext_mime_map.insert(item, item->externsion.hash_value());
 		}
 		mime = mime->NextSiblingElement();
@@ -114,9 +130,51 @@ string Settings::load_conf() {
 
 	ele = hRoot.FirstChildElement("default-mime-type").Element();
 	if (ele != NULL) {
-		string s = ele->GetText();
-		if (!s.empty()) {
-			default_mime_type = s;
+		if (ele->GetText() != NULL) {
+			string mime_type = ele->GetText();
+			if (!mime_type.empty() && mime_type.size() <= MAX_MIME_TYPE_LENGTH) {
+				default_mime_type_length = mime_type.size();
+				memcpy(default_mime_type, mime_type.c_str(), default_mime_type_length);
+				default_mime_type[default_mime_type_length] = '\0';
+			}
+		}
+	}
+
+	TiXmlElement* gzip = hRoot.FirstChild("gzip").Element();
+	if (gzip != NULL) {
+		string enable;
+		const char* type = NULL;
+		ele = gzip->FirstChildElement("enable");
+		if (ele != NULL && ele->GetText() != NULL) {
+			enable = ele->GetText();
+		}
+		if (enable == "true") {
+			ele = gzip->FirstChildElement("min-size");
+			if (ele != NULL && ele->GetText() != NULL) {
+				string t = ele->GetText();
+				if (!safe_toui32(t.c_str(), t.size(), min_gzip_size)) {
+					return "[web.xml] reading gzip.min-size error";
+				}
+			}
+			ele = gzip->FirstChildElement("max-size");
+			if (ele != NULL && ele->GetText() != NULL) {
+				string t = ele->GetText();
+				if (!safe_toui32(t.c_str(), t.size(), max_gzip_size)) {
+					return "[web.xml] reading gzip.max-size error";
+				}
+			}
+			ele = gzip->FirstChildElement("mime-type");
+			while (ele != NULL) {
+				if (ele->GetText() != NULL) {
+					type = ele->GetText();
+					string str_type = string(type);
+					Gzip_Mime_Type_Item* item = new Gzip_Mime_Type_Item();
+					item->mime_type.set((uint8_t*)str_type.c_str(), str_type.size());
+					gzip_mime_list.push_back(item);
+					gzip_mime_map.insert(item, item->mime_type.hash_value());
+				}
+				ele = ele->NextSiblingElement();
+			}
 		}
 	}
 
@@ -152,6 +210,12 @@ const uint8_t* Settings::get_mime_type(const uint8_t* ext, uint32_t ext_size, ui
 	return NULL;
 }
 
-const char* Settings::get_default_mime_type() {
-	return default_mime_type.c_str();
+const char* Settings::get_default_mime_type(uint32_t& mime_type_length) {
+	mime_type_length = default_mime_type_length;
+	return default_mime_type;
+}
+
+bool Settings::is_gzip_mime_type(const uint8_t* mime_type, uint32_t mime_type_length) {
+	Const_Data cd(mime_type, mime_type_length);
+	return gzip_mime_map.find(&cd, cd.hash_value()) != NULL;
 }

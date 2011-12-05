@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <boost/filesystem.hpp>
+
 #include "peer_http.h"
 #include "settings.h"
 #include "currtime.h"
@@ -21,8 +23,6 @@
 #include "log.h"
 #include "auth.h"
 #include "server.h"
-
-#define MAX_MIME_TYPE_LENGTH 128
 
 #define DEFAULT_RES_200_KEEP_ALIVE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: "
 #define DEFAULT_RES_200_CLOSE "HTTP/1.1 200 OK\r\nServer: "HTTP_SERVER"\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: "
@@ -961,7 +961,8 @@ void Peer_Http::process_get() {
 
 	if (it != NULL) {
 		cache_item_ = it;
-		const char* content_type = get_content_type(it);
+		uint32_t mime_type_length;
+		const char* mime_type = get_mime_type(it, mime_type_length);
 
 		char etag[30];
 		uint32_t etag_length = _snprintf((char*)etag, sizeof(etag), "\"%"PRIu64"\"", it->cache_id);
@@ -972,7 +973,7 @@ void Peer_Http::process_get() {
 				"Flags: %"PRIu32"\r\n"
 				"Expiration: %"PRIu32"\r\n"
 				"ETag: %s\r\n\r\n",
-				content_type, it->cache_id, it->flags, expiration, etag);
+				mime_type, it->cache_id, it->flags, expiration, etag);
 
 			if (http_request_.keepalive) {
 				add_write_buf((uint8_t*)GET_RES_304_KEEP_ALIVE, sizeof(GET_RES_304_KEEP_ALIVE) - 1);
@@ -983,7 +984,10 @@ void Peer_Http::process_get() {
 		} else {
 			uint32_t gzip_size = 0;
 			vector<Const_Data> write_buf;
-			if (http_request_.method != HEAD_METHOD && http_request_.accept_gzip && it->data_size > 1024) {
+			if (http_request_.method != HEAD_METHOD && http_request_.accept_gzip
+					&& it->data_size >= settings_.min_gzip_size
+					&& it->data_size <= settings_.max_gzip_size
+					&& settings_.is_gzip_mime_type((const uint8_t*)mime_type, mime_type_length)) {
 				gzip_size = gzip_encode(it->get_data(), it->data_size, write_buf);
 				if (gzip_size + 50 >= it->data_size) {
 					gzip_size = 0;
@@ -997,14 +1001,14 @@ void Peer_Http::process_get() {
 					"Flags: %"PRIu32"\r\n"
 					"Expiration: %"PRIu32"\r\n"
 					"ETag: %s\r\n\r\n",
-					content_type, gzip_size, it->cache_id, it->flags, expiration, etag);
+					mime_type, gzip_size, it->cache_id, it->flags, expiration, etag);
 			} else {
 				header_size = _snprintf((char*)header, 300, "%s\r\nContent-Length: %"PRIu32"\r\n"
 					"CacheID: %"PRIu64"\r\n"
 					"Flags: %"PRIu32"\r\n"
 					"Expiration: %"PRIu32"\r\n"
 					"ETag: %s\r\n\r\n",
-					content_type, it->data_size, it->cache_id, it->flags, expiration, etag);
+					mime_type, it->data_size, it->cache_id, it->flags, expiration, etag);
 			}
 			if (http_request_.keepalive) {
 				add_write_buf((uint8_t*)GET_RES_200_KEEP_ALIVE, sizeof(GET_RES_200_KEEP_ALIVE) - 1);
@@ -1052,7 +1056,7 @@ void Peer_Http::process_get() {
 	}
 }
 
-const char* Peer_Http::get_content_type(Cache_Item* it) {
+const char* Peer_Http::get_mime_type(Cache_Item* it, uint32_t& mime_type_length) {
 	const char* content_type = "";
 	uint32_t ext_size = it->get_ext_size();
 	if (ext_size > 0 && ext_size <= MAX_MIME_TYPE_LENGTH) {
@@ -1060,8 +1064,8 @@ const char* Peer_Http::get_content_type(Cache_Item* it) {
 		memcpy(tmp, it->get_ext(), ext_size);
 		tmp[ext_size] = '\0';
 		content_type = tmp;
+		mime_type_length = ext_size;
 	} else {
-		uint32_t mime_type_length = 0;
 		uint32_t suffix_size;
 		const char* suffix = get_suffix((const char*)key_, key_length_, suffix_size);
 		if (suffix != NULL) {
@@ -1072,16 +1076,15 @@ const char* Peer_Http::get_content_type(Cache_Item* it) {
 				tmp[mime_type_length] = '\0';
 				content_type = tmp;
 			} else {
-				content_type = settings_.get_default_mime_type();
+				content_type = settings_.get_default_mime_type(mime_type_length);
 			}
 		} else {
-			content_type = settings_.get_default_mime_type();
+			content_type = settings_.get_default_mime_type(mime_type_length);
 		}
 	}
 	return content_type;
 }
 
-#include <boost/filesystem.hpp>
 Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_t& expiration) {
 	Cache_Item* it;
 	if (touch_flag_) {
@@ -1110,7 +1113,7 @@ Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_
 				} else {
 					// load from file
 					if (!touch_flag_) {
-						expiration = settings_.cache_expiration;
+						expiration = settings_.default_cache_expiration;
 					}
 					it = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
 				}
@@ -1150,7 +1153,7 @@ Cache_Item* Peer_Http::get_welcome_file(bool is_base, xixi_reason& reason, uint3
 			break;
 		} else {
 			if (!touch_flag_) {
-				expiration = settings_.cache_expiration;
+				expiration = settings_.default_cache_expiration;
 			}
 			it = cache_mgr_.load_from_file(group_id_, (uint8_t*)new_key, new_key_length, watch_id_, expiration, reason);
 			if (reason == XIXI_REASON_NOT_FOUND) {
@@ -1287,12 +1290,13 @@ void Peer_Http::process_get_base() {
 	Cache_Item* it = get_cache_item(true, reason, expiration);
 
 	if (it != NULL) {
-		const char* content_type = get_content_type(it);
+		uint32_t mime_type_length;
+		const char* mime_type = get_mime_type(it, mime_type_length);
 
 		uint8_t* body = request_buf_.prepare(200);
 		uint32_t body_size = _snprintf((char*)body, 200,
-			"{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32",\"contenttype\":\"%s\",\"size\":%"PRIu32"}",
-			it->cache_id, it->flags, expiration, content_type, it->data_size);
+			"{\"cacheid\":%"PRIu64",\"flags\":%"PRIu32",\"expiration\":%"PRIu32",\"mime_type\":\"%s\",\"size\":%"PRIu32"}",
+			it->cache_id, it->flags, expiration, mime_type, it->data_size);
 
 		cache_mgr_.release_reference(it);
 		it = NULL;

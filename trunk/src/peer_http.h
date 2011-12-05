@@ -103,7 +103,7 @@ protected:
 
 	// get content type
 
-	inline const char* get_content_type(Cache_Item* it);
+	inline const char* get_mime_type(Cache_Item* it, uint32_t& mime_type_length);
 
 	// get cache item
 	inline Cache_Item* get_cache_item(bool is_base, xixi_reason& reason, uint32_t& expiration);
