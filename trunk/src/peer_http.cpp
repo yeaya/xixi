@@ -592,7 +592,7 @@ bool Peer_Http::process_request_header_fields(char* request_header_field, uint32
 bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, char* value, uint32_t value_length) {
 	if (name_length == 10) {
 		if (strcasecmp(name, "Connection", name_length) == 0) {
-			if (value_length >= 10 && strcasecmp(name, "Keep-Alive", 10) == 0) {
+			if (value_length >= 10 && strcasecmp(value, "Keep-Alive", 10) == 0) {
 				http_request_.keepalive = true;
 			}
 		}
