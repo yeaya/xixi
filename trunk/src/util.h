@@ -125,54 +125,58 @@ public:
 		data = NULL;
 		size = 0;
 		if (d != NULL && s > 0) {
-			data = new uint8_t[s];
+			data = (uint8_t*)malloc(s + 1);
 			if (data != NULL) {
 				memcpy(data, d, s);
 				size = s;
+				data[s] = '\0';
 			}
 		}
 	}
 	~Simple_Data() {
 		if (data != NULL) {
-			delete[] data;
+			free(data);
 			data = NULL;
 		}
 	}
 	inline void set(const uint8_t* d) {
 		if (data != NULL) {
-			delete[] data;
+			free(data);
 			data = NULL;
 		}
 		if (d != NULL && size > 0) {
-			data = new uint8_t[size];
+			data = (uint8_t*)malloc(size + 1);
 			if (data != NULL) {
 				memcpy(data, d, size);
+				data[size] = '\0';
 			}
 		}
 	}
 	inline void set(const uint8_t* d, uint32_t s) {
 		clear();
 		if (d != NULL) {
-			data = new uint8_t[s];
+			data = (uint8_t*)malloc(s);
 			if (data != NULL) {
 				memcpy(data, d, s);
 				size = s;
+				data[s] = '\0';
 			}
 		}
 	}
 	inline void set(const Const_Data* cd) {
 		clear();
 		if (cd != NULL && cd->data != NULL) {
-			data = new uint8_t[cd->size];
+			data = (uint8_t*)malloc(cd->size);
 			if (data != NULL) {
 				memcpy(data, cd->data, cd->size);
 				size = cd->size;
+				data[size] = '\0';
 			}
 		}
 	}
 	inline void clear() {
 		if (data != NULL) {
-			delete[] data;
+			free(data);
 			data = NULL;
 		}
 		size = 0;

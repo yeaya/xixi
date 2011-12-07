@@ -18,8 +18,9 @@
 <!-- The first edition of this file is derived from the apache-tomcat-7.0.23. -->
 <web-app>
 	<default-cache-expiration>60000</default-cache-expiration>
-  <!-- ===================== MIME Type Mappings =================== -->
+	<manager-base-url>/manager/</manager-base-url>
 
+  <!-- ===================== MIME Type Mappings =================== -->
 	<mime-mapping>
         <extension>123</extension>
         <mime-type>application/vnd.lotus-1-2-3</mime-type>

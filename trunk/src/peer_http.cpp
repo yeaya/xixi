@@ -647,20 +647,21 @@ bool Peer_Http::handle_request_header_field(char* name, uint32_t name_length, ch
 }
 
 void Peer_Http::process_command() {
-	if (http_request_.method != HEAD_METHOD && http_request_.uri_length >= 10 && memcmp(http_request_.uri, "/xixibase/", 10) == 0) {
+	if (http_request_.method != HEAD_METHOD && http_request_.uri_length >= settings_.manager_base_url.size()
+		&& memcmp(http_request_.uri, settings_.manager_base_url.c_str(), settings_.manager_base_url.size()) == 0) { // manager
 		uint32_t cmd_length = 0;
 		char* arg = strrchr(http_request_.uri, '?');
 		if (arg != NULL) {
-			cmd_length = (uint32_t)(arg - http_request_.uri) - 10;
+			cmd_length = (uint32_t)(arg - http_request_.uri) - settings_.manager_base_url.size();
 			if (!process_request_arg(arg + 1)) {
 				LOG_WARNING2("process_command failed arg=" << (arg + 1));
 				return;
 			}
 		} else {
-			cmd_length = http_request_.uri_length - 10;
+			cmd_length = http_request_.uri_length - settings_.manager_base_url.size();
 		}
 
-		char* cmd = http_request_.uri + 10;
+		char* cmd = http_request_.uri + settings_.manager_base_url.size();
 		if (cmd_length == 3) {
 			if (memcmp(cmd, "get", cmd_length) == 0) {
 				process_get();
@@ -721,7 +722,7 @@ void Peer_Http::process_command() {
 			}
 		} else if (cmd_length == 10) {
 			if (memcmp(cmd, "watch", cmd_length) == 0) {
-				this->process_watch();
+				process_watch();
 			} else {
 				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -729,7 +730,7 @@ void Peer_Http::process_command() {
 			}
 		} else if (cmd_length == 11) {
 			if (memcmp(cmd, "createwatch", cmd_length) == 0) {
-				this->process_create_watch();
+				process_create_watch();
 			} else {
 				LOG_WARNING2("process_command error unkown request=" << http_request_.uri);
 				write_error(XIXI_REASON_INVALID_PARAMETER);
@@ -747,21 +748,14 @@ void Peer_Http::process_command() {
 }
 
 bool Peer_Http::process_request_arg(char* args) {
-//	tokens_.clear();
-//	tokenize_command(arg, tokens_);
-
 	char* next_arg = args;
 	uint32_t arg_size = 0;
 
 	while (true) {
-		
 		char* arg = get_arg(next_arg, arg_size);
 		if (arg == NULL) {
 			break;
 		}
-	//	next_arg = arg + arg_size + 1;
-//	for (size_t i = 0; i < tokens_.size(); i++) {
-//		token_t& t = tokens_[i];
 		if (arg_size >= 2 && arg[1] == '=') {
 			if (arg[0] =='g') {
 				if (!safe_toui32(arg + 2, arg_size - 2, group_id_)) {

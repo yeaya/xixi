@@ -64,6 +64,7 @@ void Settings::init() {
 	max_stats_group = 1024;
 
 	default_cache_expiration = 600;
+	manager_base_url = "/manager/";
 
 	min_gzip_size = 512;
 	max_gzip_size = 16777216;
@@ -99,6 +100,24 @@ string Settings::load_conf() {
 			if (!safe_toui32(t.c_str(), t.size(), default_cache_expiration)) {
 				return "[web.xml] reading default-cache-expiration error";
 			}
+		}
+	}
+
+	ele = hRoot.FirstChildElement("manager-base-url").Element();
+	if (ele != NULL) {
+		if (ele->GetText() != NULL) {
+			string t = ele->GetText();
+			if (t.size() > 0) {
+				if (t.at(0) != '/') {
+					t = "/" + t;
+				}
+				if (t.at(t.size() - 1) != '/') {
+					t = t + "/";
+				}
+				manager_base_url = t;
+			}
+		} else {
+			return "[web.xml] reading manager-base-url error";
 		}
 	}
 

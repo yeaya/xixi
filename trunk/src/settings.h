@@ -69,6 +69,7 @@ public:
 	uint32_t max_stats_group;
 
 	uint32_t default_cache_expiration;
+	string manager_base_url;
 	xixi::list<Extension_Mime_Item> ext_mime_list;
 	xixi::hash_map<Const_Data, Extension_Mime_Item> ext_mime_map;
 	uint32_t min_gzip_size;

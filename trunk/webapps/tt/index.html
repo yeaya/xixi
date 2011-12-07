@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title> Xixibase </title>
+<title>Xixibase</title>
 <meta name='author' content='Yao Yuan' />
 <meta name='copyright' content='2011 - Yao Yuan' />
 
@@ -40,7 +40,7 @@
 <script type='text/javascript' src='js/jquery.js'></script>
 <script type="text/javascript" src="js/ajaxfileupload.js"></script>
 <script type='text/javascript'>
-var storageBaseURL = "/xixibase/";
+var storageBaseURL = "/manager/";
 jQuery(function ($) {
 	function prepare() {
 		if ($('#groupid').val() == "") {
@@ -89,15 +89,6 @@ jQuery(function ($) {
 				$('#flags').val(res.flags);
 				$('#expiration').val(res.expiration);
 				alert(data);
-			},
-			complete: function(XMLHttpRequest, textStatus){
-				if (textStatus == 'success') {
-					var xx = XMLHttpRequest.getResponseHeader("Xixibase");
-					var resHeaders= XMLHttpRequest.getAllResponseHeaders();
-					resHeaders.replace("\r\n", "<br>");
-					var text = '<h3>' + textStatus + '</h3>' + '<h3>Response Header:</h3><br>' + resHeaders.replace(/\r\n/g, "<br>")
-						+ "<h3>Response Text:</h3>" + XMLHttpRequest.responseText;
-				}
 			},
 			error: function (XMLHttpRequest, textStatus, errorThrown) {
 				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);

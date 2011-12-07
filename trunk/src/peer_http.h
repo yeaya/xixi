@@ -27,7 +27,7 @@
 #include "peer_cache_pdu.h"
 #include "handler_allocator.hpp"
 
-#define IS_METHOD(data, b0, b1, b2, b3) (data[0] == b0 && data[1] == b1 &&data[2] == b2 && data[3] == b3)
+#define IS_METHOD(data, b0, b1, b2, b3) (data[0] == b0 && data[1] == b1 && data[2] == b2 && data[3] == b3)
 
 const uint32_t HEAD_METHOD = 'H'; // "HEAD"
 const uint32_t GET_METHOD = 'G'; // "GET "
