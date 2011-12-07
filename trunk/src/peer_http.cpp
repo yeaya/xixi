@@ -1065,7 +1065,7 @@ const char* Peer_Http::get_mime_type(Cache_Item* it, uint32_t& mime_type_length)
 		if (suffix != NULL) {
 			const uint8_t* mime_type = settings_.get_mime_type((const uint8_t*)suffix, suffix_size, mime_type_length);
 			if (mime_type != NULL && mime_type_length <= MAX_MIME_TYPE_LENGTH) {
-				char* tmp = (char*)this->request_buf_.prepare(mime_type_length + 1);
+				char* tmp = (char*)request_buf_.prepare(mime_type_length + 1);
 				memcpy(tmp, mime_type, mime_type_length);
 				tmp[mime_type_length] = '\0';
 				content_type = tmp;

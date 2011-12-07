@@ -155,7 +155,7 @@ public:
 	inline void set(const uint8_t* d, uint32_t s) {
 		clear();
 		if (d != NULL) {
-			data = (uint8_t*)malloc(s);
+			data = (uint8_t*)malloc(s + 1);
 			if (data != NULL) {
 				memcpy(data, d, s);
 				size = s;
@@ -166,7 +166,7 @@ public:
 	inline void set(const Const_Data* cd) {
 		clear();
 		if (cd != NULL && cd->data != NULL) {
-			data = (uint8_t*)malloc(cd->size);
+			data = (uint8_t*)malloc(cd->size + 1);
 			if (data != NULL) {
 				memcpy(data, cd->data, cd->size);
 				size = cd->size;
