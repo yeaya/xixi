@@ -239,7 +239,7 @@ void Cache_Mgr::stats(const XIXI_Stats_Req_Pdu* pdu, std::string& result) {
 
 void Cache_Mgr::print_stats() {
 	uint32_t curr_time = curr_time_.get_current_time();
-	if (curr_time >= last_print_stats_time_ + 5) {
+	if (curr_time >= last_print_stats_time_ + 30) {
 		last_print_stats_time_ = curr_time;
 		cache_lock_.lock();
 
