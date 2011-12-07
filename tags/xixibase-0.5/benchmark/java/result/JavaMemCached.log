@@ -1,0 +1,28 @@
+jdk1.6.0_27/bin/java -server -Xms1024m -Xmx2048m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=64m -XX:MaxPermSize=64m -cp mbm.jar:slf4j-api-1.5.6.jar:xmemcached-1.2.6.1.jar:slf4j-log4j12-1.5.6.jar:log4j.jar:java_memcached-release_2.5.1.jar net.rubyeye.memcached.benchmark.java_memcached.JavaMemCached
+Java-MemCached startup
+warm up
+threads=1,repeats=2000,valueLength=64,tps=17480,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=512,tps=13547,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=1024,tps=10819,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=4096,tps=5068,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=1,repeats=2000,valueLength=16384,tps=1855,miss=0,fail=0,hit=1809,all=2000,hitRate=1.00
+threads=10,repeats=2000,valueLength=64,tps=127181,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=512,tps=96328,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=1024,tps=91823,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=4096,tps=39775,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=10,repeats=2000,valueLength=16384,tps=13475,miss=0,fail=0,hit=18090,all=20000,hitRate=1.00
+threads=50,repeats=2000,valueLength=64,tps=196545,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=512,tps=160981,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=1024,tps=118213,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=4096,tps=56762,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=50,repeats=2000,valueLength=16384,tps=21253,miss=0,fail=0,hit=90450,all=100000,hitRate=1.00
+threads=100,repeats=2000,valueLength=64,tps=228894,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=512,tps=154965,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=1024,tps=116900,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=4096,tps=51097,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=100,repeats=2000,valueLength=16384,tps=20975,miss=0,fail=0,hit=180900,all=200000,hitRate=1.00
+threads=300,repeats=2000,valueLength=64,tps=183013,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=512,tps=136891,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=1024,tps=109358,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=4096,tps=46430,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00
+threads=300,repeats=2000,valueLength=16384,tps=21070,miss=0,fail=0,hit=542700,all=600000,hitRate=1.00

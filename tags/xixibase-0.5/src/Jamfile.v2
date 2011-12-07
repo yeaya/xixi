@@ -1,0 +1,78 @@
+#
+#   Copyright [2011] [Yao Yuan(yeaya@163.com)]
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
+import os ;
+
+if [ os.name ] = SOLARIS
+{
+  lib socket ;
+  lib nsl ;
+}
+else if [ os.name ] = NT
+{
+  #lib ws2_32 ;
+  #lib mswsock ;
+}
+else if [ os.name ] = HPUX
+{
+  lib ipv6 ;
+}
+
+exe xixibase
+  : cache.cpp 
+    currtime.cpp 
+    io_service_pool.cpp 
+    log.cpp 
+    main.cpp 
+    server.cpp 
+    settings.cpp 
+    stats.cpp 
+    lookup3.cpp 
+    util.cpp 
+    peer.cpp 
+    peer_cache.cpp 
+    peer_http.cpp 
+    peer_pdu.cpp 
+    auth.cpp
+    ../3rd/tinyxml/tinystr.cpp
+    ../3rd/tinyxml/tinyxml.cpp
+    ../3rd/tinyxml/tinyxmlerror.cpp
+    ../3rd/tinyxml/tinyxmlparser.cpp
+    ../3rd/zlib/adler32.c
+    ../3rd/zlib/crc32.c
+    ../3rd/zlib/deflate.c
+    ../3rd/zlib/trees.c
+    ../3rd/zlib/zutil.c
+    /boost/system//boost_system
+    /boost/thread//boost_thread
+    /boost/filesystem//boost_filesystem
+  : <define>BOOST_ALL_NO_LIB=1
+    #<define>_CRT_SECURE_NO_WARNINGS
+    <os>SOLARIS:<library>socket
+    <os>SOLARIS:<library>nsl
+    #<os>NT:<define>_WIN32_WINNT=0x0501
+    <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
+    <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
+    <os>HPUX:<library>ipv6
+    <threading>multi
+    <optimization>speed
+    <link>static
+    <location>../obj/jam
+  ;
+
+install dist
+  : xixibase
+  : <variant>release:<location>../bin <variant>debug:<location>../bin ;
