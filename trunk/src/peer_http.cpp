@@ -1091,12 +1091,11 @@ Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_
 	// try load from file /webapps
 	if (it == NULL && key_length_ > 0 && key_[0] == '/') {
 		string filename = settings_.home_dir + "webapps" + (char*)key_;
-		LOG_INFO("get_cache_item " << filename);
+	//	LOG_INFO("get_cache_item " << filename);
 		try {
 			boost::filesystem::path p(filename);
 			if (exists(p)) {
 				if (is_directory(p)) {
-					cout << p << " is a directory" << endl;
 					if (key_[key_length_ - 1] == '/') {
 						// load welcome file
 						it = get_welcome_file(is_base, reason, expiration);
@@ -1112,7 +1111,6 @@ Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_
 					it = cache_mgr_.load_from_file(group_id_, (uint8_t*)key_, key_length_, watch_id_, expiration, reason);
 				}
 			} else {
-				cout << p << " no exists" << endl;
 				reason = XIXI_REASON_NOT_FOUND;
 				return NULL;
 			}
