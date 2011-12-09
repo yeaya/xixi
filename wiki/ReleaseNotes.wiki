@@ -1,8 +1,21 @@
 #summary Release Notes
-#labels Phase-Implementation
 = Introduction =
 ==Xixibase is a high performance, cross platform, distributed cache system.==
 Xixibase server write in C++, based on Boost Asio.
+
+===Xixibase 0.5===
+Dec-7-2011<br>
+*Xixibase Server*
+ # Bug fix
+  * This bug happened after set one big value that size over item_size_max.
+ # HTTP GZIP support
+ # HTTP download from file
+ # HTTP Keep-Alive support
+ # Introduce Web page tt
+ # Update getBase format, do not compatible with old version
+ # Other changes
+*Xixibase Java Client*
+ # Update getBase format, do not compatible with old version
 
 ===Xixibase 0.4===
 Nov-14-2011<br>
