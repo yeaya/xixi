@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\bin\debug"
+			OutputDirectory="..\bin"
 			IntermediateDirectory="..\obj\debug"
 			ConfigurationType="1"
 			CharacterSet="1"
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml;..\3rd\zlib"
+				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml;..\3rd\zlib;..\3rd\openssl\include"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -62,10 +62,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies=""
-				OutputFile="$(OutDir)\xixibase.exe"
+				AdditionalDependencies="ssleay32.lib libeay32.lib"
+				OutputFile="$(OutDir)\xixibase_d.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\3rd\boost\stage\lib"
+				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;..\3rd\openssl\lib"
 				IgnoreDefaultLibraryNames="libboost_regex-vc90-mt-gd-1_47.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -95,7 +95,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\bin\release"
+			OutputDirectory="..\bin"
 			IntermediateDirectory="..\obj\release"
 			ConfigurationType="1"
 			CharacterSet="1"
@@ -122,7 +122,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml;..\3rd\zlib"
+				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml;..\3rd\zlib;..\3rd\openssl\include"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -142,9 +142,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\xixibase.exe"
+				AdditionalDependencies="ssleay32.lib libeay32.lib"
+				OutputFile="$(OutDir)\xixibase_rel.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;&quot;..\3rd\google-perftools\Release&quot;"
+				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;&quot;..\3rd\google-perftools\Release&quot;;..\3rd\openssl\lib"
 				IgnoreDefaultLibraryNames="libboost_regex-vc90-mt-1_47.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -176,7 +177,7 @@
 		</Configuration>
 		<Configuration
 			Name="tcmalloc_release|Win32"
-			OutputDirectory="..\bin\tcrelease"
+			OutputDirectory="..\bin"
 			IntermediateDirectory="..\obj\tcrelease"
 			ConfigurationType="1"
 			CharacterSet="1"
@@ -203,7 +204,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml;..\3rd\zlib"
+				AdditionalIncludeDirectories="..\3rd\boost;..\3rd\tinyxml;..\3rd\zlib;..\3rd\openssl\include"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -224,10 +225,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libtcmalloc_minimal.lib"
-				OutputFile="$(OutDir)\xixibase.exe"
+				AdditionalDependencies="libtcmalloc_minimal.lib ssleay32.lib libeay32.lib"
+				OutputFile="$(OutDir)\xixibase_tc.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;&quot;..\3rd\google-perftools\Release&quot;;$(NOINHERIT)"
+				AdditionalLibraryDirectories="..\3rd\boost\stage\lib;&quot;..\3rd\google-perftools\Release&quot;;..\3rd\openssl\lib;$(NOINHERIT)"
 				IgnoreDefaultLibraryNames="libboost_regex-vc90-mt-1_47.lib"
 				ForceSymbolReferences="__tcmalloc"
 				GenerateDebugInformation="true"

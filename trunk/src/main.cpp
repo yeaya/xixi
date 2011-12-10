@@ -271,6 +271,8 @@ int main(int argc, char* argv[]) {
 
 	printf_system_info();
 
+	settings_.print();
+
 	try {
 #if defined(_WIN32)
 		SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
@@ -284,9 +286,9 @@ int main(int argc, char* argv[]) {
 
 		svr_ = new Server(settings_.pool_size, settings_.num_threads);
 
-		svr_->start();
-
-		svr_->run();
+		if (svr_->start()) {
+			svr_->run();
+		}
 
 		LOG_INFO("destory instance");
 		delete svr_;

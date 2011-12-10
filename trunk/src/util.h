@@ -22,6 +22,7 @@
 #include <string.h>
 #include "hash.h"
 
+#define SAFE_DELETE(p) if (p != NULL) { delete p; p = NULL; }
 #define BUF_CMP(buf1, len1, buf2, len2) (len1 == len2 && memcmp(buf1, buf2, len1) == 0)
 
 extern bool safe_toui64(const char* data, uint32_t data_len, uint64_t& out);

@@ -52,6 +52,7 @@ public:
 	const uint8_t* get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_length);
 	const char* get_default_mime_type(uint32_t& mime_type_length);
 	bool is_gzip_mime_type(const uint8_t* mime_type, uint32_t mime_type_length);
+	void print();
 
 	string home_dir;
 

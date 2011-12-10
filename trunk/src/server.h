@@ -19,6 +19,7 @@
 
 #include "defines.h"
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -32,7 +33,7 @@ public:
 	Server(std::size_t pool_size, std::size_t thread_size);
 	~Server();
 
-	void start();
+	bool start();
 	void stop();
 	void run();
 
@@ -44,8 +45,13 @@ public:
 	}
 
 private:
+	inline void start_accept();
+	inline void start_accept_ssl();
+
 	void handle_accept(boost::asio::ip::tcp::socket* socket, const boost::system::error_code& err);
+	void handle_accept_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket, const boost::system::error_code& err);
 	void handle_timer(const boost::system::error_code& err);
+	std::string get_password() const;
 
 private:
 	std::string server_id_;
@@ -53,8 +59,10 @@ private:
 
 	io_service_pool io_service_pool_;
 	boost::asio::ip::tcp::acceptor acceptor_;
+	boost::asio::ip::tcp::acceptor acceptor_ssl_;
 	boost::asio::ip::tcp::resolver resolver_;
 	boost::asio::deadline_timer timer_;
+	boost::asio::ssl::context context_;
 	volatile bool stop_flag_;
 };
 

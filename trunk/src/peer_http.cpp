@@ -192,9 +192,25 @@ char* Peer_Http::decode_uri(char* uri, uint32_t length, uint32_t& out) {
 	return buf;
 }
 
-Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this), timer_(socket->get_io_service()) {
+Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this) {
+	LOG_DEBUG2("Peer_Http::Peer_Http()");
+	init();
+	socket_ = socket;
+	stats_.new_conn();
+}
+
+Peer_Http::Peer_Http(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket) : self_(this) {
+	LOG_DEBUG2("Peer_Http::Peer_Http()");
+	init();
+	socket_ssl_ = socket;
+	stats_.new_conn();
+}
+
+/*
+Peer_Http::Peer_Http(bool ssl, void* socket) : self_(this)/*, timer_(socket->get_io_service())* / {
 	LOG_DEBUG2("Peer_Http::Peer_Http()");
 	op_count_ = 0;
+	ssl_flag_ = ssl;
 	socket_ = socket;
 	state_ = PEER_STATE_NEW_CMD;
 	next_state_ = PEER_STATE_NEW_CMD;
@@ -202,6 +218,7 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this), timer_
 	write_buf_total_ = 0;
 	read_item_buf_ = NULL;
 	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
+	timer_ = NULL;
 	timer_flag_ = false;
 
 	group_id_ = 0;
@@ -226,11 +243,46 @@ Peer_Http::Peer_Http(boost::asio::ip::tcp::socket* socket) : self_(this), timer_
 
 	stats_.new_conn();
 }
-
+*/
 Peer_Http::~Peer_Http() {
 	LOG_DEBUG2("~Peer_Http::Peer_Http()");
 	cleanup();
 	stats_.close_conn();
+}
+
+void Peer_Http::init() {
+	socket_ = NULL;
+	socket_ssl_ = NULL;
+
+	op_count_ = 0;
+	state_ = PEER_STATE_NEW_CMD;
+	next_state_ = PEER_STATE_NEW_CMD;
+	cache_item_ = NULL;
+	write_buf_total_ = 0;
+	read_item_buf_ = NULL;
+	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
+	timer_ = NULL;
+	timer_flag_ = false;
+
+	group_id_ = 0;
+	watch_id_ = 0;
+	cache_id_ = 0;
+	key_ = NULL;
+	key_length_ = 0;
+	value_ = NULL;
+	value_length_ = 0;
+	value_content_type_ = "";
+	value_content_type_length_ = 0;
+	post_data_ = NULL;
+	content_length_ = 0;
+	flags_ = 0;
+	expiration_ = 0;
+	touch_flag_ = false;
+	delta_ = 1;
+	ack_cache_id_ = 0;
+	interval_ = 120;
+	timeout_ = 30;
+	sub_op_ = 0;
 }
 
 void Peer_Http::reset_for_new_cmd() {
@@ -276,6 +328,12 @@ void Peer_Http::cleanup() {
 	if (socket_ != NULL) {
 		delete socket_;
 		socket_ = NULL;
+	}
+	SAFE_DELETE(socket_ssl_);
+
+	if (timer_ != NULL) {
+		delete timer_;
+		timer_ = NULL;
 	}
 }
 
@@ -1491,12 +1549,19 @@ void Peer_Http::process_watch() {
 		} else {
 			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
 			timer_lock_.lock();
-			timer_.expires_from_now(boost::posix_time::seconds(timeout_));
-			timer_.async_wait(boost::bind(&Peer_Http::handle_timer, this,
+			if (timer_ == NULL) {
+				if (socket_ != NULL) {
+					timer_ = new boost::asio::deadline_timer(socket_->get_io_service());
+				} else {
+					timer_ = new boost::asio::deadline_timer(socket_ssl_->get_io_service());
+				}
+			}
+			timer_->expires_from_now(boost::posix_time::seconds(timeout_));
+			timer_->async_wait(boost::bind(&Peer_Http::handle_timer, this,
 				boost::asio::placeholders::error, watch_id_));
 			if (timer_flag_) {
 				boost::system::error_code ec;
-				timer_.cancel(ec);
+				timer_->cancel(ec);
 				LOG_INFO2("process_check_watch timer cancel");
 			} else {
 				timer_flag_ = true;
@@ -1560,7 +1625,7 @@ void Peer_Http::on_cache_watch_notify(uint32_t watch_id) {
 	timer_lock_.lock();
 		if (timer_flag_) {
 			boost::system::error_code ec;
-			timer_.cancel(ec);
+			timer_->cancel(ec);
 		} else {
 			timer_flag_ = true;
 		}
@@ -1656,11 +1721,19 @@ void Peer_Http::try_read() {
 	if (op_count_ == 0) {
 		++op_count_;
 		read_buffer_.handle_processed();
-		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (std::size_t)read_buffer_.get_read_buf_size()),
-			make_custom_alloc_handler(handler_allocator_,
-			boost::bind(&Peer_Http::handle_read, this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred)));
+		if (socket_ != NULL) {
+			socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (std::size_t)read_buffer_.get_read_buf_size()),
+				make_custom_alloc_handler(handler_allocator_,
+					boost::bind(&Peer_Http::handle_read, this,
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred)));
+		} else {
+			socket_ssl_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (std::size_t)read_buffer_.get_read_buf_size()),
+				make_custom_alloc_handler(handler_allocator_,
+					boost::bind(&Peer_Http::handle_read, this,
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred)));
+		}
 		LOG_TRACE2("try_read async_read_some get_read_buf_size=" << read_buffer_.get_read_buf_size());
 	}
 }
@@ -1669,10 +1742,17 @@ bool Peer_Http::try_write() {
 	if (op_count_ == 0) {
 		if (!write_buf_.empty()) {
 			++op_count_;
-			async_write(*socket_, write_buf_,
-				make_custom_alloc_handler(handler_allocator_,
-				boost::bind(&Peer_Http::handle_write, this,
-				boost::asio::placeholders::error)));
+			if (socket_ != NULL) {
+				async_write(*socket_, write_buf_,
+					make_custom_alloc_handler(handler_allocator_,
+						boost::bind(&Peer_Http::handle_write, this,
+							boost::asio::placeholders::error)));
+			} else {
+				async_write(*socket_ssl_, write_buf_,
+					make_custom_alloc_handler(handler_allocator_,
+						boost::bind(&Peer_Http::handle_write, this,
+							boost::asio::placeholders::error)));
+			}
 			LOG_TRACE2("try_write async_write write_buf.count=" << write_buf_.size());
 			write_buf_.clear();
 			return true;
@@ -1683,10 +1763,11 @@ bool Peer_Http::try_write() {
 
 uint32_t Peer_Http::read_some(uint8_t* buf, uint32_t length) {
 	boost::system::error_code ec;
-	if (socket_->available(ec) == 0) {
-		return 0;
+	if (socket_ != NULL) {
+		return (uint32_t)socket_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
+	} else {
+		return (uint32_t)socket_ssl_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
 	}
-	return (uint32_t)socket_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
 }
 
 void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {

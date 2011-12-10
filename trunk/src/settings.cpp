@@ -16,6 +16,7 @@
 
 #include "settings.h"
 #include "util.h"
+#include "log.h"
 #include "tinyxml.h"
 #include <boost/filesystem.hpp>
 
@@ -237,4 +238,19 @@ const char* Settings::get_default_mime_type(uint32_t& mime_type_length) {
 bool Settings::is_gzip_mime_type(const uint8_t* mime_type, uint32_t mime_type_length) {
 	Const_Data cd(mime_type, mime_type_length);
 	return gzip_mime_map.find(&cd, cd.hash_value()) != NULL;
+}
+
+void Settings::print() {
+	LOG_INFO("BEGIN-----SETTINGS INFO-----BEGIN");
+	LOG_INFO("XIXIBASE_HOME=" << home_dir);
+	LOG_INFO("maxbytes=" << maxbytes);
+	LOG_INFO("maxconns=" << maxconns);
+	LOG_INFO("port=" << port);
+	LOG_INFO("inter=" << inter);
+	LOG_INFO("factor=" << factor);
+	LOG_INFO("pool_size=" << pool_size);
+	LOG_INFO("num_threads=" << num_threads);
+	LOG_INFO("item_size_min=" << item_size_min);
+	LOG_INFO("item_size_max=" << item_size_max);
+	LOG_INFO("END-----SETTINGS INFO-----END");
 }

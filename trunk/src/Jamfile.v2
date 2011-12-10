@@ -31,6 +31,17 @@ else if [ os.name ] = HPUX
   lib ipv6 ;
 }
 
+if [ os.name ] = NT
+{
+  lib ssl : : <name>ssleay32 ;
+  lib crypto : : <name>libeay32  ;
+}
+else
+{
+  lib ssl ;
+  lib crypto ;
+}
+
 exe xixibase
   : cache.cpp 
     currtime.cpp 
@@ -67,6 +78,8 @@ exe xixibase
     <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
     <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
     <os>HPUX:<library>ipv6
+    <library>ssl
+    <library>crypto
     <threading>multi
     <optimization>speed
     <link>static

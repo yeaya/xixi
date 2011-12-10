@@ -30,7 +30,7 @@
 
 Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this), timer_(socket->get_io_service()) {
 	LOG_DEBUG2("Peer_Cache::Peer_Cache()");
-	op_count_ = 0;
+/*	op_count_ = 0;
 	socket_ = socket;
 	read_pdu_ = NULL;
 	state_ = PEER_STATE_NEW_CMD;
@@ -40,8 +40,18 @@ Peer_Cache::Peer_Cache(boost::asio::ip::tcp::socket* socket) : self_(this), time
 	read_item_buf_ = NULL;
 	swallow_size_ = 0;
 	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
-//	timer_ = NULL;
 	timer_flag_ = false;
+*/
+	init();
+	socket_ = socket;
+
+	stats_.new_conn();
+}
+
+Peer_Cache::Peer_Cache(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket) : self_(this), timer_(socket->get_io_service()) {
+	LOG_DEBUG2("Peer_Cache::Peer_Cache()");
+	init();
+	socket_ssl_ = socket;
 
 	stats_.new_conn();
 }
@@ -50,6 +60,21 @@ Peer_Cache::~Peer_Cache() {
 	LOG_DEBUG2("~Peer_Cache::Peer_Cache()");
 	cleanup();
 	stats_.close_conn();
+}
+
+void Peer_Cache::init() {
+	op_count_ = 0;
+	socket_ = NULL;
+	socket_ssl_ = NULL;
+	read_pdu_ = NULL;
+	state_ = PEER_STATE_NEW_CMD;
+	next_state_ = PEER_STATE_NEW_CMD;
+	cache_item_ = NULL;
+	write_buf_total_ = 0;
+	read_item_buf_ = NULL;
+	swallow_size_ = 0;
+	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
+	timer_flag_ = false;
 }
 
 void Peer_Cache::cleanup() {
@@ -63,6 +88,11 @@ void Peer_Cache::cleanup() {
 	if (socket_ != NULL) {
 		delete socket_;
 		socket_ = NULL;
+	}
+
+	if (socket_ssl_ != NULL) {
+		delete socket_ssl_;
+		socket_ssl_ = NULL;
 	}
 /*	if (timer_ != NULL) {
 		timer_lock_.lock();
@@ -1014,11 +1044,19 @@ void Peer_Cache::try_read() {
 	if (op_count_ == 0) {
 		++op_count_;
 		read_buffer_.handle_processed();
-		socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (size_t)read_buffer_.get_read_buf_size()),
-			make_custom_alloc_handler(handler_allocator_,
-			boost::bind(&Peer_Cache::handle_read, this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred)));
+		if (socket_ != NULL) {
+			socket_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (size_t)read_buffer_.get_read_buf_size()),
+				make_custom_alloc_handler(handler_allocator_,
+					boost::bind(&Peer_Cache::handle_read, this,
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred)));
+		} else {
+			socket_ssl_->async_read_some(boost::asio::buffer(read_buffer_.get_read_buf(), (size_t)read_buffer_.get_read_buf_size()),
+				make_custom_alloc_handler(handler_allocator_,
+					boost::bind(&Peer_Cache::handle_read, this,
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred)));
+		}
 		LOG_TRACE2("try_read async_read_some get_read_buf_size=" << read_buffer_.get_read_buf_size());
 	}
 }
@@ -1027,10 +1065,17 @@ bool Peer_Cache::try_write() {
 	if (op_count_ == 0) {
 		if (!write_buf_.empty()) {
 			++op_count_;
-			async_write(*socket_, write_buf_,
-				make_custom_alloc_handler(handler_allocator_,
-				boost::bind(&Peer_Cache::handle_write, this,
-				boost::asio::placeholders::error)));
+			if (socket_ != NULL) {
+				async_write(*socket_, write_buf_,
+					make_custom_alloc_handler(handler_allocator_,
+						boost::bind(&Peer_Cache::handle_write, this,
+							boost::asio::placeholders::error)));
+			} else {
+				async_write(*socket_ssl_, write_buf_,
+					make_custom_alloc_handler(handler_allocator_,
+						boost::bind(&Peer_Cache::handle_write, this,
+							boost::asio::placeholders::error)));
+			}
 			LOG_TRACE2("try_write async_write write_buf.count=" << write_buf_.size());
 			write_buf_.clear();
 			return true;
@@ -1041,10 +1086,14 @@ bool Peer_Cache::try_write() {
 
 uint32_t Peer_Cache::read_some(uint8_t* buf, uint32_t length) {
 	boost::system::error_code ec;
-	if (socket_->available(ec) == 0) {
-		return 0;
+//	if (socket_->available(ec) == 0) {
+//		return 0;
+//	}
+	if (socket_ != NULL) {
+		return (uint32_t)socket_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
+	} else {
+		return (uint32_t)socket_ssl_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
 	}
-	return (uint32_t)socket_->read_some(boost::asio::buffer(buf, (std::size_t)length), ec);
 }
 
 void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {

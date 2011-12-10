@@ -20,6 +20,7 @@
 #include "defines.h"
 #include <boost/asio/buffer.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include "cache_buffer.hpp"
 #include "util.h"
 #include "cache.h"
@@ -77,11 +78,14 @@ public:
 class Peer_Http : public Peer, public Cache_Watch_Sink {
 public:
 	Peer_Http(boost::asio::ip::tcp::socket* socket);
+	Peer_Http(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket);
 
 	virtual ~Peer_Http();
 	void start(uint8_t* data, uint32_t data_length);
 
 protected:
+	inline void init();
+
 	virtual void on_cache_watch_notify(uint32_t watch_id);
 
 	void process();
@@ -189,7 +193,6 @@ protected:
 
 	Http_Request http_request_;
 
-//	vector<token_t> tokens_;
 	uint32_t group_id_;
 	uint32_t watch_id_;
 	uint64_t cache_id_;
@@ -215,17 +218,17 @@ protected:
 	uint8_t* read_item_buf_;
 
 	Cache_Item* cache_item_;
-//	vector<Cache_Item*> cache_items_;
 
 	Cache_Buffer<2048> request_buf_;
 
 	Receive_Buffer<2048, 8192> read_buffer_;
 	vector<boost::asio::const_buffer> write_buf_;
 
-	boost::asio::deadline_timer timer_;
+	boost::asio::deadline_timer* timer_;
 	bool timer_flag_;
 
 	boost::asio::ip::tcp::socket* socket_;
+	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket_ssl_;
 	int op_count_;
 	Handler_Allocator<> handler_allocator_;
 };

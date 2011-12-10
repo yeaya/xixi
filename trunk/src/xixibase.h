@@ -20,11 +20,11 @@
 #include "defines.h"
 
 #ifndef VERSION
-#define VERSION "Xixibase/0.5"
+#define VERSION "Xixibase/0.5.1"
 #endif
 
 #ifndef HTTP_SERVER
-#define HTTP_SERVER "Xixibase/0.5"
+#define HTTP_SERVER "Xixibase/0.5.1"
 #endif
 
 typedef uint16_t xixi_reason;
