@@ -330,7 +330,7 @@ bool Server::start() {
 	acceptor_ssl_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(1));
 	acceptor_ssl_.bind(endpoint_ssl, err_code);
 	if (err_code) {
-		LOG_ERROR("bind error, on " << settings_.inter << ":" << settings_.port);
+		LOG_ERROR("ssl bind error, on " << settings_.inter << ":" << 443);
 		return false;
 	} else {
 		acceptor_ssl_.listen(boost::asio::socket_base::max_connections, err_code);
