@@ -81,7 +81,7 @@ exe xixibase
     <os>HPUX:<library>ipv6
     <library>ssl
     <library>crypto
-    <library>dl
+    <os>LINUX:<library>dl
     <threading>multi
     <optimization>speed
     <link>static
