@@ -14,7 +14,7 @@ cp bin/xixibase dist/xixibase/bin/.
 mkdir dist/xixibase/conf
 cp conf/web.xml dist/xixibase/conf/.
 cp conf/privkey.pem dist/xixibase/conf/.
-copy conf/cacert.pem dist/xixibase/conf/.
+cp conf/cacert.pem dist/xixibase/conf/.
 mkdir dist/xixibase/webapps
 cp -rf webapps/* dist/xixibase/webapps/.
 cd dist
