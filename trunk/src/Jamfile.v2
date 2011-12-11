@@ -40,6 +40,7 @@ else
 {
   lib ssl ;
   lib crypto ;
+  lib dl ;
 }
 
 exe xixibase
@@ -80,6 +81,7 @@ exe xixibase
     <os>HPUX:<library>ipv6
     <library>ssl
     <library>crypto
+    <library>dl
     <threading>multi
     <optimization>speed
     <link>static
