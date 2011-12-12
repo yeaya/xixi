@@ -32,6 +32,7 @@ extern bool safe_toi32(const char* data, uint32_t data_len, int32_t& out);
 extern const char* get_suffix(const char* key, uint32_t length, uint32_t& suffix_size);
 extern char* memfind(char* data, uint32_t length, const char* sub, uint32_t sub_len);
 extern int strcasecmp(char* str1, char* str2, uint32_t length);
+extern int strcasecmp(const char* str1, const char* str2);
 extern void to_lower(char* buf, uint32_t length);
 
 template <int a = 0>

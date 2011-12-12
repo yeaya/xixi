@@ -19,7 +19,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include "defines.h"
 
 class io_service_pool : private boost::noncopyable {

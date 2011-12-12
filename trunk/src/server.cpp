@@ -28,8 +28,9 @@ Server* svr_ = NULL;
 
 class Connection_Help {
 public:
-	Connection_Help(boost::asio::ip::tcp::socket* socket) {
-		socket_ = socket;
+	Connection_Help(boost::asio::io_service& io_service, boost::asio::ip::tcp::acceptor* acceptor) {
+		socket_ = new boost::asio::ip::tcp::socket(io_service);
+		acceptor_ = acceptor;
 		read_data_size_ = 0;
 	}
 
@@ -74,37 +75,43 @@ public:
 			return;
 		}
 
-//		uint32_t ret = (uint32_t)socket_->read_some(boost::asio::buffer(read_buf_, (std::size_t)sizeof(read_buf_) - 1), ec);
+		uint32_t length = (uint32_t)socket_->read_some(boost::asio::buffer(read_buf_, (std::size_t)sizeof(read_buf_) - 1), ec);
+		if (length > 0) {
+			process(length);
+		} else {
+			socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
+				make_custom_alloc_handler(read_allocator_,
+				boost::bind(&Connection_Help::handle_first_read, this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred)));
+		}
+	}
 
-		socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
-			make_custom_alloc_handler(read_allocator_,
-			boost::bind(&Connection_Help::handle_first_read, this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred)));
+	void process(size_t length) {
+		read_data_size_ += (uint32_t)length;
+		if (read_data_size_ >= 4) {
+//			boost::asio::io_service& io_service_ = socket_->get_io_service();
+			start_peer(read_buf_, read_data_size_);
+//			io_service_.post(boost::bind(&Connection_Help::destroy, this));
+			delete this;
+		} else {
+			socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
+				make_custom_alloc_handler(read_allocator_,
+				boost::bind(&Connection_Help::handle_first_read, this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred)));
+			LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - 1 - read_data_size_));
+		}
 	}
 
 	void handle_first_read(const boost::system::error_code& err, size_t length) {
 		LOG_TRACE("handle_first_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
-
 		if (!err) {
-			read_data_size_ += (uint32_t)length;
-			if (read_data_size_ >= 4) {
-				boost::asio::io_service& io_service_ = socket_->get_io_service();
-				start_peer(read_buf_, read_data_size_);
-				//  if (socket_ == NULL) {
-				io_service_.post(boost::bind(&Connection_Help::destroy, this));
-				//  }
-			} else {
-				socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
-					make_custom_alloc_handler(read_allocator_,
-					boost::bind(&Connection_Help::handle_first_read, this,
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred)));
-				LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - 1 - read_data_size_));
-			}
+			process(length);
 		} else {
 			LOG_DEBUG("handle_first_read destroy");
-			socket_->get_io_service().post(boost::bind(&Connection_Help::destroy, this));
+		//	socket_->get_io_service().post(boost::bind(&Connection_Help::destroy, this));
+			delete this;
 		}
 	}
 
@@ -127,13 +134,21 @@ public:
 		}
 	}
 
+	boost::asio::ip::tcp::socket* get_socket() {
+		return socket_;
+	}
+
+	boost::asio::ip::tcp::acceptor* get_acceptor() {
+		return acceptor_;
+	}
+
 	static void destroy(Connection_Help* conn) {
 		delete conn;
 	}
 
 protected:
 	boost::asio::ip::tcp::socket* socket_;
-
+	boost::asio::ip::tcp::acceptor* acceptor_;
 	uint8_t  read_buf_[1025];
 	uint32_t read_data_size_;
 	Handler_Allocator<> read_allocator_;
@@ -141,8 +156,9 @@ protected:
 
 class Connection_SSL_Help {
 public:
-	Connection_SSL_Help(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket) {
-		socket_ = socket;
+	Connection_SSL_Help(boost::asio::io_service& io_service, boost::asio::ip::tcp::acceptor* acceptor, boost::asio::ssl::context& context) {
+		socket_ = new boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(io_service, context);
+		acceptor_ = acceptor;
 		read_data_size_ = 0;
 	}
 
@@ -162,7 +178,8 @@ public:
 		socket_->lowest_layer().io_control(non_blocking_io, ec);
 		if (ec) {
 			LOG_ERROR("socket io_control non_blocking_io, error=" << ec);
-			socket_->get_io_service().post(boost::bind(&Connection_SSL_Help::destroy, this));
+		//	socket_->get_io_service().post(boost::bind(&Connection_SSL_Help::destroy, this));
+			delete this;
 			return;
 		}
 
@@ -184,52 +201,58 @@ public:
 		socket_->lowest_layer().set_option(no_delay, ec);
 		if (ec) {
 			LOG_ERROR("socket set_option error=" << ec);
-			socket_->get_io_service().post(boost::bind(&Connection_SSL_Help::destroy, this));
-			return;
+	//		socket_->get_io_service().post(boost::bind(&Connection_SSL_Help::destroy, this));
+			delete this;
+		} else {
+			socket_->async_handshake(boost::asio::ssl::stream_base::server,
+				boost::bind(&Connection_SSL_Help::handle_handshake, this,
+					boost::asio::placeholders::error));
 		}
-
-		socket_->async_handshake(boost::asio::ssl::stream_base::server,
-			boost::bind(&Connection_SSL_Help::handle_handshake, this,
-				boost::asio::placeholders::error));
 	}
 
 	void handle_handshake(const boost::system::error_code& err) {
 		if (!err) {
-//			boost::system::error_code ec;
-//			uint32_t ret = (uint32_t)socket_->read_some(boost::asio::buffer(read_buf_, (std::size_t)sizeof(read_buf_) - 1), ec);
-
-			socket_->async_read_some(boost::asio::buffer(read_buf_, sizeof(read_buf_) - 1),
-				boost::bind(&Connection_SSL_Help::handle_first_read, this,
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred));
+			boost::system::error_code ec;
+			uint32_t length = (uint32_t)socket_->read_some(boost::asio::buffer(read_buf_, (std::size_t)sizeof(read_buf_) - 1), ec);
+			if (length > 0) {
+				process(length);
+			} else {
+				socket_->async_read_some(boost::asio::buffer(read_buf_, sizeof(read_buf_) - 1),
+					boost::bind(&Connection_SSL_Help::handle_first_read, this,
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred));
+			}
 		} else {
 			LOG_ERROR("socket set_option error=" << err.message() << " err_value=" << err.value());
 			delete this;
 		}
 	}
 
-	void handle_first_read(const boost::system::error_code& err, size_t length) {
-		LOG_TRACE("handle_first_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
-
-		if (!err) {
-			read_data_size_ += (uint32_t)length;
-			if (read_data_size_ >= 4) {
-				boost::asio::io_service& io_service_ = socket_->get_io_service();
-				start_peer(read_buf_, read_data_size_);
-				//  if (socket_ == NULL) {
-				io_service_.post(boost::bind(&Connection_SSL_Help::destroy, this));
-				//  }
-			} else {
-				socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
-					make_custom_alloc_handler(read_allocator_,
-					boost::bind(&Connection_SSL_Help::handle_first_read, this,
+	void process(size_t length) {
+		read_data_size_ += (uint32_t)length;
+		if (read_data_size_ >= 4) {
+//			boost::asio::io_service& io_service_ = socket_->get_io_service();
+			start_peer(read_buf_, read_data_size_);
+//			io_service_.post(boost::bind(&Connection_SSL_Help::destroy, this));
+			delete this;
+		} else {
+			socket_->async_read_some(boost::asio::buffer(read_buf_ + read_data_size_, sizeof(read_buf_) - 1 - read_data_size_),
+				make_custom_alloc_handler(read_allocator_,
+				boost::bind(&Connection_SSL_Help::handle_first_read, this,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred)));
-				LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - 1 - read_data_size_));
-			}
+			LOG_TRACE("handle_first_read async_read_some get_read_buf_size=" << (sizeof(read_buf_) - 1 - read_data_size_));
+		}
+	}
+
+	void handle_first_read(const boost::system::error_code& err, size_t length) {
+		LOG_TRACE("handle_first_read length=" << length << " err=" << err.message() << " err_value=" << err.value());
+		if (!err) {
+			process(length);
 		} else {
 			LOG_INFO("handle_first_read destroy length=" << length << " err=" << err.message() << " err_value=" << err.value());
-			socket_->get_io_service().post(boost::bind(&Connection_SSL_Help::destroy, this));
+		//	socket_->get_io_service().post(boost::bind(&Connection_SSL_Help::destroy, this));
+			delete this;
 		}
 	}
 
@@ -252,12 +275,21 @@ public:
 		}
 	}
 
-	static void destroy(Connection_SSL_Help* conn) {
-		delete conn;
+	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* get_socket() {
+		return socket_;
 	}
+
+	boost::asio::ip::tcp::acceptor* get_acceptor() {
+		return acceptor_;
+	}
+
+//	static void destroy(Connection_SSL_Help* conn) {
+//		delete conn;
+//	}
 
 protected:
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket_;
+	boost::asio::ip::tcp::acceptor* acceptor_;
 	uint8_t  read_buf_[1025];
 	uint32_t read_data_size_;
 	Handler_Allocator<> read_allocator_;
@@ -265,8 +297,6 @@ protected:
 
 Server::Server(std::size_t pool_size, std::size_t thread_size) :
 io_service_pool_(pool_size, thread_size),
-acceptor_(io_service_pool_.get_io_service()),
-acceptor_ssl_(io_service_pool_.get_io_service()),
 resolver_(io_service_pool_.get_io_service()),
 timer_(io_service_pool_.get_io_service(), boost::posix_time::millisec(500)),
 context_(boost::asio::ssl::context::sslv23_server) {
@@ -284,12 +314,11 @@ Server::~Server() {
 }
 
 bool Server::start() {
-	boost::system::error_code err_code;
-
-	boost::asio::ip::address address = boost::asio::ip::address::from_string(settings_.inter, err_code);
-	if (err_code) {
-		LOG_FATAL("failed on parse address " << settings_.inter << ", error:" << err_code.message());
-		return false;
+	for (size_t i = 0; i < settings_.connectors.size(); i++) {
+		Connector* c = settings_.connectors[i].get();
+		if (!listen(c->address, c->port, c->reuse_address, c->ssl)) {
+			return false;
+		}
 	}
 
 //	context_.set_password_callback(boost::bind(&Server::get_password, this), err_code);
@@ -297,6 +326,8 @@ bool Server::start() {
 //		LOG_FATAL("failed on set_password_callback, error:" << err_code.message());
 //		return false;
 //	}
+	boost::system::error_code err_code;
+
 	context_.use_certificate_chain_file(settings_.home_dir + "conf/cacert.pem", err_code);
 	if (err_code) {
 		LOG_FATAL("failed on use_certificate_chain_file, error:" << err_code.message());
@@ -308,35 +339,7 @@ bool Server::start() {
 		return false;
 	}
 
-	boost::asio::ip::tcp::endpoint endpoint(address, settings_.port);
-	boost::asio::ip::tcp::endpoint endpoint_ssl(address, 443);
-	//  boost::asio::ip::udp::endpoint udpendpoint(address, settings_.udpport);
-
 	cache_mgr_.init(settings_.maxbytes, settings_.item_size_max, settings_.item_size_min, settings_.factor);
-
-	acceptor_.open(endpoint.protocol(), err_code);
-	acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(1));
-	acceptor_.bind(endpoint, err_code);
-	if (err_code) {
-		LOG_ERROR("bind error, on " << settings_.inter << ":" << settings_.port);
-		return false;
-	} else {
-		acceptor_.listen(boost::asio::socket_base::max_connections, err_code);
-
-		start_accept();
-	}
-
-	acceptor_ssl_.open(endpoint_ssl.protocol(), err_code);
-	acceptor_ssl_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(1));
-	acceptor_ssl_.bind(endpoint_ssl, err_code);
-	if (err_code) {
-		LOG_ERROR("ssl bind error, on " << settings_.inter << ":" << 443);
-		return false;
-	} else {
-		acceptor_ssl_.listen(boost::asio::socket_base::max_connections, err_code);
-
-		start_accept_ssl();
-	}
 
 	timer_.async_wait(boost::bind(&Server::handle_timer, this,
 		boost::asio::placeholders::error));
@@ -346,7 +349,19 @@ bool Server::start() {
 void Server::stop() {
 	LOG_INFO("Server::stop enter");
 	stop_flag_ = true;
-	acceptor_.close();
+
+	for (size_t i = 0; i < acceptors_.size(); i++) {
+		acceptors_[i]->close();
+		delete acceptors_[i];
+	}
+	acceptors_.clear();
+
+	for (size_t i = 0; i < acceptors_ssl_.size(); i++) {
+		acceptors_ssl_[i]->close();
+		delete acceptors_ssl_[i];
+	}
+	acceptors_ssl_.clear();
+
 	resolver_.cancel();
 	//  timer_.cancel();
 	io_service_pool_.stop();
@@ -361,55 +376,95 @@ boost::asio::ip::tcp::socket* Server::create_socket() {
 	return new boost::asio::ip::tcp::socket(io_service_pool_.get_io_service());
 }
 
-void Server::start_accept() {
-	boost::asio::ip::tcp::socket* socket = new boost::asio::ip::tcp::socket(io_service_pool_.get_io_service());
-	acceptor_.async_accept(*socket,
-		boost::bind(&Server::handle_accept, this, socket,
-			boost::asio::placeholders::error));
-}
-
 std::string Server::get_password() const {
 	return "test";
 }
 
-void Server::start_accept_ssl() {
-	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket = new boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(io_service_pool_.get_io_service(), context_);
-	acceptor_ssl_.async_accept(socket->lowest_layer(),
-		boost::bind(&Server::handle_accept_ssl, this, socket,
+bool Server::listen(const string& address_s, uint32_t port, bool reuse_address, bool ssl) {
+	boost::system::error_code err_code;
+
+	boost::asio::ip::address address = boost::asio::ip::address::from_string(address_s, err_code);
+	if (err_code) {
+		LOG_FATAL("failed on parse address " << address << ", error:" << err_code.message());
+		return false;
+	}
+	boost::asio::ip::tcp::endpoint endpoint(address, port);
+	boost::asio::ip::tcp::acceptor* acceptor = new boost::asio::ip::tcp::acceptor(io_service_pool_.get_io_service());
+	
+	acceptor->open(endpoint.protocol(), err_code);
+	if (err_code) {
+		LOG_FATAL("acceptor open error, on " << address << ":" << port << " " << err_code.message());
+		return false;
+	}
+	if (reuse_address) {
+		acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(1), err_code);
+		if (err_code) {
+			LOG_FATAL("acceptor set_option error, on " << address << ":" << port << " " << err_code.message());
+			return false;
+		}
+	}
+	acceptor->bind(endpoint, err_code);
+	if (err_code) {
+		LOG_FATAL("acceptor bind error, on " << address << ":" << port << " " << err_code.message());
+		return false;
+	} else {
+		acceptor->listen(boost::asio::socket_base::max_connections, err_code);
+
+		if (ssl) {
+			LOG_INFO("Listen on " << address << ":" << port << "(SSL)");
+			acceptors_ssl_.push_back(acceptor);
+			start_accept_ssl(acceptor);
+		} else {
+			LOG_INFO("Listen on " << address << ":" << port);
+			acceptors_.push_back(acceptor);
+			start_accept(acceptor);
+		}
+	}
+
+	return true;
+}
+
+void Server::start_accept(boost::asio::ip::tcp::acceptor* acceptor) {
+	Connection_Help* help = new Connection_Help(io_service_pool_.get_io_service(), acceptor);
+	acceptor->async_accept(*help->get_socket(),
+		boost::bind(&Server::handle_accept, this, help,
 			boost::asio::placeholders::error));
 }
 
-void Server::handle_accept(boost::asio::ip::tcp::socket* socket, const boost::system::error_code& err) {
+void Server::handle_accept(Connection_Help* help, const boost::system::error_code& err) {
 	LOG_DEBUG("handle_accept error=" << err.message());
 	if (!err) {
-		Connection_Help* conn = new Connection_Help(socket);
-		conn->start();
-
-		start_accept();
+		start_accept(help->get_acceptor());
+		help->start();
 	} else {
-		delete socket;
 		if (!stop_flag_) {
 			LOG_ERROR("handle accept error:" << err.message());
 
-			start_accept();
+			start_accept(help->get_acceptor());
 		}
+		delete help;
 	}
 }
 
-void Server::handle_accept_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket, const boost::system::error_code& err) {
+void Server::start_accept_ssl(boost::asio::ip::tcp::acceptor* acceptor) {
+	Connection_SSL_Help* help = new Connection_SSL_Help(io_service_pool_.get_io_service(), acceptor, context_);
+	acceptor->async_accept(help->get_socket()->lowest_layer(),
+		boost::bind(&Server::handle_accept_ssl, this, help,
+			boost::asio::placeholders::error));
+}
+
+void Server::handle_accept_ssl(Connection_SSL_Help* help, const boost::system::error_code& err) {
 	LOG_DEBUG("handle_accept_ssl error=" << err.message());
 	if (!err) {
-		Connection_SSL_Help* conn = new Connection_SSL_Help(socket);
-		conn->start();
-
-		start_accept_ssl();
+		start_accept_ssl(help->get_acceptor());
+		help->start();
 	} else {
-		delete socket;
 		if (!stop_flag_) {
 			LOG_ERROR("handle accept error:" << err.message());
 
-			start_accept_ssl();
+			start_accept_ssl(help->get_acceptor());
 		}
+		delete help;
 	}
 }
 

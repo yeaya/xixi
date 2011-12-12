@@ -58,8 +58,8 @@ void sigpipeproc(int sig) {
 
 void print_usage() {
 	std::cout << "\n"
-		"   -p <num>      TCP port number to listen on (default: 7788)\n"
-		"   -l <ip_addr>  interface to listen on (default: INADDR_ANY, all addresses)\n"
+//		"   -p <num>      TCP port number to listen on (default: 7788)\n"
+//		"   -l <ip_addr>  interface to listen on (default: INADDR_ANY, all addresses)\n"
 		"   -m <num>      max memory to use for items in megabytes (default: 768 MB)\n"
 		"   -log          log level\n"
 #if LOG_LEVEL <= log_level_trace
@@ -194,10 +194,11 @@ int main(int argc, char* argv[]) {
 	set_log_level(log_level_info);
 
 	for (int i = 1; i < argc; i++) {
-		if (cmdcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+/*		if (cmdcmp(argv[i], "-p") == 0 && i + 1 < argc) {
 			i++;
 			settings_.port = atoi(argv[i]);
-		} else if (cmdcmp(argv[i], "-m") == 0 && i + 1 < argc) {
+		} else */
+		if (cmdcmp(argv[i], "-m") == 0 && i + 1 < argc) {
 			i++;
 			settings_.maxbytes = ((uint64_t)atoi(argv[i])) * 1024 * 1024;
 		} else if (cmdcmp(argv[i], "-c") == 0 && i + 1 < argc) {
@@ -209,9 +210,9 @@ int main(int argc, char* argv[]) {
 		} else if (cmdcmp(argv[i], "-i") == 0) {
 			print_license();
 			exit(EXIT_SUCCESS);
-		} else if (cmdcmp(argv[i], "-l") == 0 && i + 1 < argc) {
+/*		} else if (cmdcmp(argv[i], "-l") == 0 && i + 1 < argc) {
 			i++;
-			settings_.inter = argv[i];
+			settings_.inter = argv[i];*/
 		} else if (cmdcmp(argv[i], "-f") == 0 && i + 1 < argc) {
 			i++;
 			settings_.factor = atof(argv[i]);

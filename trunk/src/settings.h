@@ -18,6 +18,7 @@
 #define SETTINGS__H
 
 #include "defines.h"
+#include <boost/shared_ptr.hpp>
 #include "xixibase.h"
 #include "xixi_list.hpp"
 #include "xixi_hash_map.hpp"
@@ -43,12 +44,22 @@ public:
 	Simple_Data mime_type;
 };
 
+class Connector {
+public:
+	string address;
+	uint32_t port;
+	bool ssl;
+	bool reuse_address;
+};
+
 class Settings {
 public:
 	Settings();
 	~Settings();
 	void init();
 	string load_conf();
+	string load_conf_web();
+	string load_conf_server();
 	const uint8_t* get_mime_type(const uint8_t* ext, uint32_t ext_size, uint32_t& mime_type_length);
 	const char* get_default_mime_type(uint32_t& mime_type_length);
 	bool is_gzip_mime_type(const uint8_t* mime_type, uint32_t mime_type_length);
@@ -56,10 +67,11 @@ public:
 
 	string home_dir;
 
+	vector<boost::shared_ptr<Connector> > connectors;
 	uint64_t maxbytes;
 	uint32_t maxconns;
-	uint16_t port;
-	string inter;
+//	uint16_t port;
+//	string inter;
 
 	double factor;            // chunk size growth factor
 	uint32_t pool_size;       // number of io_service to run

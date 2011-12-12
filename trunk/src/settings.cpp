@@ -52,8 +52,8 @@ void Settings::init() {
 		home_dir = scp.string();
 	}
 
-	port = 7788;
-	inter = "0.0.0.0";
+//	port = 7788;
+//	inter = "0.0.0.0";
 	maxbytes = 768 * 1024 * 1024;
 	maxconns = 1024;
 	factor = 1.25;
@@ -77,6 +77,82 @@ void Settings::init() {
 }
 
 string Settings::load_conf() {
+	string ret = load_conf_server();
+	if (ret != "") {
+		return ret;
+	}
+	return load_conf_web();
+}
+
+string Settings::load_conf_server() {
+	string xmlfile = settings_.home_dir + "conf/server.xml";
+	TiXmlDocument doc(xmlfile.c_str());
+	if (!doc.LoadFile()) {
+		return "[server.xml] load error";
+	}
+
+	TiXmlHandle hDoc(&doc);
+	TiXmlHandle hRoot(0);
+
+	TiXmlElement* first = hDoc.FirstChildElement().Element();
+	if (first == NULL) {
+		return "[server.xml] format error";
+	}
+	string name = first->Value();
+
+	hRoot = TiXmlHandle(first);
+
+	TiXmlElement* elem = hRoot.FirstChild("Connector").Element();
+	while (elem != NULL) {
+		const char* address = elem->Attribute("host");
+		if (address == NULL) {
+			address = "0.0.0.0";
+		}
+		const char* ssl = elem->Attribute("SSLEnabled");
+		if (ssl == NULL) {
+			ssl = "false";
+		}
+		bool ssl_flag = false;
+		if (strcasecmp(ssl, "true") == 0) {
+			ssl_flag = true;
+		}
+		const char* p = elem->Attribute("port");
+		if (p == NULL) {
+			if (ssl_flag) {
+				p = "443";
+			} else {
+				p = "7788";
+			}
+		}
+		uint32_t port;
+		string t = p;
+		if (!safe_toui32(t.c_str(), t.size(), port)) {
+			return "[server.xml] reading Connector.port error";
+		}
+		const char* reuse_address = elem->Attribute("reuse-address");
+		if (reuse_address == NULL) {
+			reuse_address = "false";
+		}
+		bool reuse_address_flag = false;
+		if (strcasecmp(reuse_address, "true") == 0) {
+			reuse_address_flag = true;
+		}
+		
+		boost::shared_ptr<Connector> connector(new Connector());
+		connector->address = address;
+		connector->port = port;
+		connector->ssl = ssl_flag;
+		connector->reuse_address = reuse_address_flag;
+
+		connectors.push_back(connector);
+
+		elem = elem->NextSiblingElement("Connector");
+	}
+
+	return "";
+}
+
+string Settings::load_conf_web() {
 	string xmlfile = settings_.home_dir + "conf/web.xml";
 	TiXmlDocument doc(xmlfile.c_str());
 	if (!doc.LoadFile()) {
@@ -145,7 +221,7 @@ string Settings::load_conf() {
 			ext_mime_list.push_back(item);
 			ext_mime_map.insert(item, item->externsion.hash_value());
 		}
-		mime = mime->NextSiblingElement();
+		mime = mime->NextSiblingElement("mime-mapping");
 	}
 
 	ele = hRoot.FirstChildElement("default-mime-type").Element();
@@ -193,7 +269,7 @@ string Settings::load_conf() {
 					gzip_mime_list.push_back(item);
 					gzip_mime_map.insert(item, item->mime_type.hash_value());
 				}
-				ele = ele->NextSiblingElement();
+				ele = ele->NextSiblingElement("mime-type");
 			}
 		}
 	}
@@ -204,7 +280,7 @@ string Settings::load_conf() {
 		if (file != NULL) {
 			welcome_file_list.push_back(string(file));
 		}
-		welcome = welcome->NextSiblingElement();
+		welcome = welcome->NextSiblingElement("welcome-file");
 	}
 
 	return "";
@@ -245,8 +321,8 @@ void Settings::print() {
 	LOG_INFO("XIXIBASE_HOME=" << home_dir);
 	LOG_INFO("maxbytes=" << maxbytes);
 	LOG_INFO("maxconns=" << maxconns);
-	LOG_INFO("port=" << port);
-	LOG_INFO("inter=" << inter);
+//	LOG_INFO("port=" << port);
+//	LOG_INFO("inter=" << inter);
 	LOG_INFO("factor=" << factor);
 	LOG_INFO("pool_size=" << pool_size);
 	LOG_INFO("num_threads=" << num_threads);

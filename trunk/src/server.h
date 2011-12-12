@@ -27,8 +27,10 @@
 #include <boost/thread/condition.hpp>
 #include "io_service_pool.h"
 
-class Server {
+class Connection_Help;
+class Connection_SSL_Help;
 
+class Server {
 public:
 	Server(std::size_t pool_size, std::size_t thread_size);
 	~Server();
@@ -45,11 +47,12 @@ public:
 	}
 
 private:
-	inline void start_accept();
-	inline void start_accept_ssl();
+	bool listen(const string& address, uint32_t port, bool reuse_address, bool ssl);
+	inline void start_accept(boost::asio::ip::tcp::acceptor* acceptor);
+	inline void start_accept_ssl(boost::asio::ip::tcp::acceptor* acceptor);
 
-	void handle_accept(boost::asio::ip::tcp::socket* socket, const boost::system::error_code& err);
-	void handle_accept_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* socket, const boost::system::error_code& err);
+	void handle_accept(Connection_Help* help, const boost::system::error_code& err);
+	void handle_accept_ssl(Connection_SSL_Help* help, const boost::system::error_code& err);
 	void handle_timer(const boost::system::error_code& err);
 	std::string get_password() const;
 
@@ -58,8 +61,8 @@ private:
 	mutex lock_;
 
 	io_service_pool io_service_pool_;
-	boost::asio::ip::tcp::acceptor acceptor_;
-	boost::asio::ip::tcp::acceptor acceptor_ssl_;
+	vector<boost::asio::ip::tcp::acceptor*> acceptors_;
+	vector<boost::asio::ip::tcp::acceptor*> acceptors_ssl_;
 	boost::asio::ip::tcp::resolver resolver_;
 	boost::asio::deadline_timer timer_;
 	boost::asio::ssl::context context_;

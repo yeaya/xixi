@@ -264,6 +264,53 @@ int strcasecmp(char* str1, char* str2, uint32_t length) {
 	return 0;
 }
 
+int strcasecmp(const char* str1, const char* str2) {
+	while (true) {
+		char c1 = *str1;
+		char c2 = *str2;
+
+		str1++;
+		str2++;
+
+		if (c1 == '\0') {
+			if (c2 == '\0') {
+				return 0;
+			} else {
+				return -1;
+			}
+		}
+
+		if (c2 == '\0') {
+			if (c1 == '\0') {
+				return 0;
+			} else {
+				return 1;
+			}
+		}
+
+		if (c1 == c2) {
+			continue;
+		}
+
+		if (c1 >= 'a' && c1 <= 'z') {
+			c1 -= ('a' - 'A');
+		}
+
+		if (c2 >= 'a' && c2 <= 'z') {
+			c2 -= ('a' - 'A');
+		}
+
+		if (c1 == c2) {
+			continue;
+		} else if (c1 > c2) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
+	return 0;
+}
+
 void to_lower(char* buf, uint32_t length) {
 	for (uint32_t i = 0; i < length; i++) {
 		char c = buf[i];
