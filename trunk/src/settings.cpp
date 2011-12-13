@@ -113,7 +113,7 @@ string Settings::load_conf_server() {
 			ssl = "false";
 		}
 		bool ssl_flag = false;
-		if (strcasecmp(ssl, "true") == 0) {
+		if (Util<>::strcasecmp(ssl, "true") == 0) {
 			ssl_flag = true;
 		}
 		const char* p = elem->Attribute("port");
@@ -134,7 +134,7 @@ string Settings::load_conf_server() {
 			reuse_address = "false";
 		}
 		bool reuse_address_flag = false;
-		if (strcasecmp(reuse_address, "true") == 0) {
+		if (Util<>::strcasecmp(reuse_address, "true") == 0) {
 			reuse_address_flag = true;
 		}
 		
