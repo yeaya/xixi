@@ -1148,6 +1148,27 @@ Cache_Item* Peer_Http::get_cache_item(bool is_base, xixi_reason& reason, uint32_
 
 	// try load from file /webapps
 	if (it == NULL && key_length_ > 0 && key_[0] == '/') {
+		boost::filesystem::path key_path = (char*)key_;
+		boost::filesystem::path::const_iterator pit = key_path.begin();
+		uint32_t path_count = 0;
+		while (true) {
+			if (pit != key_path.end()) {
+				if (*pit == "..") {
+					if (path_count <= 1) {
+						reason = XIXI_REASON_NOT_FOUND;
+						return NULL;
+					}
+					path_count--;
+				} else if (*pit == ".") {
+				} else {
+					path_count++;
+				}
+				pit = boost::next(pit);
+			} else {
+				break;
+			}
+		}
+
 		string filename = settings_.home_dir + "webapps" + (char*)key_;
 	//	LOG_INFO("get_cache_item " << filename);
 		try {
