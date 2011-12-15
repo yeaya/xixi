@@ -2,20 +2,8 @@
 #labels Phase-Implementation
 ==Building Xixibase server==
 ===Windows:===
- # Please check the directory.
-{{{
-xixibase/3rd/boost
-        /client
-        /src
-}}}
  # run build.bat
 
 ===Linux/Mac:===
- # Please check the directory.
-{{{
-xixibase/3rd/boost
-        /client
-        /src
-}}}
  # chmod +x build.sh
  # run ./build.sh
