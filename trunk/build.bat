@@ -16,6 +16,7 @@ copy 3rd\openssl\libeay32.dll dist\xixibase\bin\
 copy 3rd\openssl\ssleay32.dll dist\xixibase\bin\
 mkdir dist\xixibase\conf
 copy conf\web.xml dist\xixibase\conf\
+copy conf\server.xml dist\xixibase\conf\
 copy conf\privkey.pem dist\xixibase\conf\
 copy conf\cacert.pem dist\xixibase\conf\
 mkdir dist\xixibase\webapps

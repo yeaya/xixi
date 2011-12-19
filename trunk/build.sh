@@ -13,6 +13,7 @@ mkdir dist/xixibase/bin
 cp bin/xixibase dist/xixibase/bin/.
 mkdir dist/xixibase/conf
 cp conf/web.xml dist/xixibase/conf/.
+cp conf/server.xml dist/xixibase/conf/.
 cp conf/privkey.pem dist/xixibase/conf/.
 cp conf/cacert.pem dist/xixibase/conf/.
 mkdir dist/xixibase/webapps
