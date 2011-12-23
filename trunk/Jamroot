@@ -11,8 +11,6 @@
 project    
 
 : requirements <include>3rd/tinyxml <include>3rd/zlib <include>3rd/openssl/include 
-   <library-path>3rd/openssl/lib64
-   <library-path>3rd/openssl/lib
  : default-build release
  : build-dir obj/jam
 ;

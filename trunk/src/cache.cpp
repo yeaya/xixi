@@ -1104,7 +1104,7 @@ uint32_t Cache_Mgr::create_watch(uint32_t group_id, uint32_t max_next_check_inte
 	cache_lock_.lock();
 	uint32_t watch_id = get_watch_id();
 	if (watch_id != 0) {
-		shared_ptr<Cache_Watch> sp(new Cache_Watch(watch_id, curr_time_.realtime(max_next_check_interval)));
+		boost::shared_ptr<Cache_Watch> sp(new Cache_Watch(watch_id, curr_time_.realtime(max_next_check_interval)));
 		watch_map_[watch_id] = sp;
 		stats_.create_watch(group_id);
 	}
@@ -1116,7 +1116,7 @@ bool Cache_Mgr::check_watch_and_set_callback(uint32_t group_id, uint32_t watch_i
 											 uint64_t ack_cache_id, boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t max_next_check_interval) {
 	 bool ret = true;
 	 cache_lock_.lock();
-	 std::map<uint32_t, shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
+	 std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
 	 if (it != watch_map_.end()) {
 		 it->second->check_and_set_callback(updated_list, updated_count, ack_cache_id, sp, curr_time_.realtime(max_next_check_interval));
 		 stats_.check_watch(group_id);
@@ -1131,7 +1131,7 @@ bool Cache_Mgr::check_watch_and_set_callback(uint32_t group_id, uint32_t watch_i
 bool Cache_Mgr::check_watch_and_clear_callback(uint32_t watch_id, std::list<uint64_t>& updated_list, uint32_t& updated_count) {
 	bool ret = true;
 	cache_lock_.lock();
-	std::map<uint32_t, shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
+	std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
 	if (it != watch_map_.end()) {
 		it->second->check_and_clear_callback(updated_list, updated_count);
 	} else {
@@ -1145,7 +1145,7 @@ void Cache_Mgr::notify_watch(Cache_Item* item) {
 	std::set<uint32_t>::iterator it = item->watch_item->watch_map.begin();
 	while (it != item->watch_item->watch_map.end()) {
 		uint32_t watch_id = *it;
-		std::map<uint32_t, shared_ptr<Cache_Watch> >::iterator it2 = watch_map_.find(watch_id);
+		std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it2 = watch_map_.find(watch_id);
 		if (it2 != watch_map_.end()) {
 			it2->second->notify_watch(item->cache_id);
 			++it;
@@ -1157,7 +1157,7 @@ void Cache_Mgr::notify_watch(Cache_Item* item) {
 
 void Cache_Mgr::expire_watchs(uint32_t curr_time) {
 	//  LOG_INFO("Cache_Mgr::expire_watchs curr_time=" << curr_time);
-	std::map<uint32_t, shared_ptr<Cache_Watch> >::iterator it = watch_map_.begin();
+	std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it = watch_map_.begin();
 	while (it != watch_map_.end()) {
 		if (it->second->is_expired(curr_time)) {
 			watch_map_.erase(it++);

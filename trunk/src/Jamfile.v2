@@ -79,6 +79,8 @@ exe xixibase
     <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
     <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
     <os>HPUX:<library>ipv6
+    <address-model>32:<library-path>../3rd/openssl/lib
+    <address-model>64:<library-path>../3rd/openssl/lib64
     <library>ssl
     <library>crypto
     <os>LINUX:<library>dl

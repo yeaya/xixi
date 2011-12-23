@@ -278,7 +278,7 @@ private:
 
 	uint32_t last_check_expired_time_;
 	uint32_t last_watch_id_;
-	std::map<uint32_t, shared_ptr<Cache_Watch> > watch_map_;
+	std::map<uint32_t, boost::shared_ptr<Cache_Watch> > watch_map_;
 };
 
 extern Cache_Mgr cache_mgr_;
