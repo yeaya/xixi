@@ -4,8 +4,8 @@ tar xvzf openssl-1.0.0e.tar.gz
 cd openssl-1.0.0e/
 ./config
 make
-cp -f  libcrypto.a ../openssl/lib/.
-cp -f  libssl.a ../openssl/lib/.
+cp -f  libcrypto.a ../openssl/lib64/.
+cp -f  libssl.a ../openssl/lib64/.
 cd ../boost 
 chmod +x bootstrap.sh
 chmod +x tools/build/v2/engine/build.sh
