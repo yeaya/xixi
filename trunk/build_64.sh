@@ -1,5 +1,12 @@
 xixibaseDIR=$(pwd)
-cd 3rd/boost 
+cd 3rd
+tar xvzf openssl-1.0.0e.tar.gz
+cd openssl-1.0.0e/
+./config
+make
+cp -f  libcrypto.a ../openssl/lib/.
+cp -f  libssl.a ../openssl/lib/.
+cd ../boost 
 chmod +x bootstrap.sh
 chmod +x tools/build/v2/engine/build.sh
 ./bootstrap.sh
