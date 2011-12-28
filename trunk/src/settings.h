@@ -68,10 +68,8 @@ public:
 	string home_dir;
 
 	vector<boost::shared_ptr<Connector> > connectors;
-	uint64_t maxbytes;
-	uint32_t maxconns;
-//	uint16_t port;
-//	string inter;
+	uint64_t max_bytes;
+	uint32_t max_conns;
 
 	double factor;            // chunk size growth factor
 	uint32_t pool_size;       // number of io_service to run

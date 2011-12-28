@@ -52,10 +52,8 @@ void Settings::init() {
 		home_dir = scp.string();
 	}
 
-//	port = 7788;
-//	inter = "0.0.0.0";
-	maxbytes = 768 * 1024 * 1024;
-	maxconns = 1024;
+	max_bytes = 768 * 1024 * 1024;
+	max_conns = 1024;
 	factor = 1.25;
 	pool_size = 2;
 	num_threads = 4;
@@ -319,8 +317,8 @@ bool Settings::is_gzip_mime_type(const uint8_t* mime_type, uint32_t mime_type_le
 void Settings::print() {
 	LOG_INFO("BEGIN-----SETTINGS INFO-----BEGIN");
 	LOG_INFO("XIXIBASE_HOME=" << home_dir);
-	LOG_INFO("maxbytes=" << maxbytes);
-	LOG_INFO("maxconns=" << maxconns);
+	LOG_INFO("max_bytes=" << max_bytes);
+	LOG_INFO("max_conns=" << max_conns);
 //	LOG_INFO("port=" << port);
 //	LOG_INFO("inter=" << inter);
 	LOG_INFO("factor=" << factor);

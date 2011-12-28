@@ -122,7 +122,7 @@ bool Stats::remove_group(uint32_t group_id) {
 void Stats::get_base_stats(std::string& out) {
 	Group_Stats_Item::append("version", VERSION, out);
 	Group_Stats_Item::append("uptime", curr_time_.get_current_time(), out);
-	Group_Stats_Item::append("maxbytes", settings_.maxbytes, out);
+	Group_Stats_Item::append("max_bytes", settings_.max_bytes, out);
 	Group_Stats_Item::append("threads", settings_.num_threads, out);
 	Group_Stats_Item::append("max_stats_group", settings_.max_stats_group, out);
 	Group_Stats_Item::append("curr_stats_group", (uint64_t)group_map_.size(), out);

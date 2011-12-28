@@ -58,8 +58,6 @@ void sigpipeproc(int sig) {
 
 void print_usage() {
 	std::cout << "\n"
-//		"   -p <num>      TCP port number to listen on (default: 7788)\n"
-//		"   -l <ip_addr>  interface to listen on (default: INADDR_ANY, all addresses)\n"
 		"   -m <num>      max memory to use for items in megabytes (default: 768 MB)\n"
 		"   -log          log level\n"
 #if LOG_LEVEL <= log_level_trace
@@ -200,10 +198,10 @@ int main(int argc, char* argv[]) {
 		} else */
 		if (cmdcmp(argv[i], "-m") == 0 && i + 1 < argc) {
 			i++;
-			settings_.maxbytes = ((uint64_t)atoi(argv[i])) * 1024 * 1024;
+			settings_.max_bytes = ((uint64_t)atoi(argv[i])) * 1024 * 1024;
 		} else if (cmdcmp(argv[i], "-c") == 0 && i + 1 < argc) {
 			i++;
-			settings_.maxconns = atoi(argv[i]);
+			settings_.max_conns = atoi(argv[i]);
 		} else if (cmdcmp(argv[i], "-h") == 0) {
 			print_usage();
 			exit(EXIT_SUCCESS);

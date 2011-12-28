@@ -339,7 +339,7 @@ bool Server::start() {
 		return false;
 	}
 
-	cache_mgr_.init(settings_.maxbytes, settings_.item_size_max, settings_.item_size_min, settings_.factor);
+	cache_mgr_.init(settings_.max_bytes, settings_.item_size_max, settings_.item_size_min, settings_.factor);
 
 	timer_.async_wait(boost::bind(&Server::handle_timer, this,
 		boost::asio::placeholders::error));
