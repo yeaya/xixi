@@ -7,27 +7,23 @@ Dependencies:
    -- boost, http://www.boost.org/
    -- tinyxml
    -- zlib
+   -- openssl
 
 --------------------------------------------------------------------------------
 Building Xixibase server
-Windows:
-1. Please check the directory.
-       xixibase--3rd--boost
-                    --tinyxml
-                    --zlib
-               --client
-               --src
-2. run build.bat
+Windows 32:
+   run build_win32.bat
 
-Linux/Mac:
-1. Please check the directory.
-       xixibase--3rd--boost
-                    --tinyxml
-                    --zlib
-               --client
-               --src
-2. chmod +x build.sh
-3. run ./build.sh
+Windows 64:
+   run build_win64.bat
+
+Unix like OS 32:
+   chmod +x build_32.sh
+   run ./build_32.sh
+
+Unix like OS 64:
+   chmod +x build_64.sh
+   run ./build_64.sh
 
 Copyright:
 --------------------------------------------------------------------------------
