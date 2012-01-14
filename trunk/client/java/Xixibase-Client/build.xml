@@ -56,6 +56,7 @@
 				<path refid="test.classpath" />
 			</classpath>
 			<jvmarg value="-Dhosts=${hosts}" />
+			<jvmarg value="-DenableSSL=${enableSSL}" />
 			<formatter type="xml" />
 			<test name="com.xixibase.cache.CacheClientTest" todir="${report.dir}" />
 		</junit>
