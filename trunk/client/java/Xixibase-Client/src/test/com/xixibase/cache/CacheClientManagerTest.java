@@ -27,8 +27,10 @@ import junit.framework.TestCase;
 public class CacheClientManagerTest extends TestCase {
 	static String[] serverlist;
 	static String servers;
+	static boolean enableSSL = false;
 	static {
 		servers = System.getProperty("hosts");
+		enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
 		if (servers == null) {
 			try {
 				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
@@ -36,6 +38,7 @@ public class CacheClientManagerTest extends TestCase {
 				p.load(in);
 				in.close();
 				servers = p.getProperty("hosts");
+				enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 			} catch (IOException e) {
 				e.printStackTrace();
 			} 
@@ -79,9 +82,9 @@ public class CacheClientManagerTest extends TestCase {
 		assertEquals(mgr.getSocketWriteBufferSize(), 32 * 1024);
 		assertEquals(mgr.getDefaultGroupID(), 315);
 		assertFalse(mgr.isInitialized());
-		boolean ret = mgr.initialize(serverlist);
+		boolean ret = mgr.initialize(serverlist, enableSSL);
 		assertTrue(ret);
-		ret = mgr.initialize(serverlist);
+		ret = mgr.initialize(serverlist, enableSSL);
 		assertFalse(ret);
 		assertTrue(mgr.isInitialized());
 		assertNotNull(mgr.getWeightMapper());
@@ -95,7 +98,7 @@ public class CacheClientManagerTest extends TestCase {
 		int size = mgr.getSocketWriteBufferSize();
 		assertEquals(32768, size);
 		mgr.setSocketWriteBufferSize(64 * 1024);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		XixiSocket socket = mgr.createSocket(serverlist[0]);
 		assertNotNull(socket);
 		
@@ -106,7 +109,7 @@ public class CacheClientManagerTest extends TestCase {
 	
 	public void testGetHost() {
 		CacheClientManager mgr = CacheClientManager.getInstance();
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		String host = mgr.getHost("xixi");
 		assertNotNull(host);
 		mgr.shutdown();
@@ -114,7 +117,7 @@ public class CacheClientManagerTest extends TestCase {
 	
 	public void testGetSocketByHost() {
 		CacheClientManager mgr = CacheClientManager.getInstance();
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		XixiSocket socket = mgr.getSocketByHost(serverlist[0]);
 		assertNotNull(socket);
 		mgr.shutdown();
@@ -128,7 +131,7 @@ public class CacheClientManagerTest extends TestCase {
 		mgr.setInactiveSocketTimeout(1000);
 		mgr.setMaxActiveConn(2);
 		mgr.setInitConn(5);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.setSocketWriteBufferSize(64 * 1024);
 		int serverCount = mgr.getServers().length;
 	
@@ -153,13 +156,13 @@ public class CacheClientManagerTest extends TestCase {
 	
 	public void testError() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testError");
-		boolean ret = mgr.initialize(null);
+		boolean ret = mgr.initialize(null, enableSSL);
 		assertFalse(ret);
-		ret = mgr.initialize(new String[0], null);
+		ret = mgr.initialize(new String[0], null, enableSSL);
 		assertFalse(ret);
 		String[] s = new String[1];
 		s[0] = "errorHost";
-		ret = mgr.initialize(s);
+		ret = mgr.initialize(s, enableSSL);
 		assertTrue(ret);
 		XixiSocket socket = mgr.getSocketByHost(serverlist[0]);
 		assertNull(mgr.getSocketByHost(null));

@@ -37,8 +37,10 @@ public class MultiOperationTest extends TestCase {
 	private static CacheClientManager mgr1 = null;
 
 	static String servers;
+	static boolean enableSSL = false;
 	static {
 		servers = System.getProperty("hosts");
+		enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
 		if (servers == null) {
 			try {
 				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
@@ -46,6 +48,7 @@ public class MultiOperationTest extends TestCase {
 				p.load(in);
 				in.close();
 				servers = p.getProperty("hosts");
+				enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 			} catch (IOException e) {
 				e.printStackTrace();
 			} 
@@ -54,7 +57,7 @@ public class MultiOperationTest extends TestCase {
 
 		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
-		mgr1.initialize(serverlist);
+		mgr1.initialize(serverlist, enableSSL);
 		mgr1.enableLocalCache();
 	}
 

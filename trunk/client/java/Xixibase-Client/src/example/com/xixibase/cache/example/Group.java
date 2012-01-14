@@ -30,7 +30,7 @@ public class Group  {
 		String[] serverlist = servers.split(",");
 
 		CacheClientManager manager = CacheClientManager.getInstance("example");
-		manager.initialize(serverlist);
+		manager.initialize(serverlist, false);
 		
 		int groupID1 = 1;
 		int groupID2 = 2;

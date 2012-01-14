@@ -18,15 +18,11 @@ package com.xixibase.cache;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.Selector;
 
 public interface XixiSocket {
-//	public ByteBuffer getReadBuffer();
-	
 	public ByteBuffer getWriteBuffer();
 
-	public SocketChannel getChannel();
-	
 	public String getHost();
 
 	public boolean trueClose();
@@ -48,4 +44,13 @@ public interface XixiSocket {
 	
 	public void setLastActiveTime(long lastActiveTime);
 	public long getLastActiveTime();
+	
+	// async op
+	public boolean isBlocking();
+	public void configureBlocking(boolean block) throws IOException ;
+	public int read(ByteBuffer dst) throws IOException ;
+	public int write(ByteBuffer src) throws IOException ;
+	public boolean handleRead() throws IOException ;
+	public boolean handleWrite() throws IOException ;
+	public void register(Selector sel, int ops, AsyncHandle handle) throws IOException ;
 }

@@ -333,22 +333,20 @@ public class StressTestLocalCache {
 	private static String[] serverlist;
 
 	public static void main(String[] args) throws InterruptedException {
-		String myservers = null;
-		if (args.length >= 1) {
-		//	System.out.println("parameter: server_address(localhost:7788)");
-			myservers = args[0];
-		} else {
+		String servers = System.getProperty("hosts");
+		boolean enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
+		if (servers == null) {
 			try {
 				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
 				Properties p = new Properties(); 
 				p.load(in);
 				in.close();
-				myservers = p.getProperty("hosts");
+				servers = p.getProperty("hosts");
+				enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		String servers = myservers;
 		serverlist = servers.split(",");
 
 		String pooName = "stresstestLocalCache";
@@ -357,7 +355,7 @@ public class StressTestLocalCache {
 		mgr.setInitConn(10);
 
 		mgr.setNoDelay(true);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		LocalCache localCache = mgr.getLocalCache();
 		localCache.setMaxCacheSize(512 * 1024 * 1024);

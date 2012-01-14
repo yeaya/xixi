@@ -29,8 +29,10 @@ import junit.framework.TestCase;
 public class LocalCacheTest extends TestCase {
 
 	static String servers;
+	static boolean enableSSL = false;
 	static {
 		servers = System.getProperty("hosts");
+		enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
 		if (servers == null) {
 			try {
 				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
@@ -38,6 +40,7 @@ public class LocalCacheTest extends TestCase {
 				p.load(in);
 				in.close();
 				servers = p.getProperty("hosts");
+				enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 			} catch (IOException e) {
 				e.printStackTrace();
 			} 
@@ -55,7 +58,7 @@ public class LocalCacheTest extends TestCase {
 	public void testLocalCache() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		mgr.enableLocalCache();
 		Thread.sleep(50);
@@ -102,7 +105,7 @@ public class LocalCacheTest extends TestCase {
 	public void testSetW() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -143,7 +146,7 @@ public class LocalCacheTest extends TestCase {
 	public void testSetW2() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -190,7 +193,7 @@ public class LocalCacheTest extends TestCase {
 	public void testAddW() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -232,7 +235,7 @@ public class LocalCacheTest extends TestCase {
 	public void testAddW2() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -286,7 +289,7 @@ public class LocalCacheTest extends TestCase {
 	public void testReplaceW() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -333,7 +336,7 @@ public class LocalCacheTest extends TestCase {
 	public void testReplaceW2() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -391,7 +394,7 @@ public class LocalCacheTest extends TestCase {
 	public void testReplaceW3() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -447,7 +450,7 @@ public class LocalCacheTest extends TestCase {
 	public void testGetTouchL() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -487,7 +490,7 @@ public class LocalCacheTest extends TestCase {
 	public void testGetTouchL2() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -528,7 +531,7 @@ public class LocalCacheTest extends TestCase {
 	public void testGetTouchW() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -569,7 +572,7 @@ public class LocalCacheTest extends TestCase {
 	public void testGetTouchLW() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -610,7 +613,7 @@ public class LocalCacheTest extends TestCase {
 	public void testGetTouchLW2() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("LocalCacheTest");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		Thread.sleep(50);
 		LocalCache lc = mgr.getLocalCache();
@@ -664,7 +667,7 @@ public class LocalCacheTest extends TestCase {
 		String[] serverlist = servers.split(",");
 		String[] serverlist2 = new String[1];
 		serverlist2[0] = serverlist[0];
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		mgr.getLocalCache().setMaxCacheSize(64 * 1024);
 		mgr.getLocalCache().setWarningCacheRate(0.5);
@@ -688,7 +691,7 @@ public class LocalCacheTest extends TestCase {
 	public void testCacheUpdate() throws InterruptedException {
 		CacheClientManager mgr = CacheClientManager.getInstance("testDropInactive");
 		String[] serverlist = servers.split(",");
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		mgr.enableLocalCache();
 		mgr.getLocalCache().setMaxCacheSize(64 * 1024);
 		mgr.getLocalCache().setWarningCacheRate(0.6);

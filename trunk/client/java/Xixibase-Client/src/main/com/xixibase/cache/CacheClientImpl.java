@@ -169,6 +169,7 @@ public class CacheClientImpl extends Defines {
 				}
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
 			lastError = "get, exception=" + e;
 			log.error(lastError);
 			socket.trueClose();

@@ -30,7 +30,7 @@ public class Replace  {
 		String[] serverlist = servers.split(",");
 
 		CacheClientManager manager = CacheClientManager.getInstance("example");
-		manager.initialize(serverlist);
+		manager.initialize(serverlist, false);
 		
 		CacheClient cc = manager.createClient();
 		

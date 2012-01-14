@@ -30,7 +30,7 @@ public class LocalCache  {
 		String[] serverlist = servers.split(",");
 
 		CacheClientManager manager = CacheClientManager.getInstance("example");
-		manager.initialize(serverlist);
+		manager.initialize(serverlist, false);
 		
 		// enable local cache
 		manager.enableLocalCache();

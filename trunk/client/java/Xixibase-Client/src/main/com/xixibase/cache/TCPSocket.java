@@ -21,6 +21,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class TCPSocket implements XixiSocket {
@@ -149,19 +152,27 @@ public class TCPSocket implements XixiSocket {
 	
 	private final void readFromChannel() throws IOException {
 		readBuffer.clear();
-		socketChannel.read(readBuffer);
+	//	socketChannel.read(readBuffer);
+		for (int i = 0; i < 100; i++) {
+			if (socketChannel.read(readBuffer) != 0) {
+				break;
+			}
+		}
 		readBuffer.flip();
 	}
 
 	private final void writeToChannel() throws IOException {
 		writeBuffer.flip();
-		socketChannel.write(writeBuffer);
+		while (writeBuffer.hasRemaining()) {
+			socketChannel.write(writeBuffer);
+		}
 		writeBuffer.clear();
 	}
 	
 	public void flush() throws IOException {
-		writeBuffer.flip();
-		socketChannel.write(writeBuffer);
+		writeToChannel();
+	//	writeBuffer.flip();
+	//	socketChannel.write(writeBuffer);
 	}
 
 	public byte readByte() throws IOException {
@@ -217,5 +228,41 @@ public class TCPSocket implements XixiSocket {
 		SocketChannel sc = SocketChannel.open();
 		sc.socket().connect(new InetSocketAddress(host, port), timeout);
 		return sc.socket();
+	}
+
+	public ByteChannel getByteChannel() {
+		return socketChannel;
+	}
+
+	public SelectableChannel getSelectableChannel() {
+		return socketChannel;
+	}
+	
+	// async op
+	private AsyncHandle handle;
+	public boolean isBlocking() {
+		return socketChannel.isBlocking();
+	}
+	public void configureBlocking(boolean block) throws IOException {
+		socketChannel.configureBlocking(block);
+		if (block) {
+			handle = null;
+		}
+	}
+	public int read(ByteBuffer dst) throws IOException {
+		return socketChannel.read(dst);
+	}
+	public int write(ByteBuffer src) throws IOException {
+		return socketChannel.write(src);
+	}
+	public boolean handleRead() throws IOException  {
+		return handle.onRead();
+	}
+	public boolean handleWrite() throws IOException {
+		return handle.onWrite();
+	}
+	public void register(Selector sel, int ops, AsyncHandle handle) throws IOException {
+		this.handle = handle;
+		socketChannel.register(sel, ops, this);
 	}
 }

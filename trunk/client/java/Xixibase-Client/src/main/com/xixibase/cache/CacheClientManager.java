@@ -50,6 +50,7 @@ public class CacheClientManager {
 	private int inactiveSocketTimeout = 1000 * 30;
 
 	private boolean noDelay = true;
+	private boolean enableSSL = false;
 
 	private String[] servers;
 	private WeightMap<Integer> weightMap = new XixiWeightMap<Integer>();
@@ -174,15 +175,52 @@ public class CacheClientManager {
      * <pre>
      *     String servers = new String[1];
      *     servers[0] = "localhost:7788";
+     *     mgr.initialize(servers, false);</pre>
+     *     
+	 * @param servers
+	 * @param enableSSL
+     * @return <tt>true</tt> if initialize success
+	 */
+	public boolean initialize(String[] servers, boolean enableSSL) {
+		return initialize(servers, null, null, enableSSL);
+	}
+	
+	/**
+	 * Initialize this instance.
+	 * 
+     * <pre>
+     *     String servers = new String[1];
+     *     servers[0] = "localhost:7788";
      *     mgr.initialize(servers);</pre>
      *     
 	 * @param servers
      * @return <tt>true</tt> if initialize success
 	 */
 	public boolean initialize(String[] servers) {
-		return initialize(servers, null, null);
+		return initialize(servers, null, null, false);
 	}
 	
+	/**
+	 * Initialize this instance.
+	 * 
+     * <pre>
+     *     String[] servers = new String[2];
+     *     Integer[] weights = new Integer[2];
+     *     servers[0] = "localhost:7788";
+     *     servers[1] = "localhost:8877";
+     *     weights[0] = new Integer(70);
+     *     weights[1] = new Integer(50);
+     *     mgr.initialize(servers, weights, false);</pre>
+     *     
+	 * @param servers server list
+	 * @param weights server weight list
+	 * @param enableSSL
+     * @return <tt>true</tt> if initialize success
+	 */
+	public boolean initialize(String[] servers, Integer[] weights, boolean enableSSL) {
+		return initialize(servers, weights, null, enableSSL);
+	}
+
 	/**
 	 * Initialize this instance.
 	 * 
@@ -200,9 +238,9 @@ public class CacheClientManager {
      * @return <tt>true</tt> if initialize success
 	 */
 	public boolean initialize(String[] servers, Integer[] weights) {
-		return initialize(servers, weights, null);
+		return initialize(servers, weights, null, false);
 	}
-
+	
 	/**
 	 * Initialize this instance.
 	 * 
@@ -213,16 +251,18 @@ public class CacheClientManager {
      *     servers[1] = "localhost:8877";
      *     weights[0] = new Integer(70);
      *     weights[1] = new Integer(50);
+     *     boolean enableSSL = false
      *     WeightMap<Integer> weightMap = XixiWeightMap<Integer>();
-     *     mgr.initialize(servers, weights, weightMap);</pre>
+     *     mgr.initialize(servers, weights, weightMap, enableSSL);</pre>
      *     
 	 * @param servers server list
 	 * @param weights server weight list
 	 * @param weightMap customizable weightMap
+	 * @param enableSSL
      * @return <tt>true</tt> if initialize success
 	 */
 	public synchronized boolean initialize(String[] servers, Integer[] weights,
-			WeightMap<Integer> weightMap) {
+			WeightMap<Integer> weightMap, boolean enableSSL) {
 		if (servers == null) {
 			log.error("initialize, servers == null");
 			return false;
@@ -235,6 +275,7 @@ public class CacheClientManager {
 			return false;
 		}
 
+		this.enableSSL = enableSSL;
 		this.servers = new String[servers.length];
 		System.arraycopy(servers, 0, this.servers, 0, servers.length);
 		
@@ -523,11 +564,17 @@ public class CacheClientManager {
 	protected final XixiSocket createSocket(String host) {
 		if (initialized) {
 			try {
-				return new TCPSocket(this, host, socketWriteBufferSize,
+				if (enableSSL) {
+					return new SSLSocket(this, host, socketWriteBufferSize,
 						socketTimeout, socketConnectTimeout, noDelay);
+				} else {
+					return new TCPSocket(this, host, socketWriteBufferSize,
+							socketTimeout, socketConnectTimeout, noDelay);
+				}
 			} catch (Exception e) {
 				log.error("manager.createSocket, failed to create Socket for host: " + host
-						+ " e=" + e.toString());
+						+ " e=" + e);
+				e.printStackTrace();
 			}
 		}
 		return null;
@@ -693,16 +740,18 @@ public class CacheClientManager {
      * @throws IOException if Selector.open failed
 	 */
 	public void selectorClose(Selector selector) throws IOException {
-		int size = selector.keys().size();
-		if (size > 0) {
-			selector.selectNow();
-			size = selector.keys().size();
-			if (size == 0 && selectorPool.size() < 16) {
-				selectorPool.add(selector);
-				return;
+		if (selector != null) {
+			int size = selector.keys().size();
+			if (size > 0) {
+				selector.selectNow();
+				size = selector.keys().size();
+				if (size == 0 && selectorPool.size() < 16) {
+					selectorPool.add(selector);
+					return;
+				}
 			}
+			selector.close();
 		}
-		selector.close();
 	}
 
 	/**

@@ -27,8 +27,10 @@ public class CacheClientTest extends TestCase {
 	
 	static String servers;
 	static String[] serverlist;
+	static boolean enableSSL = false;
 	static {
 		servers = System.getProperty("hosts");
+		enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
 		if (servers == null) {
 			try {
 				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
@@ -36,6 +38,7 @@ public class CacheClientTest extends TestCase {
 				p.load(in);
 				in.close();
 				servers = p.getProperty("hosts");
+				enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 			} catch (IOException e) {
 				e.printStackTrace();
 			} 
@@ -44,7 +47,7 @@ public class CacheClientTest extends TestCase {
 
 		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
-		mgr1.initialize(serverlist);
+		mgr1.initialize(serverlist, enableSSL);
 		mgr1.enableLocalCache();
 	}
 
@@ -116,7 +119,7 @@ public class CacheClientTest extends TestCase {
 		
 		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
-		mgr1.initialize(serverlist);
+		mgr1.initialize(serverlist, enableSSL);
 		mgr1.enableLocalCache();
 	}
 	
@@ -139,7 +142,7 @@ public class CacheClientTest extends TestCase {
 		
 		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
-		mgr1.initialize(serverlist);
+		mgr1.initialize(serverlist, enableSSL);
 		mgr1.enableLocalCache();
 	}
 	
@@ -259,7 +262,8 @@ public class CacheClientTest extends TestCase {
 		CacheClientManager mgr = CacheClientManager.getInstance("test1");
 		mgr.setNoDelay(false);
 		mgr.initialize(serverlist, null,
-				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
+				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH),
+				enableSSL);
 		CacheClient cc = mgr.createClient();
 		cc.set("xixi", value);
 		String s = (String) cc.get("xixi");
@@ -271,7 +275,8 @@ public class CacheClientTest extends TestCase {
 		mgr = CacheClientManager.getInstance("test2");
 		mgr.setNoDelay(true);
 		mgr.initialize(serverlist, null,
-				new XixiWeightMap<Integer>(false, XixiWeightMap.MD5_HASH));
+				new XixiWeightMap<Integer>(false, XixiWeightMap.MD5_HASH),
+				enableSSL);
 		cc = mgr.createClient();
 		cc.set("xixi", value);
 		s = (String) cc.get("xixi");
@@ -331,7 +336,7 @@ public class CacheClientTest extends TestCase {
 		
 		mgr1 = CacheClientManager.getInstance(managerName1);
 		mgr1.setSocketWriteBufferSize(64 * 1024);
-		mgr1.initialize(serverlist);
+		mgr1.initialize(serverlist, enableSSL);
 		mgr1.enableLocalCache();
 	}
 	
@@ -348,7 +353,8 @@ public class CacheClientTest extends TestCase {
 		CacheClientManager mgr = CacheClientManager.getInstance("testWeightMap");
 		mgr.setNoDelay(false);
 		mgr.initialize(serverlist, null,
-				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH));
+				new XixiWeightMap<Integer>(false, XixiWeightMap.CRC32_HASH),
+				enableSSL);
 		CacheClient cc = mgr.createClient();
 		assertFalse(mgr.getWeightMapper().isConsistent());
 		assertEquals(XixiWeightMap.CRC32_HASH, mgr.getWeightMapper().getHashingAlg());
@@ -371,7 +377,8 @@ public class CacheClientTest extends TestCase {
 		weights[0] = Integer.valueOf(0);
 		weights[1] = Integer.valueOf(118);
 		mgr.initialize(serverlist, weights,
-				new XixiWeightMap<Integer>(true, XixiWeightMap.NATIVE_HASH));
+				new XixiWeightMap<Integer>(true, XixiWeightMap.NATIVE_HASH),
+				enableSSL);
 		CacheClient cc = mgr.createClient();
 		cc.set("xixi", input);
 		String s = (String) cc.get("xixi");
@@ -387,7 +394,8 @@ public class CacheClientTest extends TestCase {
 		weights[0] = Integer.valueOf(1);
 		weights[1] = Integer.valueOf(8);
 		mgr.initialize(serverlist, weights,
-				new XixiWeightMap<Integer>(true, XixiWeightMap.MD5_HASH));
+				new XixiWeightMap<Integer>(true, XixiWeightMap.MD5_HASH),
+				enableSSL);
 		cc = mgr.createClient();
 		cc.set("xixi", input);
 		s = (String) cc.get("xixi");
@@ -882,7 +890,7 @@ public class CacheClientTest extends TestCase {
 	
 	public void testStatsGet2() {
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				false, XixiWeightMap.CRC32_HASH, null);
+				false, XixiWeightMap.CRC32_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		Map<String, Map<String, String>> stats = cc1.statsGetStats(null, (byte)0);
@@ -892,7 +900,7 @@ public class CacheClientTest extends TestCase {
 	
 	public void testStatsGet3() {
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				true, XixiWeightMap.MD5_HASH, null);
+				true, XixiWeightMap.MD5_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		Map<String, Map<String, String>> stats = cc1.statsGetStats(null, (byte)11);
@@ -902,7 +910,7 @@ public class CacheClientTest extends TestCase {
 	
 	public void testStatsGetError() {
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				true, XixiWeightMap.NATIVE_HASH, null);
+				true, XixiWeightMap.NATIVE_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		String[] serverlist = new String[1];
@@ -916,7 +924,7 @@ public class CacheClientTest extends TestCase {
 	
 	public void testStatsGroupGet() {
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				true, XixiWeightMap.CRC32_HASH, null);
+				true, XixiWeightMap.CRC32_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(null, 315, (byte)0);
@@ -929,7 +937,7 @@ public class CacheClientTest extends TestCase {
 		assertTrue(ret);
 		
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				false, XixiWeightMap.MD5_HASH, null);
+				false, XixiWeightMap.MD5_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(null, 315, (byte)1);
@@ -942,7 +950,7 @@ public class CacheClientTest extends TestCase {
 		assertTrue(ret);
 		
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				false, 5, null);
+				false, 5, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		Map<String, Map<String, String>> stats = cc1.statsGetGroupStats(null, 315, (byte)0);
@@ -952,7 +960,7 @@ public class CacheClientTest extends TestCase {
 		assertTrue(ret);
 		
 		ccb = new CacheClientBench(servers, 1, 100, 315,
-				false, XixiWeightMap.CRC32_HASH, null);
+				false, XixiWeightMap.CRC32_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		stats = cc1.statsGetGroupStats(null, 315, (byte)0);
@@ -965,7 +973,7 @@ public class CacheClientTest extends TestCase {
 		assertTrue(ret);
 		
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				true, XixiWeightMap.CRC32_HASH, null);
+				true, XixiWeightMap.CRC32_HASH, null, enableSSL);
 		assertTrue(ccb.runIt());
 		
 		String[] serverlist = new String[1];
@@ -975,7 +983,7 @@ public class CacheClientTest extends TestCase {
 	}
 	
 	public void testBench() {
-		CacheClientBench ccb = new CacheClientBench(servers, 1, 100);
+		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, enableSSL);
 		assertTrue(ccb.runIt());
 	}
 	
@@ -987,7 +995,7 @@ public class CacheClientTest extends TestCase {
 		weights[3] = Integer.valueOf(0);
 		weights[4] = Integer.valueOf(90);
 		CacheClientBench ccb = new CacheClientBench(servers, 1, 100, 315,
-				true, XixiWeightMap.CRC32_HASH, weights);
+				true, XixiWeightMap.CRC32_HASH, weights, enableSSL);
 		assertTrue(ccb.runIt());
 	}
 	
@@ -998,13 +1006,13 @@ public class CacheClientTest extends TestCase {
 		int setCount = 1000 * 3;
 		int getCount = 1000 * 10;
 
-		st.runIt(servers, threadCount, keyCount, setCount, getCount);
+		st.runIt(servers, enableSSL, threadCount, keyCount, setCount, getCount);
 	}
 	
 	public void testUpdateFlags() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testUpdateFlags");
 		mgr.setSocketWriteBufferSize(64 * 1024);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		CacheClient cc = mgr.createClient(315);
 		cc.flush();
 		cc.set("xixi", "0315", 0, 0);
@@ -1071,7 +1079,7 @@ public class CacheClientTest extends TestCase {
 	public void testUpdateFlagsError() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testUpdateFlagsError");
 		mgr.setSocketWriteBufferSize(64 * 1024);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		CacheClient cc = mgr.createClient(315);
 		cc.flush();
 		cc.set("xixi", "0315", 0, 0);
@@ -1123,7 +1131,7 @@ public class CacheClientTest extends TestCase {
 	public void testUpdateExpiration() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testUpdateExpiration");
 		mgr.setSocketWriteBufferSize(64 * 1024);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		CacheClient cc = mgr.createClient(315);
 		cc.flush();
 		cc.set("xixi", "0315", 20, 0);
@@ -1168,7 +1176,7 @@ public class CacheClientTest extends TestCase {
 	public void testUpdateExpirationError() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testUpdateExpirationError");
 		mgr.setSocketWriteBufferSize(64 * 1024);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		CacheClient cc = mgr.createClient(315);
 		cc.flush();
 		cc.set("xixi", "0315", 20, 0);
@@ -1223,7 +1231,7 @@ public class CacheClientTest extends TestCase {
 	public void testOtherError() {
 		CacheClientManager mgr = CacheClientManager.getInstance("testOtherError");
 		mgr.setSocketWriteBufferSize(64 * 1024);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		CacheClient cc = mgr.createClient(315);
 		cc.flush();
 		cc.set("xixi", "0315", 20, 0);

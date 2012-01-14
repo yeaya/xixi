@@ -177,7 +177,7 @@ public class StressTest {
 	public StressTest() {
 	}
 
-	public boolean runIt(String servers, int threadCount, int keyCount,
+	public boolean runIt(String servers, boolean enableSSL, int threadCount, int keyCount,
 			int maxSetCount, int maxGetCount) {
 		System.out.println("StressTest.runIt thread=" + threadCount + " keyCount=" + keyCount
 				+ " maxSetCount=" + maxSetCount + " maxGetCount=" + maxGetCount);
@@ -188,7 +188,7 @@ public class StressTest {
 		mgr.setInitConn(10);
 
 		mgr.setNoDelay(true);
-		mgr.initialize(serverlist);
+		mgr.initialize(serverlist, enableSSL);
 		
 		CacheClient cc = mgr.createClient();
 		cc.flush();
@@ -219,18 +219,17 @@ public class StressTest {
 	}
 	
 	public static void main(String[] args) {
-		
 		BasicConfigurator.configure();
-		String myservers = null;
-		if (args.length >= 1) {
-			myservers = args[0];
-		} else {
+		String servers = System.getProperty("hosts");
+		boolean enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
+		if (servers == null) {
 			try {
 				InputStream in = new BufferedInputStream(new FileInputStream("test.properties"));
 				Properties p = new Properties(); 
 				p.load(in);
 				in.close();
-				myservers = p.getProperty("hosts");
+				servers = p.getProperty("hosts");
+				enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 			} catch (IOException e) {
 				e.printStackTrace();
 				return;
@@ -248,6 +247,6 @@ public class StressTest {
 		keyCount = 100000;
 		setCount = 100000 * 1;
 		getCount = 100000 * 3;
-		st.runIt(myservers, threadCount, keyCount, setCount, getCount);
+		st.runIt(servers, enableSSL, threadCount, keyCount, setCount, getCount);
 	}
 }

@@ -22,7 +22,7 @@ import com.xixibase.cache.CacheClientManager;
 public class Add  {
 
 	public static void main(String[] args) {
-		String servers = "localhost:7788";
+		String servers = "localhost:8443";
 		if (args.length >= 1) {
 			servers = args[0];
 		}
@@ -30,7 +30,7 @@ public class Add  {
 		String[] serverlist = servers.split(",");
 
 		CacheClientManager manager = CacheClientManager.getInstance("example");
-		manager.initialize(serverlist);
+		manager.initialize(serverlist, true);
 		
 		CacheClient cc = manager.createClient();
 		

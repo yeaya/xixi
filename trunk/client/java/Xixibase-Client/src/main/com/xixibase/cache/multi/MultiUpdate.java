@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.xixibase.cache.AsyncHandle;
 import com.xixibase.cache.CacheClientManager;
 import com.xixibase.cache.Defines;
 import com.xixibase.cache.LocalCache;
@@ -192,27 +192,24 @@ public final class MultiUpdate extends Defines {
 	}
 
 	private void writeRequest(SelectionKey key) throws IOException {
-		ByteBuffer buf = ((Connection) key.attachment()).getOutBuffer();
-		if (buf.hasRemaining()) {
-			SocketChannel sc = (SocketChannel) key.channel();
-			sc.write(buf);
-		} else {
-			key.interestOps(SelectionKey.OP_READ);
+		XixiSocket socket = (XixiSocket) key.attachment();
+		if (socket.handleWrite()) {
+			key.cancel();
+			numConns--;
 		}
 	}
 
 	private void readResponse(SelectionKey key) throws IOException {
-		Connection conn = (Connection) key.attachment();
-		if (conn.processResponse()) {
+		XixiSocket socket = (XixiSocket) key.attachment();
+		if (socket.handleRead()) {
 			key.cancel();
 			numConns--;
 		}
 	}
 	
-	private final class Connection {
+	private final class Connection implements AsyncHandle {
 		private ByteBuffer outBuffer;
 		private XixiSocket socket;
-		private SocketChannel channel;
 		private boolean isDone = false;
 		private ArrayList<MultiUpdateItem> items = new ArrayList<MultiUpdateItem>();
 		private ArrayList<byte[]> keyBuffers = new ArrayList<byte[]>();
@@ -298,40 +295,44 @@ public final class MultiUpdate extends Defines {
 			encode();
 			
 			outBuffer.flip();
-			channel = socket.getChannel();
-			channel.configureBlocking(false);
-			channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
+		//	byteChannel = socket.getByteChannel();
+		//	selectableChannel = socket.getSelectableChannel();
+	//		channel = socket.getChannel();
+			socket.configureBlocking(false);
+			socket.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
 		}
-		
-		public ByteBuffer getOutBuffer() throws IOException {
-			int limit = outBuffer.limit();
-			int pos = outBuffer.position();
-			if (limit > pos) {
-				return outBuffer;
+
+		public int processRequest() throws IOException {
+			int count = socket.write(outBuffer);
+			if (count > 0) {
+				return count;
 			}
 			if (currKeyIndex >= items.size()) {
-				channel.register(selector, SelectionKey.OP_READ, this);
-				return outBuffer;
+				socket.register(selector, SelectionKey.OP_READ, this);
+				return 0;
 			}
 			outBuffer.flip();
 			
 			encode();
 
 			outBuffer.flip();
-			return outBuffer;
+			
+			count = socket.write(outBuffer);
+			
+			return count;
 		}
 
 		public void close() {
 			if (socket != null) {
 				try {
 					if (isDone) {
-						channel.configureBlocking(true);
+						socket.configureBlocking(true);
 						socket.close();
 						socket = null;
 						return;
 					}
 				} catch (IOException e) {
-					lastError = "close, failed on close socket, " + e;
+					lastError = "close, " + e;
 					log.warn(lastError);
 				}
 	
@@ -356,8 +357,10 @@ public final class MultiUpdate extends Defines {
 			boolean run = true;
 			while(run) {
 				if (state == STATE_READ_HEAD) {
-					channel.read(header);
-					if (header.position() == HEADER_LENGTH) {
+					int ret = socket.read(header);
+					if (ret <= 0) {
+						run = false;
+					} else if (header.position() == HEADER_LENGTH) {
 						header.flip();
 						byte category = header.get();
 						byte type = header.get();
@@ -368,13 +371,13 @@ public final class MultiUpdate extends Defines {
 							state = STATE_READ_ERROR;
 							error_res = ByteBuffer.allocate(ERROR_RES_LENGTH);
 						}
-					} else {
-						run = false;
 					}
 				}
 				if (state == STATE_READ_FIXED_BODY) {
-					channel.read(fixed);
-					if (fixed.position() == FIXED_LENGTH) {
+					int ret = socket.read(fixed);
+					if (ret <= 0) {
+						run = false;
+					} else if (fixed.position() == FIXED_LENGTH) {
 						fixed.flip();
 						cacheID = fixed.getLong();
 						MultiUpdateItem updateItem = items.get(decode_count);
@@ -390,13 +393,13 @@ public final class MultiUpdate extends Defines {
 							header = ByteBuffer.allocate(HEADER_LENGTH);
 							state = STATE_READ_HEAD;
 						}
-					} else {
-						run = false;
 					}
 				}
 				if (state == STATE_READ_ERROR) {
-					channel.read(error_res);
-					if (error_res.position() == ERROR_RES_LENGTH) {
+					int ret = socket.read(error_res);
+					if (ret <= 0) {
+						run = false;
+					} else if (error_res.position() == ERROR_RES_LENGTH) {
 						error_res.flip();
 						short reason = error_res.getShort();
 
@@ -412,12 +415,23 @@ public final class MultiUpdate extends Defines {
 							header = ByteBuffer.allocate(HEADER_LENGTH);
 							state = STATE_READ_HEAD;
 						}
-					} else {
-						run = false;
 					}
 				}
 			}
 			return isDone;
+		}
+		
+		@Override
+		public boolean onRead() throws IOException  {
+			this.processResponse();
+			return isDone;
+		}
+
+		@Override
+		public boolean onWrite() throws IOException  {
+			this.processRequest();
+			return isDone;
+			
 		}
 	}
 }

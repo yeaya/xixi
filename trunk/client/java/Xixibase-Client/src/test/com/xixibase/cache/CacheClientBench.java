@@ -35,7 +35,7 @@ public class CacheClientBench  {
 	CacheClient cc;
 	
 	public CacheClientBench(String servers, int start, int runs, int groupID,
-			boolean consistentFlag, int hashingAlg, Integer[] weights) {
+			boolean consistentFlag, int hashingAlg, Integer[] weights, boolean enableSSL) {
 		this.start = start;
 		this.runs = runs;
 		String[] serverlist = servers.split(",");
@@ -45,7 +45,7 @@ public class CacheClientBench  {
 		CacheClientManager manager = CacheClientManager.getInstance("CacheClientBench");
 		manager.setInitConn(2);
 		manager.setNoDelay(true);
-		manager.initialize(serverlist, weights, weightMap);
+		manager.initialize(serverlist, weights, weightMap, enableSSL);
 		manager.enableLocalCache();
 		manager.getLocalCache().setMaxCacheSize(128 * 1024 * 1024);
 		
@@ -54,8 +54,8 @@ public class CacheClientBench  {
 		System.out.println("keybaselen=" + keyBase.length() + " objlen=" + object.length());
 	}
 	
-	public CacheClientBench(String servers, int start, int runs) {
-		this(servers, start, runs, 0, false, XixiWeightMap.NATIVE_HASH, null);
+	public CacheClientBench(String servers, int start, int runs, boolean enableSSL) {
+		this(servers, start, runs, 0, false, XixiWeightMap.NATIVE_HASH, null, enableSSL);
 	}
 
 	public boolean runIt() {
@@ -238,19 +238,19 @@ public class CacheClientBench  {
 	
 	public static void main(String[] args) throws IOException {
 		String servers = System.getProperty("hosts");
-		if (args.length >= 1) {
-			servers = args[0];
-		}
+		boolean enableSSL = System.getProperty("enableSSL") != null && System.getProperty("enableSSL").equals("true");
 		if (servers == null) {
 			InputStream in = new BufferedInputStream(new FileInputStream("test.properties")); 
 			Properties p = new Properties(); 
 			p.load(in);
 			in.close();
 			servers = p.getProperty("hosts");
+			enableSSL = p.getProperty("enableSSL").equals("true");
+			enableSSL = p.getProperty("enableSSL") != null && p.getProperty("enableSSL").equals("true");
 		}
 
 	//	XixiWeightMap.MD5_HASH
-		CacheClientBench bench = new CacheClientBench(servers, 1, 30000);
+		CacheClientBench bench = new CacheClientBench(servers, 1, 30000, enableSSL);
 	//	CacheClientBench bench = new CacheClientBench(servers, 1, 50000, 315,
 //				true, XixiWeightMap.NATIVE_HASH, null);
 		bench.runIt();

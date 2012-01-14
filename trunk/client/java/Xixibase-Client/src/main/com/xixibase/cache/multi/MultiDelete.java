@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.xixibase.cache.AsyncHandle;
 import com.xixibase.cache.CacheClientManager;
 import com.xixibase.cache.Defines;
 import com.xixibase.cache.LocalCache;
@@ -153,16 +153,16 @@ public final class MultiDelete extends Defines {
 				timeRemaining = timeout - (System.currentTimeMillis() - startTime);
 			}
 		} catch (IOException e) {
-			lastError = "multiDelete, exception on " + e;
+			lastError = "multiDelete, " + e;
 			log.error(lastError);
 			e.printStackTrace();
-			return 0;
 		} finally {
 			try {
 				manager.selectorClose(selector);
 			} catch (IOException e) {
 				lastError = "multiDelete, close selector exception :" + e;
 				log.error(lastError);
+				e.printStackTrace();
 			}
 			Iterator<Connection> itc = conns.values().iterator();
 			while (itc.hasNext()) {
@@ -185,27 +185,24 @@ public final class MultiDelete extends Defines {
 	}
 
 	private void writeRequest(SelectionKey key) throws IOException {
-		ByteBuffer buf = ((Connection) key.attachment()).getOutBuffer();
-		if (buf.hasRemaining()) {
-			SocketChannel sc = (SocketChannel) key.channel();
-			sc.write(buf);
-		} else {
-			key.interestOps(SelectionKey.OP_READ);
+		XixiSocket socket = (XixiSocket) key.attachment();
+		if (socket.handleWrite()) {
+			key.cancel();
+			numConns--;
 		}
 	}
 
 	private void readResponse(SelectionKey key) throws IOException {
-		Connection conn = (Connection) key.attachment();
-		if (conn.processResponse()) {
+		XixiSocket socket = (XixiSocket) key.attachment();
+		if (socket.handleRead()) {
 			key.cancel();
 			numConns--;
 		}
 	}
 	
-	private final class Connection {
+	private final class Connection implements AsyncHandle {
 		private ByteBuffer outBuffer;
 		private XixiSocket socket;
-		private SocketChannel channel;
 		private boolean isDone = false;
 		private ArrayList<MultiDeleteItem> items = new ArrayList<MultiDeleteItem>();
 		private ArrayList<byte[]> keyBuffers = new ArrayList<byte[]>();
@@ -258,45 +255,48 @@ public final class MultiDelete extends Defines {
 
 		public void init(XixiSocket socket) throws IOException {
 			this.socket = socket;
-			outBuffer = ByteBuffer.allocateDirect(64 * 1024);
+			outBuffer = socket.getWriteBuffer();//ByteBuffer.allocateDirect(64 * 1024);
+			outBuffer.clear();
 			
 			encode();
 			
 			outBuffer.flip();
-			channel = socket.getChannel();
-			channel.configureBlocking(false);
-			channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
+
+			socket.configureBlocking(false);
+			socket.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
 		}
 		
-		public ByteBuffer getOutBuffer() throws IOException {
-			int limit = outBuffer.limit();
-			int pos = outBuffer.position();
-			if (limit > pos) {
-				return outBuffer;
+		public int processRequest() throws IOException {
+			int count = socket.write(outBuffer);
+			if (count > 0) {
+				return count;
 			}
 			if (currKeyIndex >= items.size()) {
-				channel.register(selector, SelectionKey.OP_READ, this);
-				return outBuffer;
+				socket.register(selector, SelectionKey.OP_READ, this);
+				return 0;
 			}
 			outBuffer.flip();
 			
 			encode();
 
 			outBuffer.flip();
-			return outBuffer;
+			
+			count = socket.write(outBuffer);
+			
+			return count;
 		}
-
+			
 		public void close() {
 			if (socket != null) {
 				try {
 					if (isDone) {
-						channel.configureBlocking(true);
+						socket.configureBlocking(true);
 						socket.close();
 						socket = null;
 						return;
 					}
 				} catch (IOException e) {
-					lastError = "close, failed on close socket, " + e;
+					lastError = "close, " + e;
 					log.warn(lastError);
 				}
 	
@@ -317,8 +317,10 @@ public final class MultiDelete extends Defines {
 			boolean run = true;
 			while(run) {
 				if (state == STATE_READ_HEAD) {
-					channel.read(header);
-					if (header.position() == HEADER_LENGTH) {
+					int ret = socket.read(header);
+					if (ret <= 0) {
+						run = false;
+					} else if (header.position() == HEADER_LENGTH) {
 						header.flip();
 						byte category = header.get();
 						byte type = header.get();
@@ -340,13 +342,13 @@ public final class MultiDelete extends Defines {
 							state = STATE_READ_ERROR;
 							error_res = ByteBuffer.allocate(ERROR_RES_LENGTH);
 						}
-					} else {
-						run = false;
 					}
 				}
 				if (state == STATE_READ_ERROR) {
-					channel.read(error_res);
-					if (error_res.position() == ERROR_RES_LENGTH) {
+					int ret = socket.read(error_res);
+					if (ret <= 0) {
+						run = false;
+					} else if (error_res.position() == ERROR_RES_LENGTH) {
 						error_res.flip();
 						short reason = error_res.getShort();
 
@@ -362,12 +364,23 @@ public final class MultiDelete extends Defines {
 							header = ByteBuffer.allocate(HEADER_LENGTH);
 							state = STATE_READ_HEAD;
 						}
-					} else {
-						run = false;
 					}
 				}
 			}
 			return isDone;
+		}
+		
+		@Override
+		public boolean onRead() throws IOException  {
+			this.processResponse();
+			return isDone;
+		}
+
+		@Override
+		public boolean onWrite() throws IOException  {
+			this.processRequest();
+			return isDone;
+			
 		}
 	}
 }
