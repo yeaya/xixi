@@ -60,6 +60,8 @@ void Settings::init() {
 	item_size_min = 48;
 	item_size_max = 5 * 1024 * 1024;
 
+	log_level = log_level_info;
+
 	max_stats_group = 1024;
 
 	default_cache_expiration = 600;
@@ -100,7 +102,7 @@ string Settings::load_conf_server() {
 
 	hRoot = TiXmlHandle(first);
 
-	TiXmlElement* elem = hRoot.FirstChild("Connector").Element();
+	TiXmlElement* elem = hRoot.FirstChild("connector").Element();
 	while (elem != NULL) {
 		const char* address = elem->Attribute("host");
 		if (address == NULL) {
@@ -125,7 +127,7 @@ string Settings::load_conf_server() {
 		uint32_t port;
 		string t = p;
 		if (!safe_toui32(t.c_str(), t.size(), port)) {
-			return "[server.xml] reading Connector.port error";
+			return "[server.xml] reading connector.port error";
 		}
 		const char* reuse_address = elem->Attribute("reuse-address");
 		if (reuse_address == NULL) {
@@ -144,7 +146,70 @@ string Settings::load_conf_server() {
 
 		connectors.push_back(connector);
 
-		elem = elem->NextSiblingElement("Connector");
+		elem = elem->NextSiblingElement("connector");
+	}
+
+	TiXmlElement* kv = hRoot.FirstChild("key-value").Element();
+	if (kv != NULL) {
+		elem = kv->FirstChildElement("max-bytes");
+		if (elem != NULL && elem->GetText() != NULL) {
+			string t = elem->GetText();
+			if (!safe_toui64(t.c_str(), t.size(), max_bytes)) {
+				return "[server.xml] reading key-value.max-bytes error";
+			}
+		}
+		elem = kv->FirstChildElement("max-conns");
+		if (elem != NULL && elem->GetText() != NULL) {
+			string t = elem->GetText();
+			if (!safe_toui32(t.c_str(), t.size(), max_conns)) {
+				return "[server.xml] reading key-value.max-conns error";
+			}
+		}
+		elem = kv->FirstChildElement("factor");
+		if (elem != NULL && elem->GetText() != NULL) {
+			string t = elem->GetText();
+			factor = atof(t.c_str());
+			if (factor <= 1.0) {
+				return "[server.xml] reading key-value.factor error";
+			}
+		}
+		elem = kv->FirstChildElement("min-item-size");
+		if (elem != NULL && elem->GetText() != NULL) {
+			string t = elem->GetText();
+			if (!safe_toui32(t.c_str(), t.size(), item_size_min)) {
+				return "[server.xml] reading key-value.min-item-size error";
+			}
+		}
+		elem = kv->FirstChildElement("max-item-size");
+		if (elem != NULL && elem->GetText() != NULL) {
+			string t = elem->GetText();
+			if (!safe_toui32(t.c_str(), t.size(), item_size_max)) {
+				return "[server.xml] reading key-value.max-item-size error";
+			}
+		}
+	}
+	elem = hRoot.FirstChildElement("log").Element();
+	if (elem != NULL && elem->GetText() != NULL) {
+		string t = elem->GetText();
+		if (!safe_toui32(t.c_str(), t.size(), log_level)) {
+			return "[server.xml] reading log error";
+		}
+	}
+
+	elem = hRoot.FirstChildElement("core-number").Element();
+	if (elem != NULL && elem->GetText() != NULL) {
+		string t = elem->GetText();
+		if (!safe_toui32(t.c_str(), t.size(), pool_size)) {
+			return "[server.xml] reading core-number error";
+		}
+	}
+
+	elem = hRoot.FirstChildElement("thread-number").Element();
+	if (elem != NULL && elem->GetText() != NULL) {
+		string t = elem->GetText();
+		if (!safe_toui32(t.c_str(), t.size(), num_threads)) {
+			return "[server.xml] reading thread-number error";
+		}
 	}
 
 	return "";

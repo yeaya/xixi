@@ -77,6 +77,8 @@ public:
 	uint32_t item_size_min;
 	uint32_t item_size_max;
 
+	uint32_t log_level;
+
 	uint32_t max_stats_group;
 
 	uint32_t default_cache_expiration;
