@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Xixibase</title>
+<meta name='author' content='Yao Yuan' />
+<meta name='copyright' content='2011 - Yao Yuan' />
+
+<link type='text/css' href='css/default.css' rel='stylesheet' media='screen' />
+
+</head>
+<body>
+<div id='container'>
+	<div id='logo'>
+		<h1><span>Xixi</span>base</h1>
+		<span class='title'>Xixibase is a high performance, cross platform, distributed cache system.</span>
+	</div>
+	<div>
+		GroupID: <input type='text' id="groupid" value="" onkeyup="this.value=this.value.replace(/\D/g, '') " size="25" maxlength="12" onafterpaste= "this.value=this.value.replace(/\d/g, '') "></input><br>
+		CacheID: <input type='text' id="cacheid"  onkeyup="this.value=this.value.replace(/\D/g, '') " size="25" maxlength="12" onafterpaste= "this.value=this.value.replace(/\d/g, '') "></input><br>
+		Flags: <input type='text' id="flags" onkeyup="this.value=this.value.replace(/\D/g, '') " size="25" maxlength="12" onafterpaste= "this.value=this.value.replace(/\d/g, '') "></input><br>
+		Expiration: <input type='text' id="expiration" onkeyup="this.value=this.value.replace(/\D/g, '') " size="25" maxlength="12" onafterpaste= "this.value=this.value.replace(/\d/g, '') "></input><br>
+		Key: <input type='text' id="key"></input><br>
+		Value: <textarea id="value" cols="100" rows="15" style="background-color:#C7C7C7;" ></textarea><br>
+		Upload: <input id="file" type="file" size="45" name="v"><button name="button" id='upload'>upload</button> <br>
+		<button name="button" id='get'>get</button> 
+		<button name="button" id='glance'>glance</button> 
+		<button name="button" id='getbase'>getbase</button> 
+		<button name="button" id='set'>set</button>
+		<button name="button" id='incr'>incr</button>
+		<button name="button" id='decr'>decr</button>
+		<button name="button" id='touch'>touch</button><br>
+		<button name="button" id='delete'>delete</button>
+		<button name="button" id='flush'>flush</button><br>
+		<button name="button" id='clear'>clear</button><br>
+	</div>
+	<div id='footer'>
+		<a href='http://code.google.com/p/xixibase/' class='basic'>http://code.google.com/p/xixibase/</a>
+	</div>
+</div>
+<script type='text/javascript' src='js/jquery.js'></script>
+<script type="text/javascript" src="js/ajaxfileupload.js"></script>
+<script type='text/javascript'>
+var storageBaseURL = "/manager/";
+jQuery(function ($) {
+	function prepare() {
+		if ($('#groupid').val() == "") {
+			$('#groupid').val("0");
+		}
+		if ($('#key').val() == "") {
+			$('#key').val("/");
+		}
+		if ($('#cacheid').val() == "") {
+			$('#cacheid').val("0");
+		}
+		if ($('#flags').val() == "") {
+			$('#flags').val("0");
+		}
+		if ($('#expiration').val() == "") {
+			$('#expiration').val("0");
+		}
+	}
+
+	function clear() {
+		$('#groupid').val("");
+		$('#key').val("");
+		$('#cacheid').val("");
+		$('#flags').val("");
+		$('#expiration').val("");
+		$('#value').val("");
+	}
+
+	$('#clear').click(function (e) {
+		clear();
+	});
+
+	$('#getbase').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val())
+			+ "&g=" + $('#groupid').val();
+
+		$.ajax({
+			type: "POST",
+			url: storageBaseURL + "getbase",
+			data: postdata,
+			success: function(data, textStatus){
+				var res = eval('(' + data + ')');
+				$('#cacheid').val(res.cacheid);
+				$('#flags').val(res.flags);
+				$('#expiration').val(res.expiration);
+				alert(data);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#get').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val())
+			+ "&g=" + $('#groupid').val();
+
+		$.ajax({
+			type: "POST",
+			url: storageBaseURL + "get",
+			data: postdata,
+			dataType: 'text',
+			success: function(data){
+			//	alert("get:" + data + " status=" + textStatus);
+				$('#value').val(data);
+			},
+			complete: function(XMLHttpRequest, textStatus){
+				if (textStatus == 'success') {
+					$('#cacheid').val(XMLHttpRequest.getResponseHeader("CacheID"));
+					$('#flags').val(XMLHttpRequest.getResponseHeader("Flags"));
+					$('#expiration').val(XMLHttpRequest.getResponseHeader("Expiration"));
+				}
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#glance').click(function (e) {
+		prepare();
+
+		var url = storageBaseURL + "get?k=" + encodeURIComponent($('#key').val())
+			+ "&g=" + $('#groupid').val() + "&random=" + (new Date()).valueOf();
+		window.open (url, "xixiimgwindow", "height=385, width=512, toolbar=no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+	});
+
+	$('#set').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val()) + "&v=" + encodeURIComponent($('#value').val())
+			+ "&c=" + $('#cacheid').val()
+			+ "&g=" + $('#groupid').val()
+			+ "&f=" + $('#flags').val()
+			+ "&e=" + $('#expiration').val();
+		$.ajax({
+			type: "POST",
+			url: storageBaseURL + "set",
+			data: postdata,
+			dataType: 'html',
+			success: function(data, textStatus){
+		//		alert("success " + textStatus);
+				var res = eval('(' + data + ')');
+				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#delete').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val())
+			+ "&c=" + $('#cacheid').val()
+			+ "&g=" + $('#groupid').val();
+		$.ajax({
+			type: "POST",
+			url: storageBaseURL + "del",
+			data: postdata,
+			success: function(data, textStatus){
+			//	$('#value').val("deleted");
+				alert("deleted");
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#flush').click(function (e) {
+		prepare();
+
+		var postdata = "g=" + $('#groupid').val();
+		$.ajax({
+			type: "POST",
+			url: storageBaseURL + "flush",
+			data: postdata,
+			success: function(data, textStatus){
+//				var res = eval('(' + data + ')');
+				alert(data);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#incr').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val()) + "&d=1"
+			+ "&c=" + $('#cacheid').val()
+			+ "&g=" + $('#groupid').val();
+		$.ajax({
+			type: "POST",
+			dataType: 'text',
+			url: storageBaseURL + "incr",
+			data: postdata,
+			success: function(data, textStatus){
+				var res = eval('(' + data + ')');
+				$('#value').val(res.value);
+				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#decr').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val()) + "&d=1"
+			+ "&c=" + $('#cacheid').val()
+			+ "&g=" + $('#groupid').val();
+		$.ajax({
+			type: "POST",
+			dataType: 'text',
+			url: storageBaseURL + "decr",
+			data: postdata,
+			success: function(data, textStatus){
+				var res = eval('(' + data + ')');
+				$('#value').val(res.value);
+				$('#cacheid').val(res.cacheid);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#touch').click(function (e) {
+		prepare();
+
+		var postdata = "k=" + encodeURIComponent($('#key').val())
+			+ "&c=" + $('#cacheid').val()
+			+ "&g=" + $('#groupid').val()
+			+ "&e=" + $('#expiration').val();
+		$.ajax({
+			type: "POST",
+			dataType: 'text',
+			url: storageBaseURL + "touch",
+			data: postdata,
+			success: function(data, textStatus){
+				var res = eval('(' + data + ')');
+				$('#cacheid').val(res.cacheid);
+				alert("touched");
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+			}
+		});
+		return false;
+	});
+
+	$('#upload').click(function (e) {
+		prepare();
+		ajaxFileUpload();
+
+		return false;
+	});
+
+	function ajaxFileUpload()
+	{
+		var postdata = "k=" + encodeURIComponent($('#key').val())
+			+ "&c=" + $('#cacheid').val()
+			+ "&g=" + $('#groupid').val()
+			+ "&f=" + $('#flags').val()
+			+ "&e=" + $('#expiration').val();
+
+		$("#loading")
+		.ajaxStart(function(){
+			$(this).show();
+		})
+		.ajaxComplete(function(){
+			$(this).hide();
+		});
+
+		$.ajaxFileUpload
+		(
+			{
+				url: storageBaseURL + "set?" + postdata,
+				secureuri:false,
+				fileElementId:'file',
+				dataType: 'json',
+				data: "",
+				success: function (data, status)
+				{
+					var res = data;
+					$('#cacheid').val(res.cacheid);
+				},
+				error: function (XMLHttpRequest, textStatus, errorThrown) {
+					alert("returnCode=" + XMLHttpRequest.status + " status=" + textStatus + " errorThrown=" + errorThrown);
+				}
+			}
+		)
+		
+		return false;
+	}
+});
+</script>
+</body>
+</html>
