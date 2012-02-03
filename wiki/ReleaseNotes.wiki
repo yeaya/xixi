@@ -1,7 +1,17 @@
 #summary Release Notes
+#labels Featured,Phase-Implementation
 = Introduction =
 ==Xixibase is a high performance, cross platform, distributed cache system.==
 Xixibase server write in C++, based on Boost Asio.
+
+===Xixibase 0.6===
+Jan-31-2012<br>
+*Xixibase Server*
+ # Add protection on file load
+ # Configuration enhancement
+ # Support SSL(openSSL)
+*Xixibase Java Client*
+ # Support SSL
 
 ===Xixibase 0.5===
 Dec-7-2011<br>
