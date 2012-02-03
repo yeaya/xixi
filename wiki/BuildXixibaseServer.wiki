@@ -1,9 +1,16 @@
 #summary How to build Xixibase server?
 #labels Phase-Implementation
-==Building Xixibase server==
-===Windows:===
- # run build.bat
+==Building Xixibase server(after 0.6 version)==
+===Windows 32bit:===
+ # run build_win32.bat
 
-===Linux/Mac:===
- # chmod +x build.sh
- # run ./build.sh
+===Windows 64bit:===
+ # run build_win64.bat
+
+===Linux/Mac/Freebsd 32bit:===
+ # chmod +x build_32.sh
+ # run ./build_32.sh
+
+===Linux/Mac/Freebsd 64bit:===
+ # chmod +x build_64.sh
+ # run ./build_64.sh
