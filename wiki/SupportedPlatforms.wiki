@@ -1,6 +1,6 @@
 #summary Supported Platforms
 #labels Phase-Deploy
-Xixibase is based on the Boost Asio, in principle, as long as Boost Asio supported platforms, Xixibase can be supported. Like Windows, Linux, Mac.
+Xixibase is based on the Boost Asio, in principle, as long as Boost Asio supported platforms, Xixibase can be supported. Like Windows, Linux, Mac, Freebsd.
 
 ===Here is Asio supported platforms:===
 {{{
