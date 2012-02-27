@@ -44,9 +44,11 @@ public:
 	void check_and_set_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count, uint64_t ack_cache_id, boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t expire_time);
 	void check_and_clear_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count);
 	void notify_watch(uint64_t cache_id);
-	void notify_updated(uint64_t cache_id);
+	void notify_base_info_updated(uint64_t cache_id);
+	void notify_data_updated(uint64_t cache_id);
 	void notify_deleted(uint64_t cache_id);
 	void notify_expired(uint64_t cache_id);
+//	void notify_flushed(uint64_t cache_id);
 	bool is_expired(uint32_t current_time) {
 		return current_time >= expire_time_;
 	}
