@@ -32,6 +32,7 @@ Cache_Mgr cache_mgr_;
 Cache_Watch::Cache_Watch(uint32_t watch_id, uint32_t expire_time) {
 	watch_id_ = watch_id;
 	expire_time_ = expire_time;
+	sequence_ = 0;
 	updated_count_ = 0;
 	wait_updated_count_ = 0;
 }
