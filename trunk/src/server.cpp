@@ -413,11 +413,15 @@ bool Server::listen(const string& address_s, uint32_t port, bool reuse_address, 
 		if (ssl) {
 			LOG_INFO("Listen on " << address << ":" << port << "(SSL)");
 			acceptors_ssl_.push_back(acceptor);
-			start_accept_ssl(acceptor);
+			for (size_t i = 0; i < io_service_pool_.get_thread_size(); i++) {
+				start_accept_ssl(acceptor);
+			}
 		} else {
 			LOG_INFO("Listen on " << address << ":" << port);
 			acceptors_.push_back(acceptor);
-			start_accept(acceptor);
+			for (size_t i = 0; i < io_service_pool_.get_thread_size(); i++) {
+				start_accept(acceptor);
+			}
 		}
 	}
 

@@ -32,6 +32,8 @@ public:
 
 	boost::asio::io_service& get_io_service();
 
+	size_t get_thread_size() { return thread_size_; }
+
 private:
 	vector<boost::asio::io_service*> io_services_;
 
