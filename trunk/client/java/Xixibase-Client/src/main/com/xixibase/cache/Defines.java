@@ -90,4 +90,10 @@ public class Defines {
 	public static final short XIXI_REASON_UNKNOWN_COMMAND = 10;
 
 	public static final short XIXI_REASON_SUCCESS = 0;
+	
+	public static final byte WATCH_NOTIFY_TYPE_BASE_INFO_UPDATED = 1;
+	public static final byte WATCH_NOTIFY_TYPE_DATA_UPDATED = 2;
+	public static final byte WATCH_NOTIFY_TYPE_DELETED = 3;
+	public static final byte WATCH_NOTIFY_TYPE_EXPIRED = 4;
+	public static final byte WATCH_NOTIFY_TYPE_FLUSHED = 5;
 }

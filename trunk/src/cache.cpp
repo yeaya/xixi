@@ -33,62 +33,79 @@ Cache_Watch::Cache_Watch(uint32_t watch_id, uint32_t expire_time) {
 	watch_id_ = watch_id;
 	expire_time_ = expire_time;
 	sequence_ = 0;
-	updated_count_ = 0;
-	wait_updated_count_ = 0;
 }
 
-void Cache_Watch::check_and_set_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count, uint64_t ack_cache_id,
-										 boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t expire_time) {
+void Cache_Watch::check_and_set_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t ack_sequence, uint32_t expire_time,
+										 uint32_t& sequence, std::vector<uint64_t>& updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list) {
 	expire_time_ = expire_time;
 	if (!wait_updated_list_.empty()) {
-		if (wait_updated_list_.front() == ack_cache_id) {
+		if (ack_sequence == sequence_) {
 			wait_updated_list_.clear();
-			wait_updated_count_ = 0;
+			wait_updated_type_list_.clear();
 		} else {
-			std::list<uint64_t>::iterator it = wait_updated_list_.begin();
-			while (it != wait_updated_list_.end()) {
-				updated_list.push_back(*it);
-				++it;
+			for (size_t i = 0; i < wait_updated_list_.size(); i++) {
+				updated_list.push_back(wait_updated_list_[i]);
+				updated_type_list.push_back(wait_updated_type_list_[i]);
 			}
-			updated_count = wait_updated_count_;
+//			std::vector<uint64_t>::iterator it = wait_updated_list_.begin();
+//			while (it != wait_updated_list_.end()) {
+//				updated_list.push_back(*it);
+//				++it;
+//			}
+			sequence = sequence_;
 			return;
 		}
 	}
-	if (updated_count_ > 0) {
-		std::list<uint64_t>::iterator it = updated_list_.begin();
-		while (it != updated_list_.end()) {
-			updated_list.push_back(*it);
-			++it;
+	if (updated_list_.size() > 0) {
+		for (size_t i = 0; i < updated_list_.size(); i++) {
+			updated_list.push_back(updated_list_[i]);
+				updated_type_list.push_back(updated_type_list_[i]);
 		}
-		wait_updated_count_ = updated_count = updated_count_;
+//		std::vector<uint64_t>::iterator it = updated_list_.begin();
+//		while (it != updated_list_.end()) {
+//			updated_list.push_back(*it);
+//			++it;
+//		}
 		updated_list_.swap(wait_updated_list_);
-		updated_count_ = 0;
+		updated_type_list_.swap(wait_updated_type_list_);
+		sequence = next_sequence();
+		return;
 	} else {
 		boost::shared_ptr<Cache_Watch_Sink> p = wp_.lock();
 		if (p != NULL) {
 			p->on_cache_watch_notify(watch_id_);
 		}
 		wp_ = sp;
+		sequence = 0;
+		return;
 	}
 }
 
-void Cache_Watch::check_and_clear_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count) {
-	if (updated_count_ > 0) {
-		std::list<uint64_t>::iterator it = updated_list_.begin();
-		while (it != updated_list_.end()) {
-			updated_list.push_back(*it);
-			++it;
+void Cache_Watch::check_and_clear_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t& sequence,
+										   std::vector<uint64_t>& updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list) {
+	boost::shared_ptr<Cache_Watch_Sink> p = wp_.lock();
+	if (sp == p) {
+		if (updated_list_.size() > 0 && wait_updated_list_.empty()) {
+			for (size_t i = 0; i < updated_list_.size(); i++) {
+				updated_list.push_back(updated_list_[i]);
+				updated_type_list.push_back(updated_type_list_[i]);
+			}
+//			std::vector<uint64_t>::iterator it = updated_list_.begin();
+//			while (it != updated_list_.end()) {
+//				updated_list.push_back(*it);
+//				++it;
+//			}
+			updated_list_.swap(wait_updated_list_);
+			updated_type_list_.swap(wait_updated_type_list_);
+			sequence = next_sequence();
 		}
-		wait_updated_count_ = updated_count = updated_count_;
-		updated_list_.swap(wait_updated_list_);
-		updated_count_ = 0;
+		wp_.reset();
 	}
-	wp_.reset();
 }
 
-void Cache_Watch::notify_watch(uint64_t cache_id) {
+void Cache_Watch::notify_watch(uint64_t cache_id, watch_notify_type type) {
 	updated_list_.push_back(cache_id);
-	updated_count_++;
+	updated_type_list_.push_back(type);
 	boost::shared_ptr<Cache_Watch_Sink> p = wp_.lock();
 	if (p != NULL) {
 		p->on_cache_watch_notify(watch_id_);
@@ -259,7 +276,7 @@ void Cache_Mgr::expire_items(uint32_t curr_time) {
 			while (it != NULL) {
 				if (it->expire_time <= curr_time) {
 					Cache_Item* next = it->next();
-					do_unlink(it);
+					do_unlink(it, WATCH_NOTIFY_TYPE_EXPIRED);
 					it = next;
 				} else {
 					Cache_Item* next = it->next();
@@ -373,7 +390,7 @@ void Cache_Mgr::do_link(Cache_Item* it) {
 	expire_list_[it->expiration_id].push_back(it);
 }
 
-void Cache_Mgr::do_unlink(Cache_Item* it) {
+void Cache_Mgr::do_unlink(Cache_Item* it, watch_notify_type type) {
 	assert(expire_list_[it->expiration_id].is_linked(it));
 
 	stats_.item_unlink(it->group_id, it->class_id, it->total_size());
@@ -384,7 +401,7 @@ void Cache_Mgr::do_unlink(Cache_Item* it) {
 	expire_list_[it->expiration_id].remove(it);
 
 	if (it->watch_item != NULL) {
-		notify_watch(it);
+		notify_watch(it, type);
 		delete it->watch_item;
 		it->watch_item = NULL;
 	}
@@ -400,7 +417,7 @@ void Cache_Mgr::do_unlink_flush(Cache_Item* it) {
 
 	expire_list_[it->expiration_id].remove(it);
 	if (it->watch_item != NULL) {
-		notify_watch(it);
+		notify_watch(it, WATCH_NOTIFY_TYPE_FLUSHED);
 		delete it->watch_item;
 		it->watch_item = NULL;
 	}
@@ -416,7 +433,7 @@ void Cache_Mgr::do_release_reference(Cache_Item* it) {
 }
 
 void Cache_Mgr::do_replace(Cache_Item* it, Cache_Item* new_it) {
-	do_unlink(it);
+	do_unlink(it, WATCH_NOTIFY_TYPE_DATA_UPDATED);
 	do_link(new_it);
 }
 
@@ -451,7 +468,7 @@ Cache_Item* Cache_Mgr::do_get(uint32_t group_id, const uint8_t* key, uint32_t ke
 				it->ref_count++;
 				expiration = it->expire_time - currtime;
 			} else {
-				do_unlink(it);
+				do_unlink(it, WATCH_NOTIFY_TYPE_EXPIRED);
 				it = NULL;
 			}
 		}
@@ -596,7 +613,7 @@ bool Cache_Mgr::update_flags(uint32_t group_id, const uint8_t* key, uint32_t key
 		if (pdu->cache_id == 0 || pdu->cache_id == it->cache_id) {
 			it->flags = pdu->flags;
 			if (it->watch_item != NULL) {
-				notify_watch(it);
+				notify_watch(it, WATCH_NOTIFY_TYPE_BASE_INFO_UPDATED);
 			}
 			it->cache_id = get_cache_id();
 			it->last_update_time = curr_time_.get_current_time();
@@ -973,7 +990,7 @@ xixi_reason Cache_Mgr::remove(uint32_t group_id, const uint8_t* key, uint32_t ke
 	if (it != NULL) {
 		if (cache_id == 0 || cache_id == it->cache_id) {
 			stats_.delete_success(group_id, it->class_id);
-			do_unlink(it);
+			do_unlink(it, WATCH_NOTIFY_TYPE_DELETED);
 			reason = XIXI_REASON_SUCCESS;
 		} else {
 			stats_.delete_mismatch(group_id, it->class_id);
@@ -1076,7 +1093,7 @@ void Cache_Mgr::flush(uint32_t group_id, uint32_t&/*out*/ flush_count, uint64_t&
 				flush_count++;
 				flush_size += it->total_size();
 				//  do_unlink_flush(it);
-				do_unlink(it);
+				do_unlink(it, WATCH_NOTIFY_TYPE_FLUSHED);
 			}
 			it = next;
 		}
@@ -1113,13 +1130,14 @@ uint32_t Cache_Mgr::create_watch(uint32_t group_id, uint32_t max_next_check_inte
 	return watch_id;
 }
 
-bool Cache_Mgr::check_watch_and_set_callback(uint32_t group_id, uint32_t watch_id, std::list<uint64_t>& updated_list, uint32_t& updated_count,
-											 uint64_t ack_cache_id, boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t max_next_check_interval) {
+bool Cache_Mgr::check_watch_and_set_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t group_id, uint32_t watch_id,
+											 uint32_t ack_sequence, uint32_t max_next_check_interval,
+											 uint32_t& sequence, std::vector<uint64_t>& updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list) {
 	 bool ret = true;
 	 cache_lock_.lock();
 	 std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
 	 if (it != watch_map_.end()) {
-		 it->second->check_and_set_callback(updated_list, updated_count, ack_cache_id, sp, curr_time_.realtime(max_next_check_interval));
+		 it->second->check_and_set_callback(sp, ack_sequence, curr_time_.realtime(max_next_check_interval), sequence, updated_list, updated_type_list);
 		 stats_.check_watch(group_id);
 	 } else {
 		 ret = false;
@@ -1129,12 +1147,13 @@ bool Cache_Mgr::check_watch_and_set_callback(uint32_t group_id, uint32_t watch_i
 	 return ret;
 }
 
-bool Cache_Mgr::check_watch_and_clear_callback(uint32_t watch_id, std::list<uint64_t>& updated_list, uint32_t& updated_count) {
+bool Cache_Mgr::check_watch_and_clear_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t watch_id,
+											   uint32_t& sequence, std::vector<uint64_t>& updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list) {
 	bool ret = true;
 	cache_lock_.lock();
 	std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it = watch_map_.find(watch_id);
 	if (it != watch_map_.end()) {
-		it->second->check_and_clear_callback(updated_list, updated_count);
+		it->second->check_and_clear_callback(sp, sequence, updated_list, updated_type_list);
 	} else {
 		ret = false;
 	}
@@ -1142,13 +1161,13 @@ bool Cache_Mgr::check_watch_and_clear_callback(uint32_t watch_id, std::list<uint
 	return ret;
 }
 
-void Cache_Mgr::notify_watch(Cache_Item* item) {
+void Cache_Mgr::notify_watch(Cache_Item* item, watch_notify_type type) {
 	std::set<uint32_t>::iterator it = item->watch_item->watch_map.begin();
 	while (it != item->watch_item->watch_map.end()) {
 		uint32_t watch_id = *it;
 		std::map<uint32_t, boost::shared_ptr<Cache_Watch> >::iterator it2 = watch_map_.find(watch_id);
 		if (it2 != watch_map_.end()) {
-			it2->second->notify_watch(item->cache_id);
+			it2->second->notify_watch(item->cache_id, type);
 			++it;
 		} else {
 			item->watch_item->watch_map.erase(it++);

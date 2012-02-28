@@ -21,7 +21,7 @@
 
 #include "defines.h"
 #include "util.h"
-#include "peer_pdu.h"
+#include "peer_cache_pdu.h"
 #include "xixi_list.hpp"
 #include "xixi_hash_map.hpp"
 #include "hash.h"
@@ -29,8 +29,6 @@
 #include <boost/pool/pool.hpp>
 #endif
 #include <boost/thread/mutex.hpp>
-//#include <boost/thread/shared_mutex.hpp>
-//#include <boost/thread/tss.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
 
 class Cache_Watch_Sink {
@@ -41,27 +39,31 @@ public:
 class Cache_Watch {
 public:
 	Cache_Watch(uint32_t watch_id, uint32_t expire_time_);
-	void check_and_set_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count, uint64_t ack_cache_id, boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t expire_time);
-	void check_and_clear_callback(std::list<uint64_t>& updated_list, uint32_t& updated_count);
-	void notify_watch(uint64_t cache_id);
-	void notify_base_info_updated(uint64_t cache_id);
-	void notify_data_updated(uint64_t cache_id);
-	void notify_deleted(uint64_t cache_id);
-	void notify_expired(uint64_t cache_id);
-//	void notify_flushed(uint64_t cache_id);
+	void check_and_set_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t ack_sequence, uint32_t expire_time,
+		uint32_t&/*out*/ sequence, std::vector<uint64_t>&/*out*/ updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list);
+	void check_and_clear_callback(boost::shared_ptr<Cache_Watch_Sink>& sp,
+		uint32_t&/*out*/ sequence, std::vector<uint64_t>& updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list);
+	void notify_watch(uint64_t cache_id, watch_notify_type type);
 	bool is_expired(uint32_t current_time) {
 		return current_time >= expire_time_;
 	}
 
 private:
+	uint32_t next_sequence() {
+		sequence_++;
+		if (sequence_ == 0) {
+			sequence_ = 1;
+		}
+		return sequence_;
+	}
 	uint32_t watch_id_;
 	uint32_t max_check_interval_;
 	uint32_t expire_time_;
 	uint32_t sequence_;
-	std::list<uint64_t> updated_list_;
-	uint32_t updated_count_;
-	std::list<uint64_t> wait_updated_list_;
-	uint32_t wait_updated_count_;
+	std::vector<uint64_t> updated_list_;
+	std::vector<uint64_t> wait_updated_list_;
+	std::vector<watch_notify_type> updated_type_list_;
+	std::vector<watch_notify_type> wait_updated_type_list_;
 	boost::weak_ptr<Cache_Watch_Sink> wp_;
 };
 
@@ -217,9 +219,10 @@ public:
 	bool item_size_ok(uint32_t key_length, uint32_t data_size, uint32_t ext_size);
 
 	uint32_t create_watch(uint32_t group_id, uint32_t max_next_check_interval);
-	bool check_watch_and_set_callback(uint32_t group_id, uint32_t watch_id, std::list<uint64_t>&/*out*/ updated_list, uint32_t&/*out*/ updated_count,
-		uint64_t ack_cache_id, boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t max_next_check_interval);
-	bool check_watch_and_clear_callback(uint32_t watch_id, std::list<uint64_t>&/*out*/ updated_list, uint32_t&/*out*/ updated_count);
+	bool check_watch_and_set_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t group_id, uint32_t watch_id, uint32_t ack_sequence, uint32_t max_next_check_interval,
+		uint32_t&/*out*/ sequence, std::vector<uint64_t>&/*out*/ updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list);
+	bool check_watch_and_clear_callback(boost::shared_ptr<Cache_Watch_Sink>& sp, uint32_t watch_id,
+		uint32_t&/*out*/ sequence, std::vector<uint64_t>&/*out*/ updated_list, std::vector<watch_notify_type>&/*out*/ updated_type_list);
 
 	void check_expired();
 	void stats(const XIXI_Stats_Req_Pdu* pdu, std::string& result);
@@ -237,7 +240,7 @@ private:
 	inline uint64_t get_cache_id();
 	inline Cache_Item* do_alloc(uint32_t group_id, uint32_t key_length, uint32_t flags, uint32_t expire_time, uint32_t data_size, uint32_t ext_size);
 	inline void do_link(Cache_Item* it);
-	inline void do_unlink(Cache_Item* it);
+	inline void do_unlink(Cache_Item* it, watch_notify_type type);
 	inline void do_unlink_flush(Cache_Item* it);
 	inline void do_release_reference(Cache_Item* it);
 	inline void do_replace(Cache_Item* it, Cache_Item* new_it);
@@ -247,7 +250,7 @@ private:
 	inline uint32_t get_class_id(uint32_t size);
 	inline uint32_t get_watch_id();
 	inline bool is_valid_watch_id(uint32_t watch_id);
-	void notify_watch(Cache_Item* it);
+	void notify_watch(Cache_Item* it, watch_notify_type type);
 
 	inline uint32_t get_expiration_id(uint32_t curr_time, uint32_t expire_time);
 
@@ -257,7 +260,6 @@ private:
 
 private:
 	mutex cache_lock_;
-//	boost::thread_specific_ptr<int> tls_int_;
 
 	xixi::hash_map<Cache_Key, Cache_Item> cache_hash_map_;
 

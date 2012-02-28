@@ -176,7 +176,7 @@ protected:
 			write_buf_.pop_back();
 		}
 	}
-	inline void encode_update_list(std::list<uint64_t>& updated_list);
+	inline void encode_update_list(uint32_t sequence, std::vector<uint64_t>& updated_list);
 
 	void handle_timer(const boost::system::error_code& err, uint32_t watch_id);
 
@@ -208,7 +208,7 @@ protected:
 	uint32_t expiration_;
 	bool touch_flag_;
 	int64_t delta_;
-	uint64_t ack_cache_id_;
+	uint32_t ack_sequence_;
 	uint32_t interval_;
 	uint32_t timeout_;
 	uint32_t sub_op_;

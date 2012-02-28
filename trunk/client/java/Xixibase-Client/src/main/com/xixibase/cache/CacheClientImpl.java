@@ -934,7 +934,7 @@ public class CacheClientImpl extends Defines {
 		return 0;
 	}
 	
-	protected long[] checkWatch(String host, int watchID, int checkTimeout, int maxNextCheckInterval, long ackCacheID) {
+	protected WatchResult checkWatch(String host, int watchID, int checkTimeout, int maxNextCheckInterval, int ackSequence) {
 		lastError = null;
 		XixiSocket socket = manager.getSocketByHost(host);
 		if (socket == null) {
@@ -951,18 +951,22 @@ public class CacheClientImpl extends Defines {
 			writeBuffer.putInt(watchID);
 			writeBuffer.putInt(checkTimeout);
 			writeBuffer.putInt(maxNextCheckInterval);
-			writeBuffer.putLong(ackCacheID);
+			writeBuffer.putInt(ackSequence);
 			socket.flush();
 
 			byte category = socket.readByte();
 			byte type = socket.readByte();
 			if (category == XIXI_CATEGORY_CACHE && type == XIXI_CHECK_WATCH_RES) {
+				WatchResult wr = new WatchResult();
+				wr.sequence = socket.readInt();
 				int updateCount = socket.readInt();
-				long[] updates = new long[updateCount];
+				wr.cacheIDs = new long[updateCount];
+				wr.types = new byte[updateCount];
 				for (int i = 0; i < updateCount; i++) {
-					updates[i] = socket.readLong();
+					wr.cacheIDs[i] = socket.readLong();
+					wr.types[i] = socket.readByte();
 				}
-				return updates;
+				return wr;
 			} else {
 				short reason = socket.readShort();
 				lastError = "checkWatch, response error, reason=" + reason;

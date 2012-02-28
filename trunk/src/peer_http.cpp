@@ -206,44 +206,6 @@ Peer_Http::Peer_Http(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>* soc
 	stats_.new_conn();
 }
 
-/*
-Peer_Http::Peer_Http(bool ssl, void* socket) : self_(this)/*, timer_(socket->get_io_service())* / {
-	LOG_DEBUG2("Peer_Http::Peer_Http()");
-	op_count_ = 0;
-	ssl_flag_ = ssl;
-	socket_ = socket;
-	state_ = PEER_STATE_NEW_CMD;
-	next_state_ = PEER_STATE_NEW_CMD;
-	cache_item_ = NULL;
-	write_buf_total_ = 0;
-	read_item_buf_ = NULL;
-	next_data_len_ = XIXI_PDU_HEAD_LENGTH;
-	timer_ = NULL;
-	timer_flag_ = false;
-
-	group_id_ = 0;
-	watch_id_ = 0;
-	cache_id_ = 0;
-	key_ = NULL;
-	key_length_ = 0;
-	value_ = NULL;
-	value_length_ = 0;
-	value_content_type_ = "";
-	value_content_type_length_ = 0;
-	post_data_ = NULL;
-	content_length_ = 0;
-	flags_ = 0;
-	expiration_ = 0;
-	touch_flag_ = false;
-	delta_ = 1;
-	ack_cache_id_ = 0;
-	interval_ = 120;
-	timeout_ = 30;
-	sub_op_ = 0;
-
-	stats_.new_conn();
-}
-*/
 Peer_Http::~Peer_Http() {
 	LOG_DEBUG2("~Peer_Http::Peer_Http()");
 	cleanup();
@@ -279,7 +241,7 @@ void Peer_Http::init() {
 	expiration_ = 0;
 	touch_flag_ = false;
 	delta_ = 1;
-	ack_cache_id_ = 0;
+	ack_sequence_ = 0;
 	interval_ = 120;
 	timeout_ = 30;
 	sub_op_ = 0;
@@ -306,7 +268,7 @@ void Peer_Http::reset_for_new_cmd() {
 	expiration_ = 0;
 	touch_flag_ = false;
 	delta_ = 1;
-	ack_cache_id_ = 0;
+	ack_sequence_ = 0;
 	interval_ = 120;
 	timeout_ = 30;
 	sub_op_ = 0;
@@ -859,7 +821,7 @@ bool Peer_Http::process_request_arg(char* args) {
 					return false;
 				}
 			} else if (arg[0] =='a') {
-				if (!safe_toui64(arg + 2, arg_size - 2, ack_cache_id_)) {
+				if (!safe_toui32(arg + 2, arg_size - 2, ack_sequence_)) {
 					write_error(XIXI_REASON_INVALID_PARAMETER);
 					return false;
 				}
@@ -974,7 +936,7 @@ void Peer_Http::process_post() {
 							return;
 						}
 					} else if (name[0] =='a') {
-						if (!safe_toui64(value, (uint32_t)(buf - value) - 4, ack_cache_id_)) {
+						if (!safe_toui32(value, (uint32_t)(buf - value) - 4, ack_sequence_)) {
 							write_error(XIXI_REASON_INVALID_PARAMETER);
 							return;
 						}
@@ -1496,7 +1458,7 @@ void Peer_Http::process_create_watch() {
 	next_state_ = PEER_STATE_NEW_CMD;
 }
 
-void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
+void Peer_Http::encode_update_list(uint32_t sequence, std::vector<uint64_t>& updated_list) {
 	uint8_t* buf = request_buf_.prepare(2000);
 	uint32_t offset = 0;
 	uint32_t total_size = 0;
@@ -1506,9 +1468,11 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 		add_write_buf(NULL, 0); // will update next
 		uint32_t write_buf_count = 2;
 
-		while (!updated_list.empty()) {
-			uint64_t cache_id = updated_list.front();
-			updated_list.pop_front();
+		for (size_t i = 0; i < updated_list.size(); i++) {
+	//	while (!updated_list.empty()) {
+	//		uint64_t cache_id = updated_list.front();
+	//		updated_list.pop_front();
+			uint64_t cache_id = updated_list[i];
 			uint32_t data_size = 0;
 			if (is_begin) {
 				is_begin = false;
@@ -1555,18 +1519,19 @@ void Peer_Http::encode_update_list(std::list<uint64_t>& updated_list) {
 }
 
 void Peer_Http::process_watch() {
-	std::list<uint64_t> updated_list;
-	uint32_t updated_count = 0;
+	std::vector<uint64_t> updated_list;
+	std::vector<watch_notify_type> updated_type_list;
 	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
 	timer_flag_ = false;
-	bool ret = cache_mgr_.check_watch_and_set_callback(group_id_, watch_id_, updated_list, updated_count, ack_cache_id_, sp, interval_);
+	uint32_t sequence;
+	bool ret = cache_mgr_.check_watch_and_set_callback(sp, group_id_, watch_id_, ack_sequence_, interval_, sequence, updated_list, updated_type_list);
 	//  LOG_INFO2("process_check_watch_req_pdu_fixed watch_id=" << pdu->watch_id << " ack=" << pdu->ack_cache_id << " updated_count=" << updated_count);
 
 	if (!ret) {
 		write_error(XIXI_REASON_WATCH_NOT_FOUND);
 	} else {
-		if (updated_count > 0) {
-			encode_update_list(updated_list);
+		if (updated_list.size() > 0) {
+			encode_update_list(sequence, updated_list);
 		} else {
 			//    LOG_INFO2("process_check_watch_req_pdu_fixed wait a moment watch_id=" << pdu->watch_id << " updated_count=" << updated_count);
 			timer_lock_.lock();
@@ -1793,16 +1758,18 @@ uint32_t Peer_Http::read_some(uint8_t* buf, uint32_t length) {
 
 void Peer_Http::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {
 	LOG_DEBUG("Peer_Http::handle_timer err=" << err);
-	std::list<uint64_t> updated_list;
-	uint32_t updated_count = 0;
+	std::vector<uint64_t> updated_list;
+	std::vector<watch_notify_type> updated_type_list;
+	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
+	uint32_t sequence;
 	lock_.lock();
-	bool ret = cache_mgr_.check_watch_and_clear_callback(watch_id, updated_list, updated_count);
-	LOG_DEBUG("handle_timer watch_id=" << watch_id << " updated_count=" << updated_count);
+	bool ret = cache_mgr_.check_watch_and_clear_callback(sp, watch_id, sequence, updated_list, updated_type_list);
+	LOG_DEBUG("handle_timer watch_id=" << watch_id << " updated_count=" << updated_list.size() << " sequence=" << sequence);
 
 	if (!ret) {
 		write_error(XIXI_REASON_WATCH_NOT_FOUND);
 	} else {
-		encode_update_list(updated_list);
+		encode_update_list(sequence, updated_list);
 	}
 	try_write();
 	lock_.unlock();

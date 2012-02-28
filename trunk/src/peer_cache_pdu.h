@@ -58,6 +58,13 @@ const xixi_choice XIXI_CHOICE_CREATE_WATCH_RES = XIXI_CHOICE_CACHE_BASE + 23;
 const xixi_choice XIXI_CHOICE_CHECK_WATCH_REQ = XIXI_CHOICE_CACHE_BASE + 24;
 const xixi_choice XIXI_CHOICE_CHECK_WATCH_RES = XIXI_CHOICE_CACHE_BASE + 25;
 
+typedef uint8_t watch_notify_type;
+const watch_notify_type WATCH_NOTIFY_TYPE_BASE_INFO_UPDATED = 1;
+const watch_notify_type WATCH_NOTIFY_TYPE_DATA_UPDATED = 2;
+const watch_notify_type WATCH_NOTIFY_TYPE_DELETED = 3;
+const watch_notify_type WATCH_NOTIFY_TYPE_EXPIRED = 4;
+const watch_notify_type WATCH_NOTIFY_TYPE_FLUSHED = 5;
+
 class XIXI_Get_Req_Pdu : public XIXI_Pdu {
 public:
 	static uint32_t get_fixed_body_size() {
@@ -482,38 +489,45 @@ public:
 class XIXI_Check_Watch_Req_Pdu : public XIXI_Pdu {
 public:
 	static uint32_t get_fixed_body_size() {
-		return 24;
+		return 20;
 	}
 	void decode_fixed(uint8_t* buf, uint32_t length) {
 		group_id = DECODE_UINT32(buf);
 		watch_id = DECODE_UINT32(buf + 4);
 		check_timeout = DECODE_UINT32(buf + 8);
 		max_next_check_interval = DECODE_UINT32(buf + 12);
-		ack_cache_id = DECODE_UINT64(buf + 16);
+		ack_sequence = DECODE_UINT32(buf + 16);
 	}
 
 	uint32_t group_id;
 	uint32_t watch_id;
 	uint32_t check_timeout;
 	uint32_t max_next_check_interval;
-	uint64_t ack_cache_id;
+	uint32_t ack_sequence;
 };
 
 class XIXI_Check_Watch_Res_Pdu : public XIXI_Pdu {
 public:
 	static uint32_t calc_encode_size(uint32_t updated_count) {
-		return XIXI_PDU_CHOICE_LENGTH + 4 + updated_count * 8;
+		return XIXI_PDU_CHOICE_LENGTH + 8 + updated_count * (sizeof(uint64_t) + sizeof(watch_notify_type));
 	}
-	static void encode(uint8_t* buf, uint32_t update_count, std::list<uint64_t>& update_list) {
+	static void encode(uint8_t* buf, uint32_t sequence, std::vector<uint64_t>& update_list, std::vector<watch_notify_type>& update_type_list) {
+		uint32_t update_count = update_list.size();
 		ENCODE_CHOICE(buf, XIXI_CHOICE_CHECK_WATCH_RES); buf += XIXI_PDU_CHOICE_LENGTH;
+		ENCODE_UINT32(buf, sequence); buf += 4;
 		ENCODE_UINT32(buf, update_count); buf += 4;
-		std::list<uint64_t>::iterator it = update_list.begin();
-		while (it != update_list.end()) {
-			ENCODE_UINT64(buf, *it); buf += 8;
-			++it;
+		for (uint32_t i = 0; i < update_count; i++) {
+			ENCODE_UINT64(buf, update_list[i]); buf += 8;
+			ENCODE_UINT8(buf, update_type_list[i]); buf++;
 		}
+//		std::vector<uint64_t>::iterator it = update_list.begin();
+//		while (it != update_list.end()) {
+//			ENCODE_UINT64(buf, *it); buf += 8;
+//			++it;
+//		}
 	}
 
+	uint32_t sequence;
 	uint32_t update_count;
 };
 

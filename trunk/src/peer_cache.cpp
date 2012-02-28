@@ -846,22 +846,24 @@ void Peer_Cache::process_create_watch_req_pdu_fixed(XIXI_Create_Watch_Req_Pdu* p
 }
 
 void Peer_Cache::process_check_watch_req_pdu_fixed(XIXI_Check_Watch_Req_Pdu* pdu) {
-	std::list<uint64_t> updated_list;
-	uint32_t updated_count = 0;
+	std::vector<uint64_t> updated_list;
+	std::vector<watch_notify_type> updated_type_list;
 	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
 	timer_flag_ = false;
-	bool ret = cache_mgr_.check_watch_and_set_callback(pdu->group_id, pdu->watch_id, updated_list, updated_count, pdu->ack_cache_id, sp, pdu->max_next_check_interval);
+	uint32_t sequence;
+	bool ret = cache_mgr_.check_watch_and_set_callback(sp, pdu->group_id, pdu->watch_id, pdu->ack_sequence, pdu->max_next_check_interval,
+		sequence, updated_list, updated_type_list);
 	//  LOG_INFO2("process_check_watch_req_pdu_fixed watch_id=" << pdu->watch_id << " ack=" << pdu->ack_cache_id << " updated_count=" << updated_count);
 
 	if (!ret) {
 		write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
 	} else {
-		if (updated_count > 0) {
-			uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
+		if (updated_list.size() > 0) {
+			uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_list.size());
 
 			uint8_t* buf = cache_buf_.prepare(size);
 			if (buf != NULL) {
-				XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
+				XIXI_Check_Watch_Res_Pdu::encode(buf, sequence, updated_list, updated_type_list);
 
 				add_write_buf(buf, size);
 
@@ -1098,20 +1100,22 @@ uint32_t Peer_Cache::read_some(uint8_t* buf, uint32_t length) {
 
 void Peer_Cache::handle_timer(const boost::system::error_code& err, uint32_t watch_id) {
 	//  LOG_INFO("Peer_Cache::handle_timer err=" << err);
-	std::list<uint64_t> updated_list;
-	uint32_t updated_count = 0;
+	std::vector<uint64_t> updated_list;
+	std::vector<watch_notify_type> updated_type_list;
+	boost::shared_ptr<Cache_Watch_Sink> sp = self_;
+	uint32_t sequence;
 	lock_.lock();
-	bool ret = cache_mgr_.check_watch_and_clear_callback(watch_id, updated_list, updated_count);
-	//  LOG_INFO2("handle_timer watch_id=" << watch_id << " updated_count=" << updated_count);
+	bool ret = cache_mgr_.check_watch_and_clear_callback(sp, watch_id, sequence, updated_list, updated_type_list);
+	//  LOG_INFO2("handle_timer watch_id=" << watch_id << " updated_count=" << updated_list.size());
 
 	if (!ret) {
 		write_error(XIXI_REASON_WATCH_NOT_FOUND, 0, true);
 	} else {
-		uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_count);
+		uint32_t size = XIXI_Check_Watch_Res_Pdu::calc_encode_size(updated_list.size());
 
 		uint8_t* buf = cache_buf_.prepare(size);
 		if (buf != NULL) {
-			XIXI_Check_Watch_Res_Pdu::encode(buf, updated_count, updated_list);
+			XIXI_Check_Watch_Res_Pdu::encode(buf, sequence, updated_list, updated_type_list);
 
 			add_write_buf(buf, size);
 

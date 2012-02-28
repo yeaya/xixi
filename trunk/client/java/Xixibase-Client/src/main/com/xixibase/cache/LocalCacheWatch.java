@@ -174,7 +174,7 @@ class LocalCacheWatch extends Thread {
 	private HashMap<Long, CacheItem> cacheIDMap = new HashMap<Long, CacheItem>();
 	private AtomicLong cacheSize = null;
 	private AtomicInteger cacheCount = null;
-	private long ackCacheID = 0;
+	private int ackSequence = 0;
 	private int checkTimeout = 3;
 	private int maxNextCheckInterval = 600;
 	private CacheClientImpl cc = null;
@@ -266,10 +266,10 @@ class LocalCacheWatch extends Thread {
 		}
 	}
 
-	protected synchronized void update(long[] cacheIDList) {
+	protected synchronized void update(WatchResult wr) {
 		//	log.debug("update count=" + updated.length);
-		for (int i = 0; i < cacheIDList.length; i++) {
-			Long cacheID = new Long(cacheIDList[i]);
+		for (int i = 0; i < wr.cacheIDs.length; i++) {
+			Long cacheID = new Long(wr.cacheIDs[i]);
 			CacheItem it = cacheIDMap.remove(cacheID);
 			if (it != null) {
 				GroupItem gitem = groupMap.get(it.groupID);
@@ -297,16 +297,16 @@ class LocalCacheWatch extends Thread {
 	//		log.error("localCache updater " + host + " watchID=" + watchID);
 			long beginTime = System.currentTimeMillis();
 
-			long[] cacheIDList = cc.checkWatch(host, watchID, checkTimeout, maxNextCheckInterval, ackCacheID);
+			WatchResult wr = cc.checkWatch(host, watchID, checkTimeout, maxNextCheckInterval, ackSequence);
 			long endTime = System.currentTimeMillis();
 			// for test try { Thread.sleep(10); } catch (InterruptedException e) {}
-			if (cacheIDList == null && runFlag) {
-				cacheIDList = cc.checkWatch(host, watchID, checkTimeout, maxNextCheckInterval, ackCacheID);
+			if (wr == null && runFlag) {
+				wr = cc.checkWatch(host, watchID, checkTimeout, maxNextCheckInterval, ackSequence);
 			}
-			if (cacheIDList != null) {
-				if (cacheIDList.length > 0) {
-					update(cacheIDList);
-					ackCacheID = cacheIDList[0];
+			if (wr != null) {
+				if (wr.cacheIDs.length > 0) {
+					update(wr);
+					ackSequence = wr.sequence;
 				} else {
 					if (endTime - beginTime < 200) {
 						try {
